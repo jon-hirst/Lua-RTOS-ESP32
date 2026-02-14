@@ -488,7 +488,7 @@ menu "Lua RTOS"
             config LUA_RTOS_HTTP_SERVER_DOCUMENT_ROOT
                 depends on LUA_RTOS_USE_HTTP_SERVER
                    string "HTTP document root"
-                   default /
+                   default "/"
                 help
                    base folder where HTTP server looks for files
 
