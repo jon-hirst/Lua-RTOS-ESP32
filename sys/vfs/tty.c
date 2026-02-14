@@ -126,6 +126,7 @@ static void put(int fd, char *c) {
 	}
 }
 
+#ifndef CONFIG_IDF_TARGET_ESP32S3
 static int tty_has_bytes(int fd, int to) {
 	char c;
 
@@ -139,6 +140,7 @@ static int tty_has_bytes(int fd, int to) {
 static int tty_free(int fd) {
 	return uxQueueSpacesAvailable(usj_rx_queue);
 }
+#endif
 
 #else /* UART mode */
 
@@ -163,6 +165,7 @@ static void put(int fd, char *c) {
     }
 }
 
+#ifndef CONFIG_IDF_TARGET_ESP32S3
 static int tty_has_bytes(int fd, int to) {
     char c;
 
@@ -176,12 +179,15 @@ static int tty_has_bytes(int fd, int to) {
 static int tty_free(int fd) {
     return uxQueueSpacesAvailable(uart_get_queue(fd));
 }
+#endif
 
 #endif /* CONSOLE_USB_SERIAL_JTAG */
 
+#ifndef CONFIG_IDF_TARGET_ESP32S3
 static int vfs_tty_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout) {
     return vfs_generic_select(local_storage, tty_has_bytes, tty_free, maxfdp1, readset, writeset, exceptset, timeout);
 }
+#endif
 
 static int  vfs_tty_open(const char *path, int flags, int mode) {
 	int unit = 0;
@@ -249,6 +255,7 @@ static int vfs_tty_close(int fd) {
 	return 0;
 }
 
+#ifndef CONFIG_IDF_TARGET_ESP32S3
 static ssize_t vfs_tty_writev(int fd, const struct iovec *iov, int iovcnt) {
 	int ret;
 
@@ -264,6 +271,7 @@ static ssize_t vfs_tty_writev(int fd, const struct iovec *iov, int iovcnt) {
 
     return ret;
 }
+#endif
 
 static int vfs_tty_fcntl(int fd, int cmd, int arg) {
 	return vfs_generic_fcntl(local_storage, fd, cmd, arg);

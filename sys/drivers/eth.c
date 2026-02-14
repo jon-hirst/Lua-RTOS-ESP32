@@ -191,8 +191,10 @@ static void net_eth_ip_event_handler(void *arg, esp_event_base_t base, int32_t i
  * Operation functions
  */
 driver_error_t *eth_setup(uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns1, uint32_t dns2) {
+#ifndef CONFIG_IDF_TARGET_ESP32S3
 #if CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
     driver_unit_lock_error_t *lock_error = NULL;
+#endif
 #endif
     driver_error_t *error;
 
@@ -210,6 +212,7 @@ driver_error_t *eth_setup(uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns1
     esp_event_handler_instance_register(ETH_EVENT, ESP_EVENT_ANY_ID, &net_eth_event_handler, (void *)ETH_EVENT, NULL);
     esp_event_handler_instance_register(IP_EVENT, IP_EVENT_ETH_GOT_IP, &net_eth_ip_event_handler, (void *)IP_EVENT, NULL);
 
+#ifndef CONFIG_IDF_TARGET_ESP32S3
 #if CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
     // Lock resources
 	#if CONFIG_LUA_RTOS_ETH_HW_TYPE_RMII
@@ -251,6 +254,7 @@ driver_error_t *eth_setup(uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns1
     }
 	#endif
 	#endif
+#endif
 #endif
 
     // PHY configuration

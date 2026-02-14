@@ -105,7 +105,9 @@ float IRAM_ATTR solve_third_order_newton(float a, float b, float c, float d, flo
 float IRAM_ATTR solve_third_order_newton_fast(float a, float a3, float b, float b2, float c, float d, float first_approximation, float err, int32_t *iterations) {
     float previous_unknown;
     float error;
+#ifndef CONFIG_IDF_TARGET_ESP32S3
     float previous_error;
+#endif
     uint32_t it = 0;
 
 	float unknown;
