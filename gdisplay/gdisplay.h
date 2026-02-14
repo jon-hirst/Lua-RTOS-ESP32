@@ -60,6 +60,7 @@
 #include "dgdisplay.h"
 #include "ili9341.h"
 #include "st7735.h"
+#include "st7789.h"
 #include "pcd8544.h"
 #include "ssd1306.h"
 
@@ -86,24 +87,30 @@
 #define CHIPSET_ST7735_VARIANT_OFFSET CHIPSET_ST7735
 
 /*
+ * ST7789
+ */
+
+#define CHIPSET_ST7789     6
+
+/*
  * ILI9341
  */
 
-#define CHIPSET_ILI9341    6
+#define CHIPSET_ILI9341    7
 
 /*
  * PCD8544
  */
 
-#define CHIPSET_PCD8544   7
+#define CHIPSET_PCD8544   8
 
 /*
  * SSDS1306
  */
 
-#define CHIPSET_SSD1306_128_32  8
-#define CHIPSET_SSD1306_128_64  9
-#define CHIPSET_SSD1306_96_16   10
+#define CHIPSET_SSD1306_128_32  9
+#define CHIPSET_SSD1306_128_64  10
+#define CHIPSET_SSD1306_96_16   11
 
 #define CHIPSET_SSD1306_VARIANT_OFFSET CHIPSET_SSD1306_128_32
 
