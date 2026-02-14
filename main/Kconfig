@@ -219,10 +219,14 @@ menu "Lua RTOS"
       config LUA_RTOS_CONSOLE_UART2
          bool "UART 2"
 
+      config LUA_RTOS_CONSOLE_USB_SERIAL_JTAG
+         bool "USB Serial/JTAG"
+         depends on SOC_USB_SERIAL_JTAG_SUPPORTED
+
       endchoice
 
       choice LUA_RTOS_CONSOLE_BR
-         depends on LUA_RTOS_USE_CONSOLE
+         depends on LUA_RTOS_USE_CONSOLE && !LUA_RTOS_CONSOLE_USB_SERIAL_JTAG
          prompt "Baud rate"
          default LUA_RTOS_CONSOLE_BR_115200
          help

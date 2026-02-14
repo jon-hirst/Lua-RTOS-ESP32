@@ -53,12 +53,94 @@
 
 #include <sys/stat.h>
 
+#ifdef CONSOLE_USB_SERIAL_JTAG
+#include "driver/usb_serial_jtag.h"
+#include <sys/status.h>
+#include <sys/_signal.h>
+#include <signal.h>
+#else
 #include <drivers/uart.h>
+#endif
 
 extern FILE *lua_stdout_file;
 
 // Local storage for file descriptors
 static vfs_fd_local_storage_t *local_storage;
+
+#ifdef CONSOLE_USB_SERIAL_JTAG
+static QueueHandle_t usj_rx_queue = NULL;
+static pthread_mutex_t usj_mtx = PTHREAD_MUTEX_INITIALIZER;
+
+extern pthread_t lua_thread;
+extern int _pthread_has_signal(int dst, int s);
+extern uint8_t console_raw;
+
+static void usj_reader_task(void *arg) {
+	uint8_t buf[64];
+
+	for (;;) {
+		int len = usb_serial_jtag_read_bytes(buf, sizeof(buf), portMAX_DELAY);
+		for (int i = 0; i < len; i++) {
+			uint8_t byte = buf[i];
+
+			if ((byte == 0x04) && (!console_raw)) {
+				status_set(STATUS_LUA_ABORT_BOOT_SCRIPTS, 0x00000000);
+				continue;
+			} else if ((byte == 0x03) && (!console_raw)) {
+				if (status_get(STATUS_LUA_RUNNING)) {
+					if (!_pthread_has_signal(lua_thread, SIGINT)) {
+						xQueueSend(usj_rx_queue, &byte, portMAX_DELAY);
+					}
+				}
+				continue;
+			}
+
+			if (status_get(STATUS_LUA_RUNNING) || console_raw) {
+				xQueueSend(usj_rx_queue, &byte, portMAX_DELAY);
+			}
+		}
+	}
+}
+
+static int has_bytes(int fd, int to) {
+	char c;
+
+	if (to != portMAX_DELAY) {
+		to = to / portTICK_PERIOD_MS;
+	}
+
+	return (xQueuePeek(usj_rx_queue, &c, (BaseType_t)to) == pdTRUE);
+}
+
+static int get(int fd, char *c) {
+	if (xQueueReceive(usj_rx_queue, c, portMAX_DELAY) == pdTRUE) {
+		return 1;
+	}
+	return 0;
+}
+
+static void put(int fd, char *c) {
+	usb_serial_jtag_write_bytes((const uint8_t *)c, 1, portMAX_DELAY);
+	if (lua_stdout_file) {
+		fwrite(c, 1, 1, lua_stdout_file);
+	}
+}
+
+static int tty_has_bytes(int fd, int to) {
+	char c;
+
+	if (to != portMAX_DELAY) {
+		to = to / portTICK_PERIOD_MS;
+	}
+
+	return (xQueuePeek(usj_rx_queue, &c, (BaseType_t)to) == pdTRUE);
+}
+
+static int tty_free(int fd) {
+	return uxQueueSpacesAvailable(usj_rx_queue);
+}
+
+#else /* UART mode */
 
 static int has_bytes(int fd, int to) {
 	char c;
@@ -95,6 +177,8 @@ static int tty_free(int fd) {
     return uxQueueSpacesAvailable(uart_get_queue(fd));
 }
 
+#endif /* CONSOLE_USB_SERIAL_JTAG */
+
 static int vfs_tty_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout) {
     return vfs_generic_select(local_storage, tty_has_bytes, tty_free, maxfdp1, readset, writeset, exceptset, timeout);
 }
@@ -102,7 +186,7 @@ static int vfs_tty_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set
 static int  vfs_tty_open(const char *path, int flags, int mode) {
 	int unit = 0;
 
-	// Get UART unit
+	// Get unit
     if (strcmp(path, "/0") == 0) {
     	unit = 0;
     } else if (strcmp(path, "/1") == 0) {
@@ -114,9 +198,21 @@ static int  vfs_tty_open(const char *path, int flags, int mode) {
     	return -1;
 	}
 
+#ifdef CONSOLE_USB_SERIAL_JTAG
+    if (unit == 0) {
+        usb_serial_jtag_driver_config_t cfg = {
+            .tx_buffer_size = CONSOLE_BUFFER_LEN,
+            .rx_buffer_size = CONSOLE_BUFFER_LEN,
+        };
+        usb_serial_jtag_driver_install(&cfg);
+        usj_rx_queue = xQueueCreate(CONSOLE_BUFFER_LEN, sizeof(uint8_t));
+        xTaskCreatePinnedToCore(usj_reader_task, "usj_rd", 4096, NULL, 21, NULL, 0);
+    }
+#else
     // Init uart unit
     uart_init(unit, CONSOLE_BR, 8, 0, 1, UART_FLAG_READ | UART_FLAG_WRITE, CONSOLE_BUFFER_LEN);
     uart_setup_interrupts(unit);
+#endif
 
     // Store flags
     local_storage[unit].flags = flags;
@@ -127,9 +223,15 @@ static int  vfs_tty_open(const char *path, int flags, int mode) {
 static ssize_t vfs_tty_write(int fd, const void *data, size_t size) {
 	int ret;
 
+#ifdef CONSOLE_USB_SERIAL_JTAG
+    pthread_mutex_lock(&usj_mtx);
+	ret = vfs_generic_write(local_storage, put, fd, data, size);
+    pthread_mutex_unlock(&usj_mtx);
+#else
     uart_ll_lock(fd);
 	ret = vfs_generic_write(local_storage, put, fd, data, size);
     uart_ll_unlock(fd);
+#endif
 
     return ret;
 }
@@ -150,9 +252,15 @@ static int vfs_tty_close(int fd) {
 static ssize_t vfs_tty_writev(int fd, const struct iovec *iov, int iovcnt) {
 	int ret;
 
+#ifdef CONSOLE_USB_SERIAL_JTAG
+    pthread_mutex_lock(&usj_mtx);
+	ret = vfs_generic_writev(local_storage, put, fd, iov, iovcnt);
+    pthread_mutex_unlock(&usj_mtx);
+#else
     uart_ll_lock(fd);
 	ret = vfs_generic_writev(local_storage, put, fd, iov, iovcnt);
     uart_ll_unlock(fd);
+#endif
 
     return ret;
 }
@@ -178,13 +286,18 @@ void vfs_tty_register() {
 		//.writev = &vfs_tty_writev,
 		//.select = &vfs_tty_select,
     };
-	
+
     ESP_ERROR_CHECK(esp_vfs_register("/dev/tty", &vfs, NULL));
 
 	local_storage = vfs_create_fd_local_storage(3);
 	assert(local_storage != NULL);
 
 	// Open standard streams, using defined tty for console
+#ifdef CONSOLE_USB_SERIAL_JTAG
+	_GLOBAL_REENT->_stdin  = fopen("/dev/tty/0", "r");
+	_GLOBAL_REENT->_stdout = fopen("/dev/tty/0", "w");
+	_GLOBAL_REENT->_stderr = fopen("/dev/tty/0", "w");
+#else
 	if (CONSOLE_UART == 0) {
 		_GLOBAL_REENT->_stdin  = fopen("/dev/tty/0", "r");
 		_GLOBAL_REENT->_stdout = fopen("/dev/tty/0", "w");
@@ -202,6 +315,7 @@ void vfs_tty_register() {
 		_GLOBAL_REENT->_stdout = fopen("/dev/tty/2", "w");
 		_GLOBAL_REENT->_stderr = fopen("/dev/tty/2", "w");
 	}
+#endif
 
 	// Work-around newlib is not compiled with HAVE_BLKSIZE flag
 	setvbuf(_GLOBAL_REENT->_stdin , NULL, _IONBF, 0);

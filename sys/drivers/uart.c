@@ -152,7 +152,7 @@ struct uart uart[NUART] = {
  */
 static xQueueHandle deferred_q = NULL;
 
-static uint8_t console_raw = 0;
+uint8_t console_raw = 0;
 
 typedef struct {
 	uint8_t type;

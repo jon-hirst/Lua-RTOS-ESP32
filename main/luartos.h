@@ -83,6 +83,10 @@
 #define CONSOLE_UART 2
 #endif
 
+#if CONFIG_LUA_RTOS_CONSOLE_USB_SERIAL_JTAG
+#define CONSOLE_USB_SERIAL_JTAG 1
+#endif
+
 // Get the console baud rate
 #if CONFIG_LUA_RTOS_CONSOLE_BR_57600
 #define CONSOLE_BR 57600
