@@ -48,8 +48,12 @@
 
 #include <stdint.h>
 
+#include "soc/soc_caps.h"
+
 #include "tone_pwm.h"
+#if SOC_DAC_SUPPORTED
 #include "tone_dac.h"
+#endif
 #include "driver.h"
 
 typedef driver_error_t *(*tone_setup_t)(void *, void **);
@@ -59,13 +63,17 @@ typedef driver_error_t *(*set_volume_t)(void **, float);
 
 typedef enum {
 	ToneGeneratorPWM = 1,
+#if SOC_DAC_SUPPORTED
 	ToneGeneratorDAC = 2,
+#endif
 	ToneGeneratorMAX
 } tone_gen_t;
 
 typedef union {
 	tone_pwm_config_t pwm;
+#if SOC_DAC_SUPPORTED
 	tone_dac_config_t dac;
+#endif
 } tone_gen_config_t;
 
 typedef struct {

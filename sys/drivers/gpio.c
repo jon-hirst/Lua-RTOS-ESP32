@@ -85,12 +85,12 @@ DRIVER_REGISTER_END(GPIO,gpio,CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS * (CPU_LAST_GPI
 driver_error_t * gpio_ll_pin_set(uint8_t pin) {
     if (pin < 32) {
         GPIO.out_w1ts = (1 << pin);
-    } else if (pin < 40) {
+    } else if (pin < GPIO_PER_PORT) {
         GPIO.out1_w1ts.data = (1 << (pin - 32));
     }
 #if EXTERNAL_GPIO
     else {
-        return gpio_ext_pin_set(pin - 40);
+        return gpio_ext_pin_set(pin - GPIO_PER_PORT);
     }
 #endif
 
@@ -100,12 +100,12 @@ driver_error_t * gpio_ll_pin_set(uint8_t pin) {
 driver_error_t *  gpio_ll_pin_clr(uint8_t pin) {
     if (pin < 32) {
         GPIO.out_w1tc = (1 << pin);
-    } else if (pin < 40) {
+    } else if (pin < GPIO_PER_PORT) {
         GPIO.out1_w1tc.data = (1 << (pin - 32));
     }
 #if EXTERNAL_GPIO
     else {
-        return gpio_ext_pin_clr(pin - 40);
+        return gpio_ext_pin_clr(pin - GPIO_PER_PORT);
     }
 #endif
 
@@ -119,7 +119,7 @@ driver_error_t *  gpio_ll_pin_inv(int8_t pin) {
         } else {
             return gpio_ll_pin_set(pin);
         }
-    } else if (pin < 40) {
+    } else if (pin < GPIO_PER_PORT) {
         if (GPIO.out1.val & (1 << pin)) {
             return gpio_ll_pin_clr(pin);
         } else {
@@ -128,7 +128,7 @@ driver_error_t *  gpio_ll_pin_inv(int8_t pin) {
     }
 #if EXTERNAL_GPIO
     else {
-        return gpio_ext_pin_inv(pin - 40);
+        return gpio_ext_pin_inv(pin - GPIO_PER_PORT);
     }
 #endif
 
@@ -138,12 +138,12 @@ driver_error_t *  gpio_ll_pin_inv(int8_t pin) {
 uint8_t gpio_ll_pin_get(int8_t pin) {
     if (pin < 32) {
         return ((GPIO.in & (1ULL << pin)) != 0);
-    } else if (pin < 40) {
+    } else if (pin < GPIO_PER_PORT) {
         return ((GPIO.in1.data & (1ULL << (pin - 32))) != 0);
     }
 #if EXTERNAL_GPIO
     else {
-        return gpio_ext_pin_get(pin - 40);
+        return gpio_ext_pin_get(pin - GPIO_PER_PORT);
     }
 #endif
 
@@ -155,7 +155,7 @@ uint8_t gpio_ll_pin_get(int8_t pin) {
  *
  */
 driver_error_t *gpio_pin_output(uint8_t pin) {
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         gpio_config_t io_conf = {0};
 
         // Sanity checks
@@ -173,13 +173,13 @@ driver_error_t *gpio_pin_output(uint8_t pin) {
     }
 #if EXTERNAL_GPIO
     else {
-        if (pin >= 40 + EXTERNAL_GPIO_PINS) {
+        if (pin >= GPIO_PER_PORT + EXTERNAL_GPIO_PINS) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
         driver_error_t *error;
 
-        error = gpio_ext_pin_output(pin - 40);
+        error = gpio_ext_pin_output(pin - GPIO_PER_PORT);
         if (error) {
             return error;
         }
@@ -194,7 +194,7 @@ driver_error_t *gpio_pin_output(uint8_t pin) {
 }
 
 driver_error_t *gpio_pin_input(uint8_t pin) {
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         gpio_config_t io_conf = {0};
 
         // Sanity checks
@@ -212,13 +212,13 @@ driver_error_t *gpio_pin_input(uint8_t pin) {
     }
 #if EXTERNAL_GPIO
     else {
-        if (pin >= 40 + EXTERNAL_GPIO_PINS) {
+        if (pin >= GPIO_PER_PORT + EXTERNAL_GPIO_PINS) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
         driver_error_t *error;
 
-        error = gpio_ext_pin_input(pin - 40);
+        error = gpio_ext_pin_input(pin - GPIO_PER_PORT);
         if (error) {
             return error;
         }
@@ -233,7 +233,7 @@ driver_error_t *gpio_pin_input(uint8_t pin) {
 }
 
 driver_error_t *gpio_pin_set(uint8_t pin) {
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         // Sanity checks
         if (!(GPIO_ALL_OUT & (GPIO_BIT_MASK << pin))) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN_DIRECTION, NULL);
@@ -243,13 +243,13 @@ driver_error_t *gpio_pin_set(uint8_t pin) {
     }
 #if EXTERNAL_GPIO
     else {
-        if (pin >= 40 + EXTERNAL_GPIO_PINS) {
+        if (pin >= GPIO_PER_PORT + EXTERNAL_GPIO_PINS) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
         driver_error_t *error;
 
-        error = gpio_ext_pin_set(pin - 40);
+        error = gpio_ext_pin_set(pin - GPIO_PER_PORT);
         if (error) {
             return error;
         }
@@ -264,7 +264,7 @@ driver_error_t *gpio_pin_set(uint8_t pin) {
 }
 
 driver_error_t *gpio_pin_clr(uint8_t pin) {
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         // Sanity checks
         if (!(GPIO_ALL_OUT & (GPIO_BIT_MASK << pin))) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN_DIRECTION, NULL);
@@ -274,13 +274,13 @@ driver_error_t *gpio_pin_clr(uint8_t pin) {
     }
 #if EXTERNAL_GPIO
     else {
-        if (pin >= 40 + EXTERNAL_GPIO_PINS) {
+        if (pin >= GPIO_PER_PORT + EXTERNAL_GPIO_PINS) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
         driver_error_t *error;
 
-        error = gpio_ext_pin_clr(pin - 40);
+        error = gpio_ext_pin_clr(pin - GPIO_PER_PORT);
         if (error) {
             return error;
         }
@@ -295,7 +295,7 @@ driver_error_t *gpio_pin_clr(uint8_t pin) {
 }
 
 driver_error_t *gpio_pin_inv(uint8_t pin) {
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         // Sanity checks
         if (!(GPIO_ALL_OUT & (GPIO_BIT_MASK << pin))) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN_DIRECTION, NULL);
@@ -305,13 +305,13 @@ driver_error_t *gpio_pin_inv(uint8_t pin) {
     }
 #if EXTERNAL_GPIO
     else {
-        if (pin >= 40 + EXTERNAL_GPIO_PINS) {
+        if (pin >= GPIO_PER_PORT + EXTERNAL_GPIO_PINS) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
         driver_error_t *error;
 
-        error = gpio_ext_pin_inv(pin - 40);
+        error = gpio_ext_pin_inv(pin - GPIO_PER_PORT);
         if (error) {
             return error;
         }
@@ -327,14 +327,14 @@ driver_error_t *gpio_pin_inv(uint8_t pin) {
 
 driver_error_t *gpio_pin_get(uint8_t pin, uint8_t *val) {
     // Sanity checks
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         if (!(GPIO_ALL_IN & (GPIO_BIT_MASK << pin))) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN_DIRECTION, NULL);
         }
     }
 #if EXTERNAL_GPIO
     else {
-        if (pin >= 40 + EXTERNAL_GPIO_PINS) {
+        if (pin >= GPIO_PER_PORT + EXTERNAL_GPIO_PINS) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
     }
@@ -351,7 +351,7 @@ driver_error_t *gpio_pin_get(uint8_t pin, uint8_t *val) {
 
 driver_error_t *gpio_pin_pullup(uint8_t pin) {
     // Sanity checks
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         if (!(GPIO_ALL_IN & (GPIO_BIT_MASK << pin))) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN_DIRECTION, NULL);
         }
@@ -371,7 +371,7 @@ driver_error_t *gpio_pin_pullup(uint8_t pin) {
     }
 #if EXTERNAL_GPIO
     else {
-        if (pin >= 40 + EXTERNAL_GPIO_PINS) {
+        if (pin >= GPIO_PER_PORT + EXTERNAL_GPIO_PINS) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -380,7 +380,7 @@ driver_error_t *gpio_pin_pullup(uint8_t pin) {
 		#else
             driver_error_t *error;
 
-            error = gpio_ext_pin_pullup(pin - 40);
+            error = gpio_ext_pin_pullup(pin - GPIO_PER_PORT);
             if (error) {
                 return error;
             }
@@ -397,7 +397,7 @@ driver_error_t *gpio_pin_pullup(uint8_t pin) {
 
 driver_error_t *gpio_pin_pulldwn(uint8_t pin) {
     // Sanity checks
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         if (!(GPIO_ALL & (GPIO_BIT_MASK << pin))) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
@@ -417,7 +417,7 @@ driver_error_t *gpio_pin_pulldwn(uint8_t pin) {
     }
 #if EXTERNAL_GPIO
     else {
-        if (pin >= 40 + EXTERNAL_GPIO_PINS) {
+        if (pin >= GPIO_PER_PORT + EXTERNAL_GPIO_PINS) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -426,7 +426,7 @@ driver_error_t *gpio_pin_pulldwn(uint8_t pin) {
 	#else
 		driver_error_t *error;
 
-		error = gpio_ext_pin_pulldown(pin - 40);
+		error = gpio_ext_pin_pulldown(pin - GPIO_PER_PORT);
 		if (error) {
 			return error;
 		}
@@ -445,7 +445,7 @@ driver_error_t *gpio_pin_pulldwn(uint8_t pin) {
 
 driver_error_t *gpio_pin_nopull(uint8_t pin) {
     // Sanity checks
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         if (!(GPIO_ALL & (GPIO_BIT_MASK << pin))) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
@@ -456,7 +456,7 @@ driver_error_t *gpio_pin_nopull(uint8_t pin) {
     }
 #if EXTERNAL_GPIO
     else {
-        if (pin >= 40 + EXTERNAL_GPIO_PINS) {
+        if (pin >= GPIO_PER_PORT + EXTERNAL_GPIO_PINS) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -465,7 +465,7 @@ driver_error_t *gpio_pin_nopull(uint8_t pin) {
 	#else
 		driver_error_t *error;
 
-		error = gpio_ext_pin_nopull(pin - 40);
+		error = gpio_ext_pin_nopull(pin - GPIO_PER_PORT);
 		if (error) {
 			return error;
 		}
@@ -492,7 +492,7 @@ driver_error_t *gpio_pin_input_mask(uint8_t port, gpio_pin_mask_t pinmask) {
         gpio_config_t io_conf = {0};
 
         // Sanity checks
-        if (0xffffff0000000000 & pinmask) {
+        if (~((1ULL << GPIO_PER_PORT) - 1) & pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -541,7 +541,7 @@ driver_error_t *gpio_pin_output_mask(uint8_t port, gpio_pin_mask_t pinmask) {
         gpio_config_t io_conf = {0};
 
         // Sanity checks
-        if (0xffffff0000000000 & pinmask) {
+        if (~((1ULL << GPIO_PER_PORT) - 1) & pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -582,7 +582,7 @@ driver_error_t *gpio_pin_pullup_mask(uint8_t port, gpio_pin_mask_t pinmask) {
 
     if (port == 1) {
         // Sanity checks
-        if (0xffffff0000000000 & pinmask) {
+        if (~((1ULL << GPIO_PER_PORT) - 1) & pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -632,7 +632,7 @@ driver_error_t *gpio_pin_pulldwn_mask(uint8_t port, gpio_pin_mask_t pinmask) {
 
     if (port == 1) {
         // Sanity checks
-        if (0xffffff0000000000 & pinmask) {
+        if (~((1ULL << GPIO_PER_PORT) - 1) & pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -684,7 +684,7 @@ driver_error_t *gpio_pin_nopull_mask(uint8_t port, gpio_pin_mask_t pinmask) {
 
     if (port == 1) {
         // Sanity checks
-        if (0xffffff0000000000 & pinmask) {
+        if (~((1ULL << GPIO_PER_PORT) - 1) & pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -734,7 +734,7 @@ driver_error_t *gpio_pin_set_mask(uint8_t port, gpio_pin_mask_t pinmask) {
 
     if (port == 1) {
         // Sanity checks
-        if (0xffffff0000000000 & pinmask) {
+        if (~((1ULL << GPIO_PER_PORT) - 1) & pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -780,7 +780,7 @@ driver_error_t *gpio_port_set(uint8_t port, gpio_pin_mask_t pinmask) {
 
     if (port == 1) {
         // Sanity checks
-        if (0xffffff0000000000 & pinmask) {
+        if (~((1ULL << GPIO_PER_PORT) - 1) & pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -824,7 +824,7 @@ driver_error_t *gpio_port_set(uint8_t port, gpio_pin_mask_t pinmask) {
 driver_error_t *gpio_pin_clr_mask(uint8_t port, gpio_pin_mask_t pinmask) {
     if (port == 1) {
         // Sanity checks
-        if (0xffffff0000000000 & pinmask) {
+        if (~((1ULL << GPIO_PER_PORT) - 1) & pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -870,7 +870,7 @@ driver_error_t *gpio_pin_clr_mask(uint8_t port, gpio_pin_mask_t pinmask) {
 driver_error_t *gpio_pin_inv_mask(uint8_t port, gpio_pin_mask_t pinmask) {
     if (port == 1) {
         // Sanity checks
-        if (0xffffff0000000000 & pinmask) {
+        if (~((1ULL << GPIO_PER_PORT) - 1) & pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -914,7 +914,7 @@ driver_error_t *gpio_pin_inv_mask(uint8_t port, gpio_pin_mask_t pinmask) {
 driver_error_t *gpio_pin_get_mask(uint8_t port, gpio_pin_mask_t pinmask, gpio_pin_mask_t *value) {
     if (port == 1) {
         // Sanity checks
-        if (0xffffff0000000000 & pinmask) {
+        if (~((1ULL << GPIO_PER_PORT) - 1) & pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
@@ -1052,7 +1052,7 @@ driver_error_t *gpio_isr_attach(uint8_t pin, gpio_isr_t gpio_isr, gpio_int_type_
     if ((error = gpio_pin_pullup(pin))) {
 #if EXTERNAL_GPIO
         // Can fail with external GPIO, continue
-        if (pin > 40) {
+        if (pin >= GPIO_PER_PORT) {
             free(error);
         } else {
             return error;
@@ -1062,7 +1062,7 @@ driver_error_t *gpio_isr_attach(uint8_t pin, gpio_isr_t gpio_isr, gpio_int_type_
 #endif
     }
 
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         // Sanity checks
         if (!(GPIO_ALL_IN & (GPIO_BIT_MASK << pin))) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INT_NOT_ALLOWED, "must be an input pin");
@@ -1081,11 +1081,11 @@ driver_error_t *gpio_isr_attach(uint8_t pin, gpio_isr_t gpio_isr, gpio_int_type_
 #if EXTERNAL_GPIO
     else {
         // Sanity checks
-        if (pin >= 40 + EXTERNAL_GPIO_PINS) {
+        if (pin >= GPIO_PER_PORT + EXTERNAL_GPIO_PINS) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
-        gpio_ext_isr_attach(pin - 40, gpio_isr, type, args);
+        gpio_ext_isr_attach(pin - GPIO_PER_PORT, gpio_isr, type, args);
     }
 #else
     else {
@@ -1097,7 +1097,7 @@ driver_error_t *gpio_isr_attach(uint8_t pin, gpio_isr_t gpio_isr, gpio_int_type_
 }
 
 driver_error_t *gpio_isr_detach(uint8_t pin) {
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         // Sanity checks
         if (!(GPIO_ALL_IN & (GPIO_BIT_MASK << pin))) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INT_NOT_ALLOWED, "must be an input pin");
@@ -1108,11 +1108,11 @@ driver_error_t *gpio_isr_detach(uint8_t pin) {
 #if EXTERNAL_GPIO
     else {
         // Sanity checks
-        if (pin >= 40 + EXTERNAL_GPIO_PINS) {
+        if (pin >= GPIO_PER_PORT + EXTERNAL_GPIO_PINS) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN, NULL);
         }
 
-        gpio_ext_isr_detach(pin - 40);
+        gpio_ext_isr_detach(pin - GPIO_PER_PORT);
     }
 #else
     else {
@@ -1124,7 +1124,7 @@ driver_error_t *gpio_isr_detach(uint8_t pin) {
 }
 
 uint8_t gpio_is_input(uint8_t pin) {
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         return (((GPIO_BIT_MASK << pin) & GPIO_ALL_IN) != 0);
     }
 #if EXTERNAL_GPIO
@@ -1137,7 +1137,7 @@ uint8_t gpio_is_input(uint8_t pin) {
 }
 
 uint8_t gpio_is_output(uint8_t pin) {
-    if (pin < 40) {
+    if (pin < GPIO_PER_PORT) {
         return (((GPIO_BIT_MASK << pin) & GPIO_ALL_OUT) != 0);
     }
 #if EXTERNAL_GPIO

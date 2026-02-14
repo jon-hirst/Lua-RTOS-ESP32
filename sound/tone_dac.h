@@ -46,6 +46,10 @@
 #ifndef _TONE_DAC_H_
 #define _TONE_DAC_H_
 
+#include "soc/soc_caps.h"
+
+#if SOC_DAC_SUPPORTED
+
 #include "driver.h"
 
 #include <stdint.h>
@@ -69,5 +73,7 @@ driver_error_t *tone_dac_setup(tone_dac_config_t *config, tone_dac_device_h_t *h
 void tone_dac_unsetup(tone_dac_device_h_t *h);
 driver_error_t *tone_dac_play(tone_dac_device_h_t *h, uint32_t freq, uint32_t duration);
 driver_error_t *tone_dac_set_volume(tone_dac_device_h_t *h, float volume);
+
+#endif /* SOC_DAC_SUPPORTED */
 
 #endif /* _TONE_DAC_H_ */

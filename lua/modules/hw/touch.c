@@ -79,6 +79,8 @@ DRIVER_REGISTER_BEGIN(TOUCH,touch,0,NULL,NULL);
 DRIVER_REGISTER_END(TOUCH,touch,0,NULL,NULL);
 
 
+#if CONFIG_IDF_TARGET_ESP32
+
 static int ltouch_init(lua_State *L) {
 	touch_high_volt_t refh = luaL_optinteger(L, 1, TOUCH_HVOLT_2V7);
 	touch_low_volt_t refl = luaL_optinteger(L, 2, TOUCH_LVOLT_0V5);
@@ -159,11 +161,71 @@ static int ltouch_wakethreshold(lua_State *L)
 	return 0;
 }
 
+#elif CONFIG_IDF_TARGET_ESP32S3
+
+static int ltouch_init(lua_State *L) {
+	touch_pad_init();
+
+	// Configure all touch pads
+	for (int i = 0; i < TOUCH_PAD_MAX; i++) {
+		touch_pad_config(i);
+	}
+
+	if (filter_mode) {
+		touch_pad_filter_enable();
+	}
+
+	// Set FSM mode for timer-based operation
+	esp_err_t error;
+	if ((error = touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER)))
+		return luaL_exception(L, LUA_TOUCH_ERR_CANT_SET_FSM_MODE);
+
+	if ((error = touch_pad_set_channel_mask(TOUCH_PAD_BIT_MASK_MAX)))
+		return luaL_exception(L, LUA_TOUCH_ERR_CANT_SET_GROUP_MASK);
+
+	return 0;
+}
+
+static int ltouch_read(lua_State *L)
+{
+	uint32_t touch_value;
+
+	for (int i = 0; i < TOUCH_PAD_MAX; i++) {
+		touch_pad_read_raw_data(i, &touch_value);
+		lua_pushinteger(L, touch_value);
+	}
+
+	return TOUCH_PAD_MAX;
+}
+
+static int ltouch_wakethreshold(lua_State *L)
+{
+	int params = lua_gettop(L);
+	double threshold;
+	esp_err_t error;
+
+	for(int i = 0; i < params; i++) {
+		threshold = lua_tonumber(L, i+1);
+
+		if (i<TOUCH_PAD_MAX) {
+			if ((error = touch_pad_set_thresh(i, (uint32_t)threshold))) {
+				return luaL_exception(L, LUA_TOUCH_ERR_CANT_SET_THRESHOLD);
+			}
+		}
+	}
+
+	status_set(STATUS_NEED_RTC_SLOW_MEM, 0x00000000);
+	return 0;
+}
+
+#endif
+
 static const LUA_REG_TYPE ltouch_map[] = {
   { LSTRKEY( "init" ),                   LFUNCVAL( ltouch_init    ) },
   { LSTRKEY( "read" ),                   LFUNCVAL( ltouch_read    ) },
   { LSTRKEY( "wakethreshold" ),          LFUNCVAL( ltouch_wakethreshold    ) },
 
+#if CONFIG_IDF_TARGET_ESP32
   { LSTRKEY("HVOLT_KEEP"), LINTVAL(TOUCH_HVOLT_KEEP) },
   { LSTRKEY("HVOLT_2V4"),  LINTVAL(TOUCH_HVOLT_2V4)  },
   { LSTRKEY("HVOLT_2V5"),  LINTVAL(TOUCH_HVOLT_2V5)  },
@@ -181,6 +243,7 @@ static const LUA_REG_TYPE ltouch_map[] = {
   { LSTRKEY("HVOLT_ATTEN_1V"),   LINTVAL(TOUCH_HVOLT_ATTEN_1V)   },
   { LSTRKEY("HVOLT_ATTEN_0V5"),  LINTVAL(TOUCH_HVOLT_ATTEN_0V5)  },
   { LSTRKEY("HVOLT_ATTEN_0V"),   LINTVAL(TOUCH_HVOLT_ATTEN_0V)   },
+#endif
 
   DRIVER_REGISTER_LUA_ERRORS(touch)
 	{ LNILKEY, LNILVAL }

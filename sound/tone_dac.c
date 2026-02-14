@@ -43,6 +43,10 @@
  *
  */
 
+#include "soc/soc_caps.h"
+
+#if SOC_DAC_SUPPORTED
+
 #include "sound.h"
 #include "driver/dac_continuous.h"
 
@@ -301,3 +305,5 @@ driver_error_t *tone_dac_set_volume(tone_dac_device_h_t *h, float volume) {
 
 	return NULL;
 }
+
+#endif /* SOC_DAC_SUPPORTED */

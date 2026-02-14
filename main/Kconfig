@@ -133,6 +133,9 @@ menu "Lua RTOS"
       config LUA_RTOS_FIRMWARE_TTGO_LORA32_OTA
          bool "TTGO Lora32 without OLED with OTA"
 
+      config LUA_RTOS_FIRMWARE_TTGO_T_WATCH_S3
+         bool "TTGO T-WATCH-S3"
+
       config LUA_RTOS_FIRMWARE_GENERIC
          bool "Generic ESP32 board"
 

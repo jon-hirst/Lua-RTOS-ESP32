@@ -47,11 +47,14 @@
 #include "freertos/task.h"
 
 #include "esp_system.h"
+#include "soc/soc_caps.h"
 #include "esp_chip_info.h"
 #include "esp_attr.h"
 #include "esp_sleep.h"
 #include "rom/rtc.h"
+#if CONFIG_IDF_TARGET_ESP32
 #include <soc/dport_reg.h>
+#endif
 #include <soc/efuse_reg.h>
 #include "soc/rtc.h"
 
@@ -73,18 +76,18 @@ void _cpu_init() {
 }
 
 unsigned int cpu_port_number(unsigned int pin) {
-	if ((pin <= 39) || (!EXTERNAL_GPIO)) {
+	if ((pin <= (GPIO_PER_PORT - 1)) || (!EXTERNAL_GPIO)) {
 		return 1;
 	} else {
-		return 2 + ((pin - GPIO39 - 1) >> 3);
+		return 2 + ((pin - CPU_LAST_GPIO_NUM - 1) >> 3);
 	}
 }
 
 uint8_t cpu_gpio_number(uint8_t pin) {
-	if ((pin <= 39) || (!EXTERNAL_GPIO)) {
+	if ((pin <= (GPIO_PER_PORT - 1)) || (!EXTERNAL_GPIO)) {
 		return pin;
 	} else {
-		return ((pin - GPIO39 - 1) % 8);
+		return ((pin - CPU_LAST_GPIO_NUM - 1) % 8);
 	}
 }
 
@@ -121,7 +124,13 @@ unsigned int cpu_has_port(unsigned int port) {
 }
 
 void cpu_model(char *buffer, int buflen) {
+#if CONFIG_IDF_TARGET_ESP32
 	snprintf(buffer, buflen, "ESP32 rev %d", cpu_revision());
+#elif CONFIG_IDF_TARGET_ESP32S3
+	snprintf(buffer, buflen, "ESP32-S3 rev %d", cpu_revision());
+#else
+	snprintf(buffer, buflen, "Unknown ESP rev %d", cpu_revision());
+#endif
 }
 
 uint32_t cpu_speed_mhz() {
@@ -191,7 +200,9 @@ void cpu_sleep(int seconds) {
 
 	// Put ESP32 in deep sleep mode
 	if (status_get(STATUS_NEED_RTC_SLOW_MEM)) {
+		#if SOC_PM_SUPPORT_RTC_SLOW_MEM_PD
 		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
+#endif
 	}
 
 	esp_deep_sleep(seconds * 1000000LL);
@@ -214,7 +225,9 @@ void cpu_deepsleep() {
 
 	// Put ESP32 in deep sleep mode
 	if (status_get(STATUS_NEED_RTC_SLOW_MEM)) {
+		#if SOC_PM_SUPPORT_RTC_SLOW_MEM_PD
 		esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
+#endif
 	}
 
 /*

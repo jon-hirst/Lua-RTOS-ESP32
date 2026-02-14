@@ -49,6 +49,7 @@
 
 #include "esp_attr.h"
 #include "esp_sleep.h"
+#include "soc/soc_caps.h"
 
 #include "rom/rtc.h"
 
@@ -125,7 +126,9 @@ static void __rtc_init() {
         memset(rtc_data_p, 0, size);
     }
 
+#if SOC_PM_SUPPORT_RTC_SLOW_MEM_PD
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
+#endif
 
     // Create mutex
     mtx_init(&mtx, NULL, NULL, 0);

@@ -101,7 +101,9 @@ DRIVER_REGISTER_BEGIN(CPU,cpu,0,NULL,NULL);
     DRIVER_REGISTER_ERROR(CPU, cpu, CannotDelWatchdog,   "can't del watchdog",   LUA_CPU_ERR_CANT_DEL_WATCHDOG);
 DRIVER_REGISTER_END(CPU,cpu,0,NULL,NULL);
 
+#if CONFIG_IDF_TARGET_ESP32
 int temprature_sens_read(void); //undocumented esp32 function
+#endif
 
 static int lcpu_model(lua_State *L) {
     int revision;
@@ -238,7 +240,11 @@ static int lcpu_watchpoint(lua_State *L) {
 }
 
 static int lcpu_temperature(lua_State *L) {
+#if CONFIG_IDF_TARGET_ESP32
     lua_pushnumber(L, ((float)temprature_sens_read() - 64.0) / 1.8 );
+#else
+    lua_pushnumber(L, 0.0);
+#endif
     return 1;
 }
 
@@ -389,19 +395,28 @@ static const LUA_REG_TYPE lcpu_map[] = {
     { LSTRKEY( "watchdog" ),               LROVAL  ( cpu_watchdog_map ) },
 
     { LSTRKEY( "RESET_POWERON" ),          LINTVAL( POWERON_RESET          ) },
-    { LSTRKEY( "RESET_SW" ),               LINTVAL( SW_RESET               ) },
     { LSTRKEY( "RESET_DEEPSLEEP" ),        LINTVAL( DEEPSLEEP_RESET        ) },
-    { LSTRKEY( "RESET_SDIO" ),             LINTVAL( SDIO_RESET             ) },
     { LSTRKEY( "RESET_TG0WDT_SYS" ),       LINTVAL( TG0WDT_SYS_RESET       ) },
     { LSTRKEY( "RESET_TG1WDT_SYS" ),       LINTVAL( TG1WDT_SYS_RESET       ) },
     { LSTRKEY( "RESET_RTCWDT_SYS" ),       LINTVAL( RTCWDT_SYS_RESET       ) },
+    { LSTRKEY( "RESET_RTCWDT_CPU" ),       LINTVAL( RTCWDT_CPU_RESET       ) },
+    { LSTRKEY( "RESET_RTCWDT_BROWN_OUT" ), LINTVAL( RTCWDT_BROWN_OUT_RESET ) },
+    { LSTRKEY( "RESET_RTCWDT_RTC" ),       LINTVAL( RTCWDT_RTC_RESET       ) },
+#if CONFIG_IDF_TARGET_ESP32
+    { LSTRKEY( "RESET_SW" ),               LINTVAL( SW_RESET               ) },
+    { LSTRKEY( "RESET_SDIO" ),             LINTVAL( SDIO_RESET             ) },
     { LSTRKEY( "RESET_INTRUSION" ),        LINTVAL( INTRUSION_RESET        ) },
     { LSTRKEY( "RESET_TGWDT_CPU" ),        LINTVAL( TGWDT_CPU_RESET        ) },
     { LSTRKEY( "RESET_SW_CPU" ),           LINTVAL( SW_CPU_RESET           ) },
-    { LSTRKEY( "RESET_RTCWDT_CPU" ),       LINTVAL( RTCWDT_CPU_RESET       ) },
     { LSTRKEY( "RESET_EXT_CPU" ),          LINTVAL( EXT_CPU_RESET          ) },
-    { LSTRKEY( "RESET_RTCWDT_BROWN_OUT" ), LINTVAL( RTCWDT_BROWN_OUT_RESET ) },
-    { LSTRKEY( "RESET_RTCWDT_RTC" ),       LINTVAL( RTCWDT_RTC_RESET       ) },
+#elif CONFIG_IDF_TARGET_ESP32S3
+    { LSTRKEY( "RESET_SW" ),               LINTVAL( RTC_SW_SYS_RESET       ) },
+    { LSTRKEY( "RESET_SW_CPU" ),           LINTVAL( RTC_SW_CPU_RESET       ) },
+    { LSTRKEY( "RESET_TG0WDT_CPU" ),       LINTVAL( TG0WDT_CPU_RESET       ) },
+    { LSTRKEY( "RESET_TG1WDT_CPU" ),       LINTVAL( TG1WDT_CPU_RESET       ) },
+    { LSTRKEY( "RESET_SUPER_WDT" ),        LINTVAL( SUPER_WDT_RESET        ) },
+    { LSTRKEY( "RESET_EFUSE" ),            LINTVAL( EFUSE_RESET             ) },
+#endif
 
     { LSTRKEY( "WAKEUP_NONE" ),            LINTVAL( ESP_SLEEP_WAKEUP_UNDEFINED ) },
     { LSTRKEY( "WAKEUP_EXT0" ),            LINTVAL( ESP_SLEEP_WAKEUP_EXT0      ) },
@@ -414,7 +429,11 @@ static const LUA_REG_TYPE lcpu_map[] = {
     { LSTRKEY( "WATCHPOINT_STORE" ),       LINTVAL( ESP_CPU_WATCHPOINT_STORE   ) },
     { LSTRKEY( "WATCHPOINT_ACCESS" ),      LINTVAL( ESP_CPU_WATCHPOINT_ACCESS  ) },
 
+#if CONFIG_IDF_TARGET_ESP32
     { LSTRKEY( "SPEED_DEFAULT" ),          LINTVAL( CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ ) },
+#elif CONFIG_IDF_TARGET_ESP32S3
+    { LSTRKEY( "SPEED_DEFAULT" ),          LINTVAL( CONFIG_ESP32S3_DEFAULT_CPU_FREQ_MHZ ) },
+#endif
     { LSTRKEY( "SPEED_FAST" ),             LINTVAL( 240      ) },
     { LSTRKEY( "SPEED_MEDIUM" ),           LINTVAL( 160      ) },
     { LSTRKEY( "SPEED_SLOW" ),             LINTVAL( 80       ) },

@@ -47,6 +47,7 @@
 
 #if CONFIG_LUA_RTOS_LUA_USE_SOUND
 
+#include "soc/soc_caps.h"
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
@@ -71,8 +72,10 @@ static int lsound_attach(lua_State* L) {
 	if (tone_generator == ToneGeneratorPWM) {
 		config.pwm.unit = 0;
 		config.pwm.pin = pin;
+#if SOC_DAC_SUPPORTED
 	} else if (tone_generator == ToneGeneratorDAC) {
 		config.dac.pin = pin;
+#endif
 	}
 
 	sound_userdata *sound = (sound_userdata *)lua_newuserdata(L, sizeof(sound_userdata));
@@ -192,7 +195,9 @@ static const LUA_REG_TYPE lsound_map[] = {
     { LSTRKEY( "attach"        ),     LFUNCVAL( lsound_attach          ) },
 
 	{LSTRKEY("PWM"), LINTVAL(ToneGeneratorPWM)},
+#if SOC_DAC_SUPPORTED
 	{LSTRKEY("DAC"), LINTVAL(ToneGeneratorDAC)},
+#endif
 
 	{ LNILKEY, LNILVAL }
 };

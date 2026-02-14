@@ -468,6 +468,18 @@
         "image": ""
     },
     {
+        "id": "TTGO-T-WATCH-S3",
+        "description": "TTGO T-WATCH-S3",
+        "manufacturer": "TTGO",
+        "brand": "",
+        "type": "TTGO-T-WATCH-S3",
+        "subtype": "",
+        "filesystem": "default",
+        "usb_vid_pid": "303a:1001",
+        "usb_port_exp": "ttyACM0",
+        "image": ""
+    },
+    {
         "id": "GENERIC",
         "description": "Generic ESP32 board",
         "manufacturer": "Generic",

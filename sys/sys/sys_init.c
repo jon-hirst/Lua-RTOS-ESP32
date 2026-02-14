@@ -56,6 +56,7 @@
 #include "esp_log.h"
 #include "esp_vfs.h"
 #include "esp_sleep.h"
+#include "soc/soc_caps.h"
 #include "esp_ota_ops.h"
 
 #include "esp_private/periph_ctrl.h"
@@ -150,11 +151,11 @@ void _sys_init() {
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
     #endif
 
-    #if CONFIG_LUA_RTOS_DEEP_SLEEP_RTC_SLOW_MEM
+    #if CONFIG_LUA_RTOS_DEEP_SLEEP_RTC_SLOW_MEM && SOC_PM_SUPPORT_RTC_SLOW_MEM_PD
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
     #endif
 
-    #if CONFIG_LUA_RTOS_DEEP_SLEEP_RTC_FAST_MEM
+    #if CONFIG_LUA_RTOS_DEEP_SLEEP_RTC_FAST_MEM && SOC_PM_SUPPORT_RTC_FAST_MEM_PD
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_ON);
     #endif
 

@@ -52,6 +52,12 @@
 #include "soc/gpio_periph.h"
 #include "driver/ledc.h"
 
+// ESP32S3 only has low-speed LEDC mode
+#if CONFIG_IDF_TARGET_ESP32S3
+#define LEDC_HIGH_SPEED_MODE LEDC_LOW_SPEED_MODE
+#define LEDC_HS_SIG_OUT0_IDX LEDC_LS_SIG_OUT0_IDX
+#endif
+
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>

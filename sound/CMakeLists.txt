@@ -1,11 +1,14 @@
 if(CONFIG_LUA_RTOS_LUA_USE_SOUND)
 	set(srcs
 	    "sound.c"
-	    "tone_dac.c"
 	    "tone_pwm.c"
 	    "tone.c"
 	)
-	
+
+	if(CONFIG_SOC_DAC_SUPPORTED)
+		list(APPEND srcs "tone_dac.c")
+	endif()
+
 	set(include_dirs ".")
 else()
 	set(srcs "")

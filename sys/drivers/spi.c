@@ -94,6 +94,52 @@
 #include "cpu.h"
 
 #include <string.h>
+
+/*
+ * ESP32S3 SPI register compatibility
+ * The ESP32S3 has a different SPI register layout from ESP32.
+ */
+#if CONFIG_IDF_TARGET_ESP32S3
+// Peripheral module names
+#define PERIPH_HSPI_MODULE  PERIPH_SPI2_MODULE
+#define PERIPH_VSPI_MODULE  PERIPH_SPI3_MODULE
+
+// SPI MOSI/MISO length registers - S3 uses a shared register
+#define SPI_MOSI_DLEN_REG(i)        SPI_MS_DLEN_REG(i)
+#define SPI_MISO_DLEN_REG(i)        SPI_MS_DLEN_REG(i)
+#define SPI_USR_MOSI_DBITLEN        SPI_MS_DATA_BITLEN
+#define SPI_USR_MOSI_DBITLEN_S      SPI_MS_DATA_BITLEN_S
+#define SPI_USR_MISO_DBITLEN        SPI_MS_DATA_BITLEN
+#define SPI_USR_MISO_DBITLEN_S      SPI_MS_DATA_BITLEN_S
+
+// Registers renamed or removed on S3
+#define SPI_CTRL2_REG(i)            SPI_MISC_REG(i)
+#define SPI_PIN_REG(i)              SPI_MISC_REG(i)
+#define SPI_DMA_OUT_LINK_REG(i)     SPI_DMA_INT_ENA_REG(i)
+#define SPI_DMA_IN_LINK_REG(i)      SPI_DMA_INT_ENA_REG(i)
+#define SPI_SLV_WR_STATUS_REG(i)    SPI_SLAVE1_REG(i)
+
+// SPI transaction done bit
+#define SPI_TRANS_DONE              SPI_TRANS_DONE_INT_RAW
+
+// MISO delay - not available on S3, define as no-ops
+#define SPI_MISO_DELAY_MODE         0
+#define SPI_MISO_DELAY_MODE_S       0
+#define SPI_MISO_DELAY_NUM          0
+#define SPI_MISO_DELAY_NUM_S        0
+
+// GPIO signal indices
+#define HSPIQ_OUT_IDX       FSPIQ_OUT_IDX
+#define HSPIQ_IN_IDX        FSPIQ_IN_IDX
+#define HSPID_OUT_IDX       FSPID_OUT_IDX
+#define HSPID_IN_IDX        FSPID_IN_IDX
+#define HSPICLK_OUT_IDX     FSPICLK_OUT_IDX
+#define VSPIQ_OUT_IDX       SPI3_Q_OUT_IDX
+#define VSPIQ_IN_IDX        SPI3_Q_IN_IDX
+#define VSPID_OUT_IDX       SPI3_D_OUT_IDX
+#define VSPID_IN_IDX        SPI3_D_IN_IDX
+#define VSPICLK_OUT_IDX     SPI3_CLK_OUT_IDX
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 

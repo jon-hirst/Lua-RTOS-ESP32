@@ -43,6 +43,7 @@
  *
  */
 
+#include "soc/soc_caps.h"
 #include "sound.h"
 #include "driver.h"
 
@@ -74,6 +75,7 @@ driver_error_t *tone_setup(tone_gen_t gen, tone_gen_config_t *config, tone_gen_d
 
 			break;
 
+#if SOC_DAC_SUPPORTED
 		case ToneGeneratorDAC:
 			(*h)->_unsetup = (tone_unsetup_t)tone_dac_unsetup;
 			(*h)->_play = (tone_play_t)tone_dac_play;
@@ -85,6 +87,7 @@ driver_error_t *tone_setup(tone_gen_t gen, tone_gen_config_t *config, tone_gen_d
 			}
 
 			break;
+#endif
 
 		case ToneGeneratorMAX:
 			break;
