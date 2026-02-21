@@ -152,12 +152,15 @@ static size_t IRAM_ATTR encoder_copy(rmt_encoder_t *encoder, rmt_channel_handle_
 		symbols_want = symbols_available;
 	}
 
+    // Convert byte offset to symbol offset (mem_off_bytes is in bytes since IDF v5.5)
+    size_t mem_off_sym = tx_chan->mem_off_bytes / sizeof(rmt_symbol_word_t);
+
     // Get how many symbols can be copied to internal RMT memory
-    size_t symbols_have = tx_chan->mem_end - tx_chan->mem_off;
-    
+    size_t symbols_have = tx_chan->mem_end - mem_off_sym;
+
     // Get reference to internal RMT memory
     rmt_symbol_word_t *mem_to_nc = channel->hw_mem_base;
-    
+
     // Get how many symbols will copied in this round
     size_t symbols_to_copy = MIN(symbols_want, symbols_have);
 
@@ -165,36 +168,37 @@ static size_t IRAM_ATTR encoder_copy(rmt_encoder_t *encoder, rmt_channel_handle_
 	// been copied or a termination condition has been found
     rmt_symbol_word_t symbol;
 	size_t symbols_copied;
-    
+
     symbols_copied = 0;
     symbol = symbols[tail];
 
     while ((symbols_to_copy > 0) && (symbol.val != 0)) {
 		// Copy current item
-		mem_to_nc[tx_chan->mem_off++] = symbol;
+		mem_to_nc[mem_off_sym++] = symbol;
+		tx_chan->mem_off_bytes += sizeof(rmt_symbol_word_t);
 		tail = ((tail + 1) % (STEPPER_RMT_DATA_SIZE));
 
-		// Next item			
+		// Next item
         symbols_to_copy--;
         symbols_copied++;
-        
+
 		symbol = symbols[tail];
     }
-    
+
     // Check if termination condition has been found
     if (symbol.val == 0) {
 		// Mark as complete
-        state = RMT_ENCODING_COMPLETE;	  
-        
+        state = RMT_ENCODING_COMPLETE;
+
         // Mark stepper as not active
-        atomic_fetch_and(&active_mask, ~(1 << pstepper->unit));	   
+        atomic_fetch_and(&active_mask, ~(1 << pstepper->unit));
 	}
-    
+
     atomic_store(&pstepper->rmt_data_tail, tail);
 
     // Reset offset pointer when exceeds maximum range
-    if (tx_chan->mem_off >= tx_chan->ping_pong_symbols * 2) {
-        tx_chan->mem_off = 0;
+    if (tx_chan->mem_off_bytes >= tx_chan->ping_pong_symbols * 2 * sizeof(rmt_symbol_word_t)) {
+        tx_chan->mem_off_bytes = 0;
     }
     
     if ((state & RMT_ENCODING_COMPLETE) == 0) {

@@ -1231,7 +1231,7 @@ int vfs_spiffs_mount(const char *target) {
 
         if (res < 0) {
             if (fs.err_code == SPIFFS_ERR_NOT_A_FS) {
-                syslog(LOG_ERR, "spiffs no file system detected, formating...");
+                syslog(LOG_ERR, "spiffs no file system detected (res=%d), formating...", res);
                 SPIFFS_unmount(&fs);
                 res = SPIFFS_format(&fs);
                 if (res < 0) {
@@ -1241,8 +1241,8 @@ int vfs_spiffs_mount(const char *target) {
                 }
             } else {
                 vfs_spiffs_free_resources();
-                syslog(LOG_ERR, "spiff can't mount file system (%s)",
-                        strerror(spiffs_result(fs.err_code)));
+                syslog(LOG_ERR, "spiff can't mount file system (res=%d), %s",
+                        res, strerror(spiffs_result(fs.err_code)));
                 return -1;
             }
         } else {

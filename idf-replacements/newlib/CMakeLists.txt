@@ -14,6 +14,7 @@ set(srcs
     "abort.c"
     "assert.c"
     "heap.c"
+    "init.c"
     "locks.c"
     "poll.c"
     "pthread.c"
@@ -38,7 +39,7 @@ list(APPEND ldfragments "newlib.lf" "system_libs.lf")
 idf_component_register(SRCS "${srcs}"
                     INCLUDE_DIRS "${include_dirs}"
                     PRIV_INCLUDE_DIRS priv_include
-                    PRIV_REQUIRES soc spi_flash
+                    PRIV_REQUIRES soc spi_flash esp_system
                     LDFRAGMENTS "${ldfragments}")
 
 # Toolchain libraries require code defined in this component
@@ -53,6 +54,11 @@ list(APPEND EXTRA_LINK_FLAGS "-u newlib_include_heap_impl")
 list(APPEND EXTRA_LINK_FLAGS "-u newlib_include_syscalls_impl")
 list(APPEND EXTRA_LINK_FLAGS "-u newlib_include_pthread_impl")
 list(APPEND EXTRA_LINK_FLAGS "-u newlib_include_assert_impl")
+# Force inclusion of init.c which registers the CORE-stage init_libc and
+# init_libc_stdio functions (esp_system_init_fn section entries).  Without
+# this the linker never pulls init.c.obj from the archive even though the
+# linker script uses KEEP for .esp_system_init_fn.* sections.
+list(APPEND EXTRA_LINK_FLAGS "-u esp_libc_init_funcs")
 target_link_libraries(${COMPONENT_LIB} INTERFACE "${EXTRA_LINK_FLAGS}")
 
 if(CONFIG_NEWLIB_NANO_FORMAT)

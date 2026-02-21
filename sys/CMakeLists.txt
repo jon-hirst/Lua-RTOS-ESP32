@@ -158,6 +158,12 @@ idf_component_register(
     REQUIRES lua esp_adc spiffs ramfs romfs lfs motion nmea gdisplay driver esp_hw_support esp_wifi esp_eth openssl eth_enc424j600
 )
 
+# rmt_private.h moved from driver/ to esp_driver_rmt/src/ in IDF v5.5
+# The RMT driver uses internal structures for GPIO routing, so we need this private path
+target_include_directories(${COMPONENT_LIB} PRIVATE
+    $ENV{IDF_PATH}/components/esp_driver_rmt/src
+)
+
 #PRIV_REQUIRES driver bt esp_adc_cal app_update openssl mbedtls wpa_supplicant nmea 
 
 set_property(TARGET ${COMPONENT_LIB} APPEND PROPERTY INTERFACE_LINK_LIBRARIES "-Wl,--wrap=_realloc_r")
@@ -179,6 +185,11 @@ set(extra_link_flags "-u _realloc_r")
 list(APPEND extra_link_flags "-u _malloc_r")
 list(APPEND extra_link_flags "-u _calloc_r")
 list(APPEND extra_link_flags "-u _open_r")
+# Force inclusion of __wrap__ implementations (needed in IDF v5.5 due to link order)
+list(APPEND extra_link_flags "-u __wrap__malloc_r")
+list(APPEND extra_link_flags "-u __wrap__realloc_r")
+list(APPEND extra_link_flags "-u __wrap__calloc_r")
+list(APPEND extra_link_flags "-u __wrap__open_r")
 list(APPEND extra_link_flags "-u _unlink_r")
 list(APPEND extra_link_flags "-u _rename_r")
 list(APPEND extra_link_flags "-u _stat_r")

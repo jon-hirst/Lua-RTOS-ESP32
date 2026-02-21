@@ -177,6 +177,9 @@ void esp_newlib_init(void)
 }
 
 void esp_setup_newlib_syscalls(void) __attribute__((alias("esp_newlib_init")));
+/* IDF v5.5 renamed esp_newlib_init -> esp_libc_init; provide the new name */
+void esp_libc_init(void) __attribute__((alias("esp_newlib_init")));
+void esp_setup_syscall_table(void) __attribute__((alias("esp_newlib_init")));
 
 void esp_newlib_init_global_stdio(const char *stdio_dev)
 {
@@ -207,3 +210,6 @@ void esp_newlib_init_global_stdio(const char *stdio_dev)
 #endif /* ESP_ROM_NEEDS_SWSETUP_WORKAROUND */
     }
 }
+
+/* IDF v5.5 renamed esp_newlib_init_global_stdio -> esp_libc_init_global_stdio */
+void esp_libc_init_global_stdio(const char *stdio_dev) __attribute__((alias("esp_newlib_init_global_stdio")));

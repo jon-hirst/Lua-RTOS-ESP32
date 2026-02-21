@@ -48,8 +48,9 @@
 })
 
 typedef enum {
-    ESP_MBEDTLS_SSL_BUF_CACHED,
+    ESP_MBEDTLS_SSL_BUF_CACHED = 0,
     ESP_MBEDTLS_SSL_BUF_NO_CACHED,
+    ESP_MBEDTLS_SSL_BUF_STATIC,
 } esp_mbedtls_ssl_buf_states;
 
 struct esp_mbedtls_ssl_buf {

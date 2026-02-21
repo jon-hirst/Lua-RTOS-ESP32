@@ -28,7 +28,9 @@ else()
             "int_wdt.c"
             "panic.c"
             "esp_system.c"
+            "esp_system_console.c"
             "startup.c"
+            "startup_funcs.c"
             "system_time.c"
             "stack_check.c"
             "ubsan.c"
@@ -76,6 +78,7 @@ else()
     # dependency on what we don't know, force linker to not drop the symbol regardless
     # of link line order.
     target_link_libraries(${COMPONENT_LIB} INTERFACE "-u start_app")
+    target_link_libraries(${COMPONENT_LIB} INTERFACE "-u esp_system_include_startup_funcs")
 
     if(NOT CONFIG_ESP_SYSTEM_SINGLE_CORE_MODE)
         target_link_libraries(${COMPONENT_LIB} INTERFACE "-u start_app_other_cores")

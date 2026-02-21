@@ -309,3 +309,6 @@ void esp_newlib_time_init(void)
 {
     esp_time_impl_init();
 }
+
+/* IDF v5.5 renamed esp_newlib_time_init -> esp_libc_time_init */
+void esp_libc_time_init(void) __attribute__((alias("esp_newlib_time_init")));

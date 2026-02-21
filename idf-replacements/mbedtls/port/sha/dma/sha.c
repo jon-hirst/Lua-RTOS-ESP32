@@ -44,6 +44,7 @@
 #include "sys/param.h"
 
 #include "sha/sha_dma.h"
+#include "sha/sha_core.h"
 #include "hal/sha_hal.h"
 #include "soc/soc_caps.h"
 #include "esp_sha_dma_priv.h"
@@ -138,6 +139,16 @@ void esp_sha_release_hardware()
     SHA_RELEASE();
 }
 
+void esp_sha_set_mode(esp_sha_type sha_type)
+{
+    sha_hal_wait_idle();
+    sha_hal_set_mode(sha_type);
+}
+
+void esp_sha_block(esp_sha_type sha_type, const void *data_block, bool is_first_block)
+{
+    sha_hal_hash_block(sha_type, data_block, block_length(sha_type) / 4, is_first_block);
+}
 
 /* Hash the input block by block, using non-DMA mode */
 static void esp_sha_block_mode(esp_sha_type sha_type, const uint8_t *input, uint32_t ilen,
@@ -287,7 +298,8 @@ static esp_err_t esp_sha_dma_process(esp_sha_type sha_type, const void *input, u
         return -1;
     }
 
-    sha_hal_hash_dma(sha_type, num_blks, is_first_block);
+    sha_hal_set_mode(sha_type);
+    sha_hal_hash_dma(num_blks, is_first_block);
 
     sha_hal_wait_idle();
 

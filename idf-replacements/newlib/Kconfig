@@ -1,5 +1,14 @@
 menu "Newlib"
 
+    # IDF v5.5 added LIBC_NEWLIB (under menu "LibC") to select the C library.
+    # FreeRTOS gates configUSE_NEWLIB_REENTRANT (and thus __getreent) on this
+    # option.  Since this component replaces the IDF newlib component, we must
+    # define LIBC_NEWLIB here so that FreeRTOS and other components that check
+    # CONFIG_LIBC_NEWLIB compile correctly.
+    config LIBC_NEWLIB
+        bool
+        default y
+
     choice NEWLIB_STDOUT_LINE_ENDING
         prompt "Line ending for UART output"
         default NEWLIB_STDOUT_LINE_ENDING_CRLF

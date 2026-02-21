@@ -55,7 +55,6 @@
 #include "driver/rmt_tx.h"
 #include "driver/rmt_rx.h"
 #include "driver/rmt_encoder.h"
-#include "rmt_private.h"
 
 typedef int rmt_pulse_idle_t;
 typedef int rmt_idle_threshold_t;

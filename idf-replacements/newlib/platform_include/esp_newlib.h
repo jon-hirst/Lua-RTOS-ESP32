@@ -53,6 +53,12 @@ void esp_newlib_init(void);
 
 void esp_setup_syscall_table(void) __attribute__((deprecated("Please call esp_newlib_init() in newer code")));
 
+/* IDF v5.5 aliases: esp_libc_init / esp_libc_init_global_stdio */
+void esp_libc_init(void);
+void esp_libc_init_global_stdio(const char *stdio_dev);
+void esp_libc_init_funcs(void);
+void esp_libc_time_init(void);
+
 /**
  * Update current microsecond time from RTC
  */

@@ -61,6 +61,7 @@ s32_t esp32_spi_flash_read(spiffs *fs, u32_t addr, u32_t size, u8_t *dst) {
                                         addr, dst, size);
 
 	if (err != ESP_OK) {
+        ESP_LOGE(TAG, "read addr=0x%x size=%u err=0x%x", (unsigned)addr, (unsigned)size, (unsigned)err);
         return SPIFFS_ERR_INTERNAL;
 	}
 
@@ -72,6 +73,7 @@ s32_t esp32_spi_flash_write(spiffs *fs, u32_t addr, u32_t size, const u8_t *src)
                                         addr, src, size);
 
 	if (err != ESP_OK) {
+        ESP_LOGE(TAG, "write addr=0x%x size=%u err=0x%x", (unsigned)addr, (unsigned)size, (unsigned)err);
         return SPIFFS_ERR_INTERNAL;
 	}
 
@@ -83,6 +85,7 @@ s32_t IRAM_ATTR esp32_spi_flash_erase(spiffs *fs, u32_t addr, u32_t size) {
                                         addr, size);
 
 	if (err != ESP_OK) {
+        ESP_LOGE(TAG, "erase addr=0x%x size=%u err=0x%x", (unsigned)addr, (unsigned)size, (unsigned)err);
         return SPIFFS_ERR_INTERNAL;
 	}
 
