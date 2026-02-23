@@ -260,7 +260,7 @@ menu "Lua RTOS"
 
          config LUA_RTOS_PART_STORAGE_SIZE
             int "FLASH storage partition size"
-            range 1024 4194304
+            range 1024 16777216
             default 524288
             help
                   Size of the storage partition (in bytes), which it's used by

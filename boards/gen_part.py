@@ -107,6 +107,7 @@ start = part_table_offset + 0x1000
 offset = start
 
 print ("")
+print ("flash size 0x%08x" % (flash_size))
 print ("Partition      Offset         Size    Size")
 print ("------------------------------------------")
 
