@@ -183,6 +183,49 @@ static int tty_free(int fd) {
 
 #endif /* CONSOLE_USB_SERIAL_JTAG */
 
+void console_io_lock(void) {
+#ifdef CONSOLE_USB_SERIAL_JTAG
+    pthread_mutex_lock(&usj_mtx);
+#else
+    uart_ll_lock(CONSOLE_UART);
+#endif
+}
+
+void console_io_unlock(void) {
+#ifdef CONSOLE_USB_SERIAL_JTAG
+    pthread_mutex_unlock(&usj_mtx);
+#else
+    uart_ll_unlock(CONSOLE_UART);
+#endif
+}
+
+void console_io_drain(void) {
+#ifdef CONSOLE_USB_SERIAL_JTAG
+    uint8_t byte;
+    while (xQueueReceive(usj_rx_queue, &byte, 0) == pdTRUE) {}
+#else
+    uart_consume(CONSOLE_UART);
+#endif
+}
+
+int console_io_read(char *c, uint32_t timeout_ms) {
+#ifdef CONSOLE_USB_SERIAL_JTAG
+    TickType_t ticks = (timeout_ms == portMAX_DELAY)
+        ? portMAX_DELAY : (TickType_t)(timeout_ms / portTICK_PERIOD_MS);
+    return (xQueueReceive(usj_rx_queue, c, ticks) == pdTRUE) ? 1 : 0;
+#else
+    return uart_read(CONSOLE_UART, c, timeout_ms);
+#endif
+}
+
+void console_io_write(char c) {
+#ifdef CONSOLE_USB_SERIAL_JTAG
+    usb_serial_jtag_write_bytes((const uint8_t *)&c, 1, portMAX_DELAY);
+#else
+    uart_write(CONSOLE_UART, c);
+#endif
+}
+
 #ifndef CONFIG_IDF_TARGET_ESP32S3
 static int vfs_tty_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout) {
     return vfs_generic_select(local_storage, tty_has_bytes, tty_free, maxfdp1, readset, writeset, exceptset, timeout);

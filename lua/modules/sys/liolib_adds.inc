@@ -59,6 +59,7 @@
 #include <sys/stat.h>
 #include <sys/syslog.h>
 #include <drivers/uart.h>
+#include <sys/console.h>
 
 #define l_getc(f)		getc(f)
 #define l_lockfile(f)   ((void)0)
@@ -152,21 +153,21 @@ static int f_receive (lua_State *L) {
     		buff_size = buff_size - 1024;
     	}
 
-        uart_ll_lock(CONSOLE_UART);
+        console_io_lock();
         uart_ll_set_raw(1);
-        
+
         // Clear received buffer
-        uart_consume(CONSOLE_UART);
+        console_io_drain();
 
         // Send 'C' for start
-        uart_write(CONSOLE_UART, 'C');
-        uart_write(CONSOLE_UART, '\n');
+        console_io_write('C');
+        console_io_write('\n');
 
         done = 0;
 
         for(;;) {
             // Wait for chunk size
-            if (!uart_read(CONSOLE_UART, (char *)&chunk_size, 2000)) {
+            if (!console_io_read((char *)&chunk_size, 2000)) {
                 break;
             }
 
@@ -179,7 +180,7 @@ static int f_receive (lua_State *L) {
             // Read chunk
             cchunk = chunk;
             for(i=0; i < chunk_size; i++) {
-                if (!uart_read(CONSOLE_UART, (char *)cchunk++, 2000)) {
+                if (!console_io_read((char *)cchunk++, 2000)) {
                     break;
                 }
                 bytes++;
@@ -189,21 +190,21 @@ static int f_receive (lua_State *L) {
             fwrite(chunk,chunk_size,1,f);
 
             // Send 'C' for start
-            uart_write(CONSOLE_UART, 'C');
-            uart_write(CONSOLE_UART, '\n');
+            console_io_write('C');
+            console_io_write('\n');
         }
 
         fclose(f);
-        
+
         if (!done) {
             uart_ll_set_raw(0);
-            uart_ll_unlock(CONSOLE_UART);
-            
+            console_io_unlock();
+
             return luaL_error(L, "timeout");
         }
 
         uart_ll_set_raw(0);
-        uart_ll_unlock(CONSOLE_UART);
+        console_io_unlock();
     } else {
         return luaL_error(L, strerror(errno));
     }
@@ -227,8 +228,8 @@ static int f_send (lua_State *L) {
 
     FILE *f= fopen(filename, "r");
     if (f) {
-    	uart_ll_lock(CONSOLE_UART);
-    	uart_ll_set_raw(1);
+        console_io_lock();
+        uart_ll_set_raw(1);
 
         done = 1;
         error = 0;
@@ -241,70 +242,70 @@ static int f_send (lua_State *L) {
                     chunk_size++;
                 }
             }
-            
+
             // Wait for C\n
-            if (!uart_read(CONSOLE_UART, &c, 2000)) {done = 0; break;}
+            if (!console_io_read(&c, 2000)) {done = 0; break;}
             if (c != 'C') {done = 0; error = 1; break;}
-            
-            if (!uart_read(CONSOLE_UART, &c, 2000)) {done = 0; break;}
+
+            if (!console_io_read(&c, 2000)) {done = 0; break;}
             if (c != '\n') {done = 0; error = 1; break;}
-            
+
             // Send chunk size
-            uart_write(CONSOLE_UART, chunk_size);
+            console_io_write((char)chunk_size);
 
             // Send chunk
             cchunk = chunk;
             while(chunk_size--) {
-                uart_write(CONSOLE_UART, *cchunk++);
-            }  
+                console_io_write((char)*cchunk++);
+            }
         }
-                
+
         fclose(f);
-        
+
         if (done){
             // Send last chunk with size 0
 
             // Wait for C\n
-            if (!uart_read(CONSOLE_UART, &c, 2000)) {
-            	uart_ll_set_raw(0);
-            	uart_ll_unlock(CONSOLE_UART);
-            	return luaL_error(L, "timeout");
+            if (!console_io_read(&c, 2000)) {
+                uart_ll_set_raw(0);
+                console_io_unlock();
+                return luaL_error(L, "timeout");
             }
 
             if (c != 'C') {
-            	uart_ll_set_raw(0);
-            	uart_ll_unlock(CONSOLE_UART);
-            	return luaL_error(L, "unnexpected input");
+                uart_ll_set_raw(0);
+                console_io_unlock();
+                return luaL_error(L, "unnexpected input");
             }
 
-            if (!uart_read(CONSOLE_UART, &c, 2000)) {
-            	uart_ll_set_raw(0);
-            	uart_ll_unlock(CONSOLE_UART);
-            	return luaL_error(L, "timeout");
+            if (!console_io_read(&c, 2000)) {
+                uart_ll_set_raw(0);
+                console_io_unlock();
+                return luaL_error(L, "timeout");
             }
-            
+
             if (c != '\n') {
-            	uart_ll_set_raw(0);
-            	uart_ll_unlock(CONSOLE_UART);
-            	return luaL_error(L, "unnexpected input");
+                uart_ll_set_raw(0);
+                console_io_unlock();
+                return luaL_error(L, "unnexpected input");
             }
-            
+
             // Send chunk size
             chunk_size = '\0';
-            uart_write(CONSOLE_UART, chunk_size);
+            console_io_write((char)chunk_size);
         } else {
-        	uart_ll_set_raw(0);
-            uart_ll_unlock(CONSOLE_UART);
+            uart_ll_set_raw(0);
+            console_io_unlock();
 
             if (error) {
-            	return luaL_error(L, "unnexpected input");
+                return luaL_error(L, "unnexpected input");
             } else {
-            	return luaL_error(L, "timeout");
+                return luaL_error(L, "timeout");
             }
         }
 
         uart_ll_set_raw(0);
-        uart_ll_unlock(CONSOLE_UART);
+        console_io_unlock();
 
     } else {
         return luaL_error(L, strerror(errno));

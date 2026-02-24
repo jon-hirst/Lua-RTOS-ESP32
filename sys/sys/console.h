@@ -46,6 +46,8 @@
 #ifndef CONSOLE_H
 #define	CONSOLE_H
 
+#include <stdint.h>
+
 void console_clear();
 void console_size(int *rows, int *cols);
 void console_gotoxy(int col, int line);
@@ -56,6 +58,12 @@ void console_erase_sol();
 void console_erase_l();
 void console_hide_cursor();
 void console_show_cursor();
+
+void console_io_lock(void);
+void console_io_unlock(void);
+void console_io_drain(void);
+int  console_io_read(char *c, uint32_t timeout_ms);
+void console_io_write(char c);
 
 #endif	/* CONSOLE_H */
 
