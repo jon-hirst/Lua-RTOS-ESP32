@@ -193,7 +193,7 @@ menu "Lua RTOS"
 
       config LUA_RTOS_LED_ACT
             int "Activity led GPIO number"
-            range -1 39
+            range -1 48
             default 22
 
       menu "Console"
@@ -594,7 +594,7 @@ menu "Lua RTOS"
       menu "Power BUS"
          config LUA_RTOS_POWER_BUS_PIN
             int "Power BUS GPIO number"
-            range -1 39
+            range -1 48
             default 27
             help
                Some Lua RTOS compatible boards, such as WHITECAT N2 DEVKIT, have a load switch that can turn on and
@@ -648,100 +648,100 @@ menu "Lua RTOS"
 
          config LUA_RTOS_I2C0_SCL
             int "I2C0 SCL"
-            range 0 39
+            range 0 48
             default 21
 
          config LUA_RTOS_I2C0_SDA
             int "I2C0 SDA"
-            range 0 39
+            range 0 48
             default 22
 
          config LUA_RTOS_I2C1_SCL
             int "I2C1 SCL"
-            range 0 39
+            range 0 48
             default 32
 
          config LUA_RTOS_I2C1_SDA
             int "I2C1 SDA"
-            range 0 39
+            range 0 48
             default 33
       endmenu
 
       menu "SPI pin map"
          config LUA_RTOS_SPI2_CS
             int "SPI2 default CS"
-            range -1 39
+            range -1 48
             default -1
             help
                Default GPIO attached to the CS signal. Set to -1 if no default CS signal is used.
 
          config LUA_RTOS_SPI2_MISO
             int "SPI2 MISO"
-            range 0 39
+            range -1 48
             default 12
 
          config LUA_RTOS_SPI2_MOSI
             int "SPI2 MOSI"
-            range 0 39
+            range 0 48
             default 13
 
          config LUA_RTOS_SPI2_CLK
             int "SPI2 CLK"
-            range 0 39
+            range 0 48
             default 14
 
          config LUA_RTOS_SPI3_CS
             int "SPI3 default CS"
-            range -1 39
+            range -1 48
             default -1
             help
                Default GPIO attached to the CS signal. Set -1 if no default CS signal is used.
 
          config LUA_RTOS_SPI3_MISO
             int "SPI3 MISO"
-            range 0 39
+            range 0 48
             default 19
 
          config LUA_RTOS_SPI3_MOSI
             int "SPI3 MOSI"
-            range 0 39
+            range 0 48
             default 23
 
          config LUA_RTOS_SPI3_CLK
             int "SPI3 CLK"
-            range 0 39
+            range 0 48
             default 18
       endmenu
 
       menu "UART pin map"
          config LUA_RTOS_UART0_RX
             int "UART0 RX"
-            range 0 39
+            range 0 48
             default 3
 
          config LUA_RTOS_UART0_TX
             int "UART0 TX"
-            range 0 39
+            range 0 48
             default 1
 
          config LUA_RTOS_UART1_RX
             int "UART1 RX"
-            range 0 39
+            range 0 48
             default 9
 
          config LUA_RTOS_UART1_TX
             int "UART1 TX"
-            range 0 39
+            range 0 48
             default 10
 
          config LUA_RTOS_UART2_RX
             int "UART2 RX"
-            range 0 39
+            range 0 48
             default 16
 
          config LUA_RTOS_UART2_TX
             int "UART2 TX"
-            range 0 39
+            range 0 48
             default 17
       endmenu
 
@@ -783,7 +783,7 @@ menu "Lua RTOS"
          config MCP23S17_SPI_CS
              depends on GPIO_MCP23S17
                 int "MCP23S17 CS pin"
-                range 0 39
+                range 0 48
                 default 4
                 help
                     The GPIO port number used to select MCP23S17.
@@ -791,7 +791,7 @@ menu "Lua RTOS"
          config MCP23S17_INTA
              depends on GPIO_MCP23S17
                 int "MCP23S17 INTA pin"
-                range -1 39
+                range -1 48
                 default 35
                 help
                     The GPIO port number used to connect the INTA pin. Use -1 if INTA is not connected.
@@ -799,7 +799,7 @@ menu "Lua RTOS"
          config MCP23S17_INTB
              depends on GPIO_MCP23S17
                 int "MCP23S17 INTB pin"
-                range -1 39
+                range -1 48
                 default 5
                 help
                     The GPIO port number used to connect the INTB pin. Use -1 if INTB is not connected.
@@ -815,7 +815,7 @@ menu "Lua RTOS"
          config PCA9xxx_INT
             depends on (GPIO_PCA9698 || GPIO_PCA9505)
                int "PCA9xxx INT pint"
-               range 0 39
+               range 0 48
                default 26
                help
                   GPIO where PCA9xxx INT pin is attached.
@@ -902,7 +902,7 @@ menu "Lua RTOS"
          config ADC_MCP3008_CS
             depends on ADC_MCP3008
                int "MCP3008 CS GPIO number"
-                  range -1 39
+                  range -1 48
                   default 15
                   help
                      GPIO attached to the CS signal. Set to -1 to use the default CS assigned to the SPI port.
@@ -922,7 +922,7 @@ menu "Lua RTOS"
          config ADC_MCP3208_CS
             depends on ADC_MCP3208
                int "MCP3208 CS GPIO number"
-                  range -1 39
+                  range -1 48
                   default 15
                   help
                      GPIO attached to the CS signal. Set to -1 to use the default CS assigned to the SPI port.
@@ -1004,7 +1004,7 @@ menu "Lua RTOS"
             config PHY_POWER_PIN
                 depends on LUA_RTOS_ETH_HW_TYPE_RMII
                 int "PHY Power GPIO"
-                range -1 39
+                range -1 48
                 default 2
                 help
                     GPIO number to use for powering on/off the PHY.
@@ -1012,7 +1012,7 @@ menu "Lua RTOS"
             config PHY_SMI_MDC_PIN
                 depends on LUA_RTOS_ETH_HW_TYPE_RMII
                 int "SMI MDC Pin"
-                range 0 39
+                range 0 48
                 default 23
                 help
                     GPIO number to use for SMI clock output MDC to PHY.
@@ -1020,7 +1020,7 @@ menu "Lua RTOS"
             config PHY_SMI_MDIO_PIN
                 depends on LUA_RTOS_ETH_HW_TYPE_RMII
                 int "SMI MDIO Pin"
-                range 0 39
+                range 0 48
                 default 18
                 help
                    GPIO number to use for SMI data pin MDIO to/from PHY.
@@ -1053,7 +1053,7 @@ menu "Lua RTOS"
             config SPI_ETHERNET_CS
                depends on LUA_RTOS_ETH_HW_TYPE_SPI
                   int "SPI Ethernet CS GPIO number"
-                     range -1 39
+                     range -1 48
                      default 26
                      help
                         GPIO attached to the CS signal. Set -1 to use the default CS assigned to the SPI port.
@@ -1061,7 +1061,7 @@ menu "Lua RTOS"
             config SPI_ETHERNET_INT
                depends on LUA_RTOS_ETH_HW_TYPE_SPI
                   int "SPI Ethernet Interrupt GPIO number"
-                     range 1 39
+                     range 1 48
                      default 35
       endmenu
 
@@ -1110,7 +1110,7 @@ menu "Lua RTOS"
             config LUA_RTOS_LORA_CS
                 depends on LUA_RTOS_LORA_HW_TYPE_SX1276 || LUA_RTOS_LORA_HW_TYPE_SX1272 || LUA_RTOS_LORA_HW_TYPE_SX1301
                 int "LoRa SPI CS GPIO number"
-                    range 0 39
+                    range 0 48
                     default 5
                     help
                         The GPIO port number used to select the LoRa hardware. Set -1 to use the default CS assigned to the SPI port.
@@ -1118,7 +1118,7 @@ menu "Lua RTOS"
             config LUA_RTOS_LORA_RST
                 depends on LUA_RTOS_LORA_HW_TYPE_SX1276 || LUA_RTOS_LORA_HW_TYPE_SX1272 || LUA_RTOS_LORA_HW_TYPE_SX1301
                 int "LoRa RST GPIO number"
-                    range -1 39
+                    range -1 48
                     default -1 if (LUA_RTOS_BOARD_WHITECAT_N1ESP32 || LUA_RTOS_BOARD_WHITECAT_N1ESP32_DEVKIT || LUA_RTOS_BOARD_WHITECAT_N2ESP32_DEVKIT)
                     default 27 if !(LUA_RTOS_BOARD_WHITECAT_N1ESP32 || LUA_RTOS_BOARD_WHITECAT_N1ESP32_DEVKIT || LUA_RTOS_BOARD_WHITECAT_N2ESP32_DEVKIT)
                     help
@@ -1127,7 +1127,7 @@ menu "Lua RTOS"
             config LUA_RTOS_LORA_DIO0
                 depends on LUA_RTOS_LORA_HW_TYPE_SX1276 || LUA_RTOS_LORA_HW_TYPE_SX1272
                 int "LoRa DIO0 GPIO number"
-                    range -1 39
+                    range -1 48
                     default 4 if (LUA_RTOS_BOARD_WHITECAT_N1ESP32 || LUA_RTOS_BOARD_WHITECAT_N1ESP32_DEVKIT || LUA_RTOS_BOARD_WHITECAT_N2ESP32_DEVKIT)
                     default 26 if !(LUA_RTOS_BOARD_WHITECAT_N1ESP32 || LUA_RTOS_BOARD_WHITECAT_N1ESP32_DEVKIT || LUA_RTOS_BOARD_WHITECAT_N2ESP32_DEVKIT)
                     help
@@ -1136,7 +1136,7 @@ menu "Lua RTOS"
             config LUA_RTOS_LORA_DIO1
                 depends on LUA_RTOS_LORA_HW_TYPE_SX1276 || LUA_RTOS_LORA_HW_TYPE_SX1272
                 int "LoRa DIO1 GPIO number"
-                    range -1 39
+                    range -1 48
                     default 16 if (LUA_RTOS_BOARD_WHITECAT_N1ESP32 || LUA_RTOS_BOARD_WHITECAT_N1ESP32_DEVKIT || LUA_RTOS_BOARD_WHITECAT_N2ESP32_DEVKIT)
                     default 25 if !(LUA_RTOS_BOARD_WHITECAT_N1ESP32 || LUA_RTOS_BOARD_WHITECAT_N1ESP32_DEVKIT || LUA_RTOS_BOARD_WHITECAT_N2ESP32_DEVKIT)
                     help
@@ -1145,7 +1145,7 @@ menu "Lua RTOS"
             config LUA_RTOS_LORA_DIO2
                 depends on LUA_RTOS_LORA_HW_TYPE_SX1276 || LUA_RTOS_LORA_HW_TYPE_SX1272
                 int "LoRa DIO2 GPIO number"
-                    range -1 39
+                    range -1 48
                     default 17 if (LUA_RTOS_BOARD_WHITECAT_N1ESP32 || LUA_RTOS_BOARD_WHITECAT_N1ESP32_DEVKIT || LUA_RTOS_BOARD_WHITECAT_N2ESP32_DEVKIT)
                     default 33 if !(LUA_RTOS_BOARD_WHITECAT_N1ESP32 || LUA_RTOS_BOARD_WHITECAT_N1ESP32_DEVKIT || LUA_RTOS_BOARD_WHITECAT_N2ESP32_DEVKIT)
                     help
@@ -1213,7 +1213,7 @@ menu "Lua RTOS"
          config LUA_RTOS_SD_CS
             depends on SD_CARD_SPI
                int "SDCARD SPI CS GPIO number"
-               range -1 39
+               range -1 48
                default 15
                help
                   GPIO attached to the CS signal. Set -1 to use the default CS assigned to the SPI port.
@@ -1233,7 +1233,7 @@ menu "Lua RTOS"
          config LUA_RTOS_MCC_CD
             depends on SD_CARD_MMC
                int "CD signal GPIO number"
-               range -1 39
+               range -1 48
                default -1
              help
                 Select the GPIO number where CD (card detect) signal is attached. Set to -1 if no CD is used.
@@ -1241,7 +1241,7 @@ menu "Lua RTOS"
          config LUA_RTOS_MCC_WP
             depends on SD_CARD_MMC
                int "WP signal GPIO number"
-               range -1 39
+               range -1 48
                default -1
              help
                 Select the GPIO number where WP signal is attached. Set to -1 if no CD is used.
@@ -1271,7 +1271,7 @@ menu "Lua RTOS"
             config LUA_RTOS_GDISPLAY_CS
                depends on LUA_RTOS_LUA_USE_GDISPLAY
                   int "Display SPI CS GPIO number"
-                  range -1 39
+                  range -1 48
                   default 14
                help
                   GPIO where display CS signal is attached. Set -1 to use the default CS assigned to the SPI port.
@@ -1279,7 +1279,7 @@ menu "Lua RTOS"
             config LUA_RTOS_GDISPLAY_RESET
                depends on LUA_RTOS_LUA_USE_GDISPLAY
                   int "Display RESET GPIO number"
-                  range -1 39
+                  range -1 48
                   default -1
                help
                   GPIO where display RESET signal is attached. Select -1 if no RESET is used.
@@ -1287,7 +1287,7 @@ menu "Lua RTOS"
             config LUA_RTOS_GDISPLAY_CMD
                depends on LUA_RTOS_LUA_USE_GDISPLAY
                   int "Display CMD GPIO number"
-                  range 0 39
+                  range 0 48
                   default 26
                help
                   GPIO where display CMD signal is attached.
@@ -1295,7 +1295,7 @@ menu "Lua RTOS"
             config LUA_RTOS_GDISPLAY_BACKLIGHT
                depends on LUA_RTOS_LUA_USE_GDISPLAY
                   int "Backlight CMD GPIO number"
-                  range -1 39
+                  range -1 48
                   default -1
                help
                   GPIO where display BACKLIGHT signal is attached.
@@ -1311,7 +1311,7 @@ menu "Lua RTOS"
             config LUA_RTOS_GDISPLAY_TP_CS
                depends on LUA_RTOS_LUA_USE_GDISPLAY
                   int "Display touch pannel SPI CS GPIO number"
-                  range -2 39
+                  range -2 48
                   default 21
                help
                   GPIO where display touch pannel CS signal is attached. Select -2 if you don't want spport for touch pannel. Set -1

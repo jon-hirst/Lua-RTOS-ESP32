@@ -515,7 +515,7 @@ static void spi_setup_bus(uint8_t unit, uint8_t flags) {
                         spi_bus[spi_idx(unit)].clk, .quadwp_io_num = -1,
                 .quadhd_io_num = -1 };
 
-        ret = spi_bus_initialize(unit - 1, &buscfg, unit - 1);
+        ret = spi_bus_initialize(unit - 1, &buscfg, SPI_DMA_CH_AUTO);
         assert(ret==ESP_OK);
     }
 }

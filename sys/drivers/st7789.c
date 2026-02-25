@@ -45,7 +45,7 @@
 
 /*
  * This driver is based on the ST7735 driver and adapted for the ST7789
- * LCD controller, which supports up to 240x320 pixels with 262K colors
+ * LCD controller, which supports up to 240x240 pixels with 262K colors
  * (18-bit RGB) over SPI interface.
  */
 

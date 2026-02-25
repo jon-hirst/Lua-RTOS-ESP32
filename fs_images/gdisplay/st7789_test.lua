@@ -1,5 +1,5 @@
 --[[
-  ST7789 240x320 262K-color LCD comprehensive test
+  ST7789 240x240 262K-color LCD comprehensive test
   Exercises every feature exposed by sys/drivers/st7789.c through the
   gdisplay Lua module.
 
@@ -35,7 +35,7 @@ local function rndcolor()
 end
 
 -- ── 1. Initialise the display ───────────────────────────────────────────────
-print("[ST7789] Initialising ST7789 240x320 262K-colour LCD ...")
+print("[ST7789] Initialising ST7789 240x240 262K-colour LCD ...")
 math.randomseed(os.time and os.time() or 42)
 
 gdisplay.init(gdisplay.ST7789, gdisplay.PORTRAIT)
@@ -63,7 +63,7 @@ local solid_colors = {
 }
 for _, c in ipairs(solid_colors) do
   gdisplay.clear(c)
-  tmr.delay(0.3)
+  tmr.delayms(300)
 end
 
 -- ── 4. Colour model helpers: rgb() and hsb2rgb() ───────────────────────────
@@ -230,7 +230,7 @@ for sides = 3, 8 do
   local r   = 50
   local rot = math.random(0, 359)
   gdisplay.poly(x, y, sides, r, rot, rndcolor(), rndcolor())
-  tmr.delay(0.4)
+  tmr.delayms(400)
 end
 pause()
 
@@ -299,7 +299,7 @@ for rot = 0, 359, 45 do
   gdisplay.setrot(rot)
   gdisplay.setcolor(rndcolor())
   gdisplay.write(gdisplay.CENTER, gdisplay.CENTER, "Rotated!")
-  tmr.delay(0.5)
+  tmr.delayms(500)
 end
 gdisplay.setrot(0)
 pause()
@@ -350,8 +350,8 @@ pause(1)
 -- ── 23. Orientation changes ─────────────────────────────────────────────────
 print("[ST7789] Test: all four orientations")
 local orientations = {
-  { gdisplay.PORTRAIT,       "PORTRAIT 240x320"   },
-  { gdisplay.LANDSCAPE,      "LANDSCAPE 320x240"  },
+  { gdisplay.PORTRAIT,       "PORTRAIT 240x240"   },
+  { gdisplay.LANDSCAPE,      "LANDSCAPE 240x240"  },
   { gdisplay.PORTRAIT_FLIP,  "PORTRAIT FLIP"      },
   { gdisplay.LANDSCAPE_FLIP, "LANDSCAPE FLIP"     },
 }
@@ -373,8 +373,8 @@ W, H = gdisplay.getscreensize()
 -- ── 24. Screen-size query ───────────────────────────────────────────────────
 print("[ST7789] Test: getscreensize")
 local sw, sh = gdisplay.getscreensize()
-assert(sw == 240 and sh == 320,
-  string.format("Expected 240x320, got %dx%d", sw, sh))
+assert(sw == 240 and sh == 240,
+  string.format("Expected 240x240, got %dx%d", sw, sh))
 print(string.format("[ST7789]   getscreensize: %dx%d  PASS", sw, sh))
 
 -- ── 25. Background / foreground / stroke colour setters ────────────────────
@@ -433,5 +433,5 @@ gdisplay.setcolor(gdisplay.GREEN)
 gdisplay.write(gdisplay.CENTER, gdisplay.CENTER - 20, "ST7789 TEST DONE")
 gdisplay.setfont(gdisplay.FONT_DEFAULT)
 gdisplay.setcolor(gdisplay.LIGHTGREY)
-gdisplay.write(gdisplay.CENTER, gdisplay.CENTER + 10, "240x320  262K colours")
+gdisplay.write(gdisplay.CENTER, gdisplay.CENTER + 10, "240x240  262K colours")
 print("[ST7789] All tests complete.")

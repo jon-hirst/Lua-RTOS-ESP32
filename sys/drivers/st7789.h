@@ -51,7 +51,7 @@
 #if CONFIG_LUA_RTOS_LUA_USE_GDISPLAY
 
 #define ST7789_WIDTH  240
-#define ST7789_HEIGHT 320
+#define ST7789_HEIGHT 240
 
 #define ST7789_BUFFER 2880  // 240 * 4 * 3 bytes per pixel (18-bit)
 

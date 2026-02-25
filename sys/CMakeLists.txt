@@ -37,6 +37,7 @@ set(srcs
 	"drivers/spi.c"
 	"drivers/ssd1306.c"
 	"drivers/st7735.c"
+	"drivers/st7789.c"
 	"drivers/stepper.c"
 	"drivers/system.c"
 	"drivers/timer.c"
