@@ -50,10 +50,15 @@
 
 #if CONFIG_LUA_RTOS_LUA_USE_GDISPLAY
 
-#define ST7789_WIDTH  240
-#define ST7789_HEIGHT 240
+#define ST7789_WIDTH      240
+#define ST7789_HEIGHT     240
+// The ST7789 has a 240×320 internal frame buffer.  A 240×240 panel is
+// connected to rows 80-319.  All RASET/CASET window addresses must be
+// shifted by this offset so writes land in the visible region.
+#define ST7789_ROW_OFFSET  80
 
-#define ST7789_BUFFER 2880  // 240 * 4 * 3 bytes per pixel (18-bit)
+#define ST7789_BUFFER 2880  // flush every 2880 pixels; buffer = 2880 * bytes_per_pixel bytes
+
 
 // ST7789 commands
 #define ST7789_NOP        0x00
@@ -107,8 +112,9 @@
 #define ST7789_GMCTRP1    0xE0
 #define ST7789_GMCTRN1    0xE1
 
-// Color mode: 18-bit (262K colors)
-#define ST7789_COLMOD_18BIT 0x66
+// Color modes
+#define ST7789_COLMOD_16BIT 0x55  // 16 bpp RGB565 – matches the gdisplay pipeline
+#define ST7789_COLMOD_18BIT 0x66  // 18 bpp RGB666 (not used: pipeline sends 16-bit)
 
 driver_error_t *st7789_init(uint8_t chipset, uint8_t orientation, uint8_t address);
 void st7789_set_orientation(uint8_t m);

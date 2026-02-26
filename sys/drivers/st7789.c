@@ -77,7 +77,7 @@ static const uint8_t ST7789_init_cmds[] = {
   ST7789_SLPOUT,    DELAY,       //  2: Out of sleep mode, no args, w/delay
   255,                            //     500 ms delay
   ST7789_COLMOD,  1+DELAY,       //  3: Set color mode, 1 arg + delay:
-  ST7789_COLMOD_18BIT,           //     18-bit color (262K colors)
+  ST7789_COLMOD_16BIT,           //     16-bit RGB565 – matches gdisplay pipeline
   10,                             //     10 ms delay
   ST7789_MADCTL,  1,             //  4: Memory access ctrl, 1 arg:
   0x00,                           //     Row addr/col addr, top to bottom refresh
@@ -141,7 +141,7 @@ driver_error_t *st7789_init(uint8_t chip, uint8_t orientation, uint8_t address) 
 	caps->orientation = st7789_set_orientation;
 	caps->touch_get = NULL;
 	caps->touch_cal = NULL;
-	caps->bytes_per_pixel = 3;
+	caps->bytes_per_pixel = 2;
 	caps->rdepth = 6;
 	caps->gdepth = 6;
 	caps->bdepth = 6;
@@ -239,29 +239,34 @@ void st7789_set_orientation(uint8_t m) {
 	uint8_t orientation = m & 3;
 	uint8_t madctl = 0;
 
-	caps->xstart = 0;
-	caps->ystart = 0;
-
 	switch (orientation) {
 	  case PORTRAIT:
 		madctl = (ST7789_MADCTL_MX | ST7789_MADCTL_MY | ST7789_MADCTL_RGB);
 		caps->width  = ST7789_WIDTH;
 		caps->height = ST7789_HEIGHT;
+		caps->xstart = 0;
+		caps->ystart = ST7789_ROW_OFFSET;
 		break;
 	  case LANDSCAPE:
 		madctl = (ST7789_MADCTL_MY | ST7789_MADCTL_MV | ST7789_MADCTL_RGB);
 		caps->width  = ST7789_HEIGHT;
 		caps->height = ST7789_WIDTH;
+		caps->xstart = ST7789_ROW_OFFSET;
+		caps->ystart = 0;
 		break;
 	  case PORTRAIT_FLIP:
 		madctl = (ST7789_MADCTL_RGB);
 		caps->width  = ST7789_WIDTH;
 		caps->height = ST7789_HEIGHT;
+		caps->xstart = 0;
+		caps->ystart = ST7789_ROW_OFFSET;
 		break;
 	  case LANDSCAPE_FLIP:
 		madctl = (ST7789_MADCTL_MX | ST7789_MADCTL_MV | ST7789_MADCTL_RGB);
 		caps->width  = ST7789_HEIGHT;
 		caps->height = ST7789_WIDTH;
+		caps->xstart = ST7789_ROW_OFFSET;
+		caps->ystart = 0;
 		break;
 	}
 
@@ -291,29 +296,30 @@ void st7789_color(uint16_t *color, uint32_t len) {
 	uint32_t buff_size = gdisplay_ll_get_buffer_size();
 	uint8_t *buffer;
 
-	// Convert 18-bit packed color to 3 bytes (R6, G6, B6)
-	// Color format: bits [17:12]=R, [11:6]=G, [5:0]=B
+	// Convert 18-bit packed input (bits [17:12]=R6,[11:6]=G6,[5:0]=B6) to
+	// 16-bit RGB565 sent as two big-endian bytes (MSB first) to the display.
 	uint32_t c = *(uint32_t *)color;
-	uint8_t r = ((c >> 12) & 0x3F) << 2;
-	uint8_t g = ((c >> 6)  & 0x3F) << 2;
-	uint8_t b = ((c)       & 0x3F) << 2;
+	uint8_t r5 = (c >> 13) & 0x1F;
+	uint8_t g6 = (c >> 6)  & 0x3F;
+	uint8_t b5 = (c >> 1)  & 0x1F;
+	uint16_t rgb565 = ((uint16_t)r5 << 11) | ((uint16_t)g6 << 5) | b5;
+	uint8_t hi = (rgb565 >> 8) & 0xFF;
+	uint8_t lo =  rgb565       & 0xFF;
 
 	int i;
 
 	if (len > 0) {
 		buffer = buff;
-		// Fill buffer with 3-byte pixel values
-		uint32_t pixels_in_buf = buff_size / 3;
+		// Fill buffer with 2-byte RGB565 pixel values
+		uint32_t pixels_in_buf = buff_size / 2;
 		for (i = 0; i < pixels_in_buf; i++) {
-			buffer[i * 3]     = r;
-			buffer[i * 3 + 1] = g;
-			buffer[i * 3 + 2] = b;
+			buffer[i * 2]     = hi;
+			buffer[i * 2 + 1] = lo;
 		}
 	} else {
 		// Single pixel write
-		buff[0] = r;
-		buff[1] = g;
-		buff[2] = b;
+		buff[0] = hi;
+		buff[1] = lo;
 		buffer = buff;
 	}
 
@@ -321,15 +327,15 @@ void st7789_color(uint16_t *color, uint32_t len) {
 	gpio_ll_pin_set(CONFIG_LUA_RTOS_GDISPLAY_CMD);
 	spi_ll_select(caps->device);
 	if (len > 0) {
-		uint32_t pixels_in_buf = buff_size / 3;
+		uint32_t pixels_in_buf = buff_size / 2;
 		uint32_t clen;
 		while (len) {
 			clen = (len > pixels_in_buf ? pixels_in_buf : len);
-			spi_ll_bulk_write(caps->device, clen * 3, buffer);
+			spi_ll_bulk_write(caps->device, clen * 2, buffer);
 			len = len - clen;
 		}
 	} else {
-		spi_ll_bulk_write(caps->device, 3, buffer);
+		spi_ll_bulk_write(caps->device, 2, buffer);
 	}
 	spi_ll_deselect(caps->device);
 
