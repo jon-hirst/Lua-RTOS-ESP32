@@ -241,28 +241,32 @@ void st7789_set_orientation(uint8_t m) {
 
 	switch (orientation) {
 	  case PORTRAIT:
-		madctl = (ST7789_MADCTL_MX | ST7789_MADCTL_MY | ST7789_MADCTL_RGB);
+		// 0°: MX compensates for physical column reversal on this panel
+		madctl = (ST7789_MADCTL_MX | ST7789_MADCTL_RGB);
 		caps->width  = ST7789_WIDTH;
 		caps->height = ST7789_HEIGHT;
 		caps->xstart = 0;
 		caps->ystart = ST7789_ROW_OFFSET;
 		break;
 	  case LANDSCAPE:
-		madctl = (ST7789_MADCTL_MY | ST7789_MADCTL_MV | ST7789_MADCTL_RGB);
+		// 90° CW: axis exchange (MV); no extra reversal needed
+		madctl = (ST7789_MADCTL_MV | ST7789_MADCTL_RGB);
 		caps->width  = ST7789_HEIGHT;
 		caps->height = ST7789_WIDTH;
 		caps->xstart = ST7789_ROW_OFFSET;
 		caps->ystart = 0;
 		break;
 	  case PORTRAIT_FLIP:
-		madctl = (ST7789_MADCTL_RGB);
+		// 180°: MX toggled off, MY added (180° from portrait)
+		madctl = (ST7789_MADCTL_MY | ST7789_MADCTL_RGB);
 		caps->width  = ST7789_WIDTH;
 		caps->height = ST7789_HEIGHT;
 		caps->xstart = 0;
 		caps->ystart = ST7789_ROW_OFFSET;
 		break;
 	  case LANDSCAPE_FLIP:
-		madctl = (ST7789_MADCTL_MX | ST7789_MADCTL_MV | ST7789_MADCTL_RGB);
+		// 270° CW: axis exchange (MV) + both reversals (MX, MY)
+		madctl = (ST7789_MADCTL_MX | ST7789_MADCTL_MY | ST7789_MADCTL_MV | ST7789_MADCTL_RGB);
 		caps->width  = ST7789_HEIGHT;
 		caps->height = ST7789_WIDTH;
 		caps->xstart = ST7789_ROW_OFFSET;
