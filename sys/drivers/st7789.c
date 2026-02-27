@@ -241,23 +241,25 @@ void st7789_set_orientation(uint8_t m) {
 
 	switch (orientation) {
 	  case PORTRAIT:
-		// 0°: MX compensates for physical column reversal on this panel
+		// 0°: MY=0 → gate 1..240 map to GRAM rows 0..239, no offset needed.
+		// MX compensates for physical column reversal on this panel.
 		madctl = (ST7789_MADCTL_MX | ST7789_MADCTL_RGB);
 		caps->width  = ST7789_WIDTH;
 		caps->height = ST7789_HEIGHT;
 		caps->xstart = 0;
-		caps->ystart = ST7789_ROW_OFFSET;
+		caps->ystart = 0;
 		break;
 	  case LANDSCAPE:
-		// 90° CW: axis exchange (MV); no extra reversal needed
+		// 90° CW: axis exchange (MV), MY=0 → no row-axis offset needed.
 		madctl = (ST7789_MADCTL_MV | ST7789_MADCTL_RGB);
 		caps->width  = ST7789_HEIGHT;
 		caps->height = ST7789_WIDTH;
-		caps->xstart = ST7789_ROW_OFFSET;
+		caps->xstart = 0;
 		caps->ystart = 0;
 		break;
 	  case PORTRAIT_FLIP:
-		// 180°: MX toggled off, MY added (180° from portrait)
+		// 180°: MY=1 reverses gate scan → gate 1 maps to GRAM row 319,
+		// gate 240 to row 80; the 240-pixel panel covers rows 80..319.
 		madctl = (ST7789_MADCTL_MY | ST7789_MADCTL_RGB);
 		caps->width  = ST7789_WIDTH;
 		caps->height = ST7789_HEIGHT;
@@ -265,7 +267,8 @@ void st7789_set_orientation(uint8_t m) {
 		caps->ystart = ST7789_ROW_OFFSET;
 		break;
 	  case LANDSCAPE_FLIP:
-		// 270° CW: axis exchange (MV) + both reversals (MX, MY)
+		// 270° CW: axis exchange (MV) + MY=1 → same row-axis reversal
+		// applies horizontally; 240 pixels cover GRAM rows 80..319.
 		madctl = (ST7789_MADCTL_MX | ST7789_MADCTL_MY | ST7789_MADCTL_MV | ST7789_MADCTL_RGB);
 		caps->width  = ST7789_HEIGHT;
 		caps->height = ST7789_WIDTH;
