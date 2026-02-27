@@ -126,7 +126,7 @@ __attribute__((weak)) void esp_clk_init(void)
     // Wait for UART TX to finish, otherwise some UART output will be lost
     // when switching APB frequency
     if (CONFIG_ESP_CONSOLE_UART_NUM >= 0) {
-        esp_rom_uart_tx_wait_idle(CONFIG_ESP_CONSOLE_UART_NUM);
+        esp_rom_output_tx_wait_idle(CONFIG_ESP_CONSOLE_UART_NUM);
     }
 
     if (res) {

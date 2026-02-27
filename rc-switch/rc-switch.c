@@ -53,7 +53,6 @@
 #include "rc-switch.h"
 #include <freertos/task.h>
 #include <sys/driver.h>
-#include "driver/timer.h"
 #include <sys/stat.h>
 #include <sys/status.h>
 #include <sys/delay.h>

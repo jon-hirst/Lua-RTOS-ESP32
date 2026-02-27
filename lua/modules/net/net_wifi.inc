@@ -50,7 +50,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <esp_wps.h>
-#include <esp_wpa2.h>
+#include <esp_eap_client.h>
 #include <sys/syslog.h>
 
 #if CONFIG_ESP32_WIFI_NVS_ENABLED
@@ -138,10 +138,10 @@ static int get_file_content(const char* filename, unsigned char **buffer, int* b
             memset(buf, 0, fileLen+1); //make sure certs are properly delimited
             unsigned long bytesRead = (int)fread(buf, sizeof(char), fileLen, fp);
             *buffer = buf;
-            // see esp_wpa2.h - The client_cert, private_key and private_key_passwd should be zero terminated.
+            // see esp_eap_client.h - The client_cert, private_key and private_key_passwd should be zero terminated.
             *buflen = bytesRead+1; // resp. https://gist.github.com/me-no-dev/2d2b51b17226f5e9c5a4d9a78bdc0720
             // The strlen() function does return the length of the certificate without the terminating 0x00.
-            // The esp_wifi_sta_wpa2_ent_set_ca_cert() does need the terminating 0x00, so you must add +1 .
+            // The esp_eap_client_set_ca_cert() does need the terminating 0x00, so you must add +1 .
             if ( bytesRead != fileLen ) {
                 rc = ESP_FAIL;
             }
@@ -190,8 +190,8 @@ static int lwifi_setup_enterprise(lua_State* L) {
     powersave = luaL_optinteger(L, 16, 0);
     channel = luaL_optinteger(L, 17, 0);
 
-    esp_wifi_sta_wpa2_ent_clear_ca_cert(); //make sure our memory is no longer referenced by the espressif layer
-    esp_wifi_sta_wpa2_ent_clear_cert_key(); //make sure our memory is no longer referenced by the espressif layer
+    esp_eap_client_clear_ca_cert(); //make sure our memory is no longer referenced by the espressif layer
+    esp_eap_client_clear_certificate_and_key(); //make sure our memory is no longer referenced by the espressif layer
 
     if (enterprise_cert_info.cacert) {
         free(enterprise_cert_info.cacert);
@@ -236,7 +236,7 @@ static int lwifi_setup_enterprise(lua_State* L) {
     }
     if (privkey_password != NULL && *privkey_password != 0) {
         enterprise_cert_info.privpwd = (unsigned char *)strdup(privkey_password);
-        // see esp_wpa2.h - The client_cert, private_key and private_key_passwd should be zero terminated.
+        // see esp_eap_client.h - The client_cert, private_key and private_key_passwd should be zero terminated.
         enterprise_cert_info.privpwd_len = strlen(privkey_password)+1;
     }
 

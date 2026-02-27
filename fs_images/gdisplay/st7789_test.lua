@@ -44,7 +44,9 @@ print(string.format("[ST7789] Screen size: %d x %d", W, H))
 
 -- ── 2. Display-on / display-off ────────────────────────────────────────────
 print("[ST7789] Test: display OFF / ON")
+gdisplay.on()
 gdisplay.clear(gdisplay.BLUE)
+
 gdisplay.setfont(gdisplay.FONT_DEFAULT)
 gdisplay.setcolor(gdisplay.WHITE)
 gdisplay.write(gdisplay.CENTER, gdisplay.CENTER, "Display ON/OFF test")

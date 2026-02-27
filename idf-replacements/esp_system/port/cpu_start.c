@@ -29,16 +29,13 @@
 
 #if CONFIG_IDF_TARGET_ESP32
 #include "soc/dport_reg.h"
-#include "esp32/rtc.h"
 #include "esp32/rom/cache.h"
 #include "esp32/rom/secure_boot.h"
 #elif CONFIG_IDF_TARGET_ESP32S2
-#include "esp32s2/rtc.h"
 #include "esp32s2/rom/cache.h"
 #include "esp32s2/rom/secure_boot.h"
 #include "esp32s2/memprot.h"
 #elif CONFIG_IDF_TARGET_ESP32S3
-#include "esp32s3/rtc.h"
 #include "esp32s3/rom/cache.h"
 #include "esp32s3/rom/secure_boot.h"
 #include "esp_memprot.h"
@@ -46,29 +43,26 @@
 #include "soc/system_reg.h"
 #include "esp32s3/rom/opi_flash.h"
 #elif CONFIG_IDF_TARGET_ESP32C3
-#include "esp32c3/rtc.h"
 #include "esp32c3/rom/cache.h"
 #include "esp32c3/rom/secure_boot.h"
 #include "esp_memprot.h"
 #elif CONFIG_IDF_TARGET_ESP32C6
-#include "esp32c6/rtc.h"
 #include "esp32c6/rom/cache.h"
 #include "esp_memprot.h"
 #elif CONFIG_IDF_TARGET_ESP32H2
-#include "esp32h2/rtc.h"
 #include "esp32h2/rom/cache.h"
 #include "esp_memprot.h"
 #elif CONFIG_IDF_TARGET_ESP32C2
-#include "esp32c2/rtc.h"
 #include "esp32c2/rom/cache.h"
 #include "esp32c2/rom/rtc.h"
 #include "esp32c2/rom/secure_boot.h"
 #elif CONFIG_IDF_TARGET_ESP32P4
-#include "esp32p4/rtc.h"
 #include "soc/hp_sys_clkrst_reg.h"
 #include "soc/interrupt_core0_reg.h"
 #include "soc/interrupt_core1_reg.h"
 #endif
+
+#include "esp_rtc_time.h"
 
 #include "esp_private/esp_mmu_map_private.h"
 #if CONFIG_SPIRAM
@@ -215,7 +209,7 @@ void IRAM_ATTR call_start_cpu1(void)
     esp_rom_install_channel_putc(2, NULL);
 #else // CONFIG_ESP_CONSOLE_NONE
     esp_rom_install_uart_printf();
-    esp_rom_uart_set_as_console(CONFIG_ESP_CONSOLE_UART_NUM);
+    esp_rom_output_set_as_console(CONFIG_ESP_CONSOLE_UART_NUM);
 #endif
 
 #if CONFIG_IDF_TARGET_ESP32
