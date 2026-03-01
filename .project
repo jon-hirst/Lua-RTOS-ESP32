@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>Lua-RTOS-ESP32-idf-5.2</name>
+	<name>Lua-RTOS-ESP32-v5.5</name>
 	<comment></comment>
 	<projects>
 		<project>esp-idf</project>
