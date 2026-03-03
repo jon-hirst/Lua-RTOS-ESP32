@@ -181,7 +181,7 @@ driver_error_t *pcf8563_setup(bool alarm_irq) {
         return error;
     }
     if ((error = i2c_attach(PCF8563_I2C_UNIT, I2C_MASTER, PCF8563_I2C_SPEED,
-                             0, 0, &i2c_device))) {
+                             0, PCF8563_I2C_ADDR, &i2c_device))) {
         return error;
     }
 

@@ -8,6 +8,7 @@ set(srcs
 	"common/sys.c"
 #	"modules/bluetooth/bluetooth.c"
 	"modules/hw/adc.c"
+	"modules/hw/axp2101.c"
 	"modules/hw/can.c"
 	"modules/hw/cpu.c"
 	"modules/hw/encoder.c"
@@ -118,6 +119,7 @@ idf_component_register(
 
 # Force linker to link lua modules enabled in build
 set(extra_link_flags "-u luaopen_adc")
+list(APPEND extra_link_flags "-u luaopen_axp2101")
 list(APPEND extra_link_flags "-u luaopen_can")
 list(APPEND extra_link_flags "-u luaopen_cpu")
 list(APPEND extra_link_flags "-u luaopen_encoder")

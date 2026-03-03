@@ -295,8 +295,13 @@ driver_error_t *i2c_pin_map(int unit, int sda, int scl) {
     i2c_lock(unit);
 
     if (i2c[unit].hdnl) {
+        /* Bus already running — error only if the pins would actually change. */
+        bool scl_conflict = (scl >= 0) && (scl != i2c[unit].scl);
+        bool sda_conflict = (sda >= 0) && (sda != i2c[unit].sda);
         i2c_unlock(unit);
-        return driver_error(I2C_DRIVER, I2C_ERR_CANNOT_CHANGE_PINMAP, NULL);
+        if (scl_conflict || sda_conflict)
+            return driver_error(I2C_DRIVER, I2C_ERR_CANNOT_CHANGE_PINMAP, NULL);
+        return NULL;
     }
 
     // Sanity checks on pinmap
@@ -412,6 +417,8 @@ driver_error_t *i2c_attach(int unit, int mode, int speed, int addr10_en, int add
             i2c_unlock(unit);
         	return driver_error(I2C_DRIVER, I2C_ERR_NOT_ENOUGH_MEMORY, NULL);
         }
+
+        i2c[unit].device[device].address = addr;
     }
 
     i2c[unit].mode = mode;
@@ -745,6 +752,8 @@ driver_error_t *i2c_write(int deviceid, uint8_t *data, int len) {
 
     if (err == ESP_ERR_TIMEOUT) {
     	return driver_error(I2C_DRIVER, I2C_ERR_TIMEOUT, NULL);
+    } else if (err != ESP_OK) {
+    	return driver_error(I2C_DRIVER, I2C_ERR_NOT_ACK, NULL);
     }
 
 	return NULL;
@@ -783,7 +792,6 @@ driver_error_t *i2c_multiple_write(int deviceid, uint8_t *d1, int s1, uint8_t *d
 driver_error_t *i2c_read(int deviceid, uint8_t *data, int len) {
     driver_error_t *error;
     esp_err_t err;
-    uint8_t min_read_buff[2];
 
     int unit = (deviceid & 0xff00) >> 8;
     int device = (deviceid & 0x00ff);
@@ -794,16 +802,13 @@ driver_error_t *i2c_read(int deviceid, uint8_t *data, int len) {
     }
 
     i2c_lock(unit);
-    if (len == 1) {
-    	err = i2c_master_receive(i2c[unit].device[device].hdnl, min_read_buff, sizeof(min_read_buff), 1000);
-    	*data = min_read_buff[0];
-    } else {
-    	err = i2c_master_receive(i2c[unit].device[device].hdnl, data, len, 1000);
-    }
+    err = i2c_master_receive(i2c[unit].device[device].hdnl, data, len, 1000);
     i2c_unlock(unit);
 
     if (err == ESP_ERR_TIMEOUT) {
     	return driver_error(I2C_DRIVER, I2C_ERR_TIMEOUT, NULL);
+    } else if (err != ESP_OK) {
+    	return driver_error(I2C_DRIVER, I2C_ERR_NOT_ACK, NULL);
     }
 
 	return NULL;
@@ -812,7 +817,6 @@ driver_error_t *i2c_read(int deviceid, uint8_t *data, int len) {
 driver_error_t *i2c_write_read(int deviceid, uint8_t *dataw, int lenw, uint8_t *datar, int lenr) {
     driver_error_t *error;
     esp_err_t err;
-    uint8_t min_read_buff[2];
 
     int unit = (deviceid & 0xff00) >> 8;
     int device = (deviceid & 0x00ff);
@@ -823,16 +827,13 @@ driver_error_t *i2c_write_read(int deviceid, uint8_t *dataw, int lenw, uint8_t *
     }
 
     i2c_lock(unit);
-    if (lenr == 1) {
-    	err = i2c_master_transmit_receive(i2c[unit].device[device].hdnl, dataw, lenw, min_read_buff, sizeof(min_read_buff), 1000);
-    	*datar = min_read_buff[0];
-    } else {
-    	err = i2c_master_transmit_receive(i2c[unit].device[device].hdnl, dataw, lenw, datar, lenr, 1000);
-    }
+    err = i2c_master_transmit_receive(i2c[unit].device[device].hdnl, dataw, lenw, datar, lenr, 1000);
     i2c_unlock(unit);
 
     if (err == ESP_ERR_TIMEOUT) {
     	return driver_error(I2C_DRIVER, I2C_ERR_TIMEOUT, NULL);
+    } else if (err != ESP_OK) {
+    	return driver_error(I2C_DRIVER, I2C_ERR_NOT_ACK, NULL);
     }
 
 	return NULL;

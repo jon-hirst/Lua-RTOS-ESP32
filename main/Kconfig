@@ -1760,6 +1760,10 @@ menu "Lua RTOS"
                bool "Include PCF8563 RTC module in build"
                default y
 
+            config LUA_RTOS_LUA_USE_AXP2101
+               bool "Include AXP2101 PMU module in build"
+               default y
+
             config LUA_RTOS_LUA_USE_RTC
                bool "Include RTC module in build"
                default y

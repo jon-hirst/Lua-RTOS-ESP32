@@ -28,6 +28,7 @@ set(srcs
 	"drivers/owire.c"
 	"drivers/pca9xxx.c"
 	"drivers/pcd8544.c"
+	"drivers/axp2101.c"
 	"drivers/pcf8563.c"
 	"drivers/power_bus.c"
 	"drivers/pwm.c"
