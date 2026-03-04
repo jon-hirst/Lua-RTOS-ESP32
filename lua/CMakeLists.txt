@@ -14,6 +14,7 @@ set(srcs
 	"modules/hw/encoder.c"
 	"modules/hw/gdisplay.c"
 	"modules/hw/i2c.c"
+	"modules/hw/i2s.c"
 	"modules/hw/neopixel.c"
 	"modules/hw/pcf8563.c"
 	"modules/hw/pio.c"
@@ -125,6 +126,7 @@ list(APPEND extra_link_flags "-u luaopen_cpu")
 list(APPEND extra_link_flags "-u luaopen_encoder")
 list(APPEND extra_link_flags "-u luaopen_gdisplay")
 list(APPEND extra_link_flags "-u luaopen_i2c")
+list(APPEND extra_link_flags "-u luaopen_i2s")
 list(APPEND extra_link_flags "-u luaopen_neopixel")
 list(APPEND extra_link_flags "-u luaopen_pcf8563")
 list(APPEND extra_link_flags "-u luaopen_pio")
