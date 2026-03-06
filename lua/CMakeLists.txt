@@ -11,6 +11,7 @@ set(srcs
 	"modules/hw/axp2101.c"
 	"modules/hw/bma423.c"
 	"modules/hw/can.c"
+	"modules/hw/ft6x36.c"
 	"modules/hw/drv2605.c"
 	"modules/hw/cpu.c"
 	"modules/hw/encoder.c"
@@ -124,6 +125,7 @@ idf_component_register(
 set(extra_link_flags "-u luaopen_adc")
 list(APPEND extra_link_flags "-u luaopen_axp2101")
 list(APPEND extra_link_flags "-u luaopen_bma423")
+list(APPEND extra_link_flags "-u luaopen_ft6x36")
 list(APPEND extra_link_flags "-u luaopen_drv2605")
 list(APPEND extra_link_flags "-u luaopen_can")
 list(APPEND extra_link_flags "-u luaopen_cpu")

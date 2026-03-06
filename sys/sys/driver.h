@@ -99,6 +99,7 @@ typedef void *device_t;
 #define AXP2101_DRIVER_ID  40
 #define DRV2605_DRIVER_ID  41
 #define BMA423_DRIVER_ID   42
+#define FT6X36_DRIVER_ID   43
 
 #define GPIO_DRIVER driver_get_by_name("gpio")
 #define UART_DRIVER driver_get_by_name("uart")
@@ -140,6 +141,7 @@ typedef void *device_t;
 #define AXP2101_DRIVER driver_get_by_name("axp2101")
 #define DRV2605_DRIVER driver_get_by_name("drv2605")
 #define BMA423_DRIVER  driver_get_by_name("bma423")
+#define FT6X36_DRIVER  driver_get_by_name("ft6x36")
 
 #define DRIVER_EXCEPTION_BASE(n) (n << 24)
 

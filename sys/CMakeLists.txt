@@ -31,6 +31,7 @@ set(srcs
 	"drivers/axp2101.c"
 	"drivers/bma423.c"
 	"drivers/drv2605.c"
+	"drivers/ft6x36.c"
 	"drivers/pcf8563.c"
 	"drivers/power_bus.c"
 	"drivers/pwm.c"

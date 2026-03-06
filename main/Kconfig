@@ -1701,6 +1701,10 @@ menu "Lua RTOS"
                bool "Include bma423 accelerometer module in build"
                default y
 
+            config LUA_RTOS_LUA_USE_FT6X36
+               bool "Include ft6x36 touch controller module in build"
+               default y
+
             config LUA_RTOS_LUA_USE_DRV2605
                bool "Include drv2605 haptic motor module in build"
                default y
