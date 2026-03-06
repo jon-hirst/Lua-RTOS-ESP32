@@ -1697,6 +1697,14 @@ menu "Lua RTOS"
                bool "Include cjson module in build"
                default y
 
+            config LUA_RTOS_LUA_USE_BMA423
+               bool "Include bma423 accelerometer module in build"
+               default y
+
+            config LUA_RTOS_LUA_USE_DRV2605
+               bool "Include drv2605 haptic motor module in build"
+               default y
+
             config LUA_RTOS_LUA_USE_EVENT
                bool "Include event module in build"
                default y

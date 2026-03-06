@@ -97,6 +97,8 @@ typedef void *device_t;
 #define HTTP_DRIVER_ID     38
 #define PCF8563_DRIVER_ID  39
 #define AXP2101_DRIVER_ID  40
+#define DRV2605_DRIVER_ID  41
+#define BMA423_DRIVER_ID   42
 
 #define GPIO_DRIVER driver_get_by_name("gpio")
 #define UART_DRIVER driver_get_by_name("uart")
@@ -136,6 +138,8 @@ typedef void *device_t;
 #define HTTP_DRIVER driver_get_by_name("http")
 #define PCF8563_DRIVER driver_get_by_name("pcf8563")
 #define AXP2101_DRIVER driver_get_by_name("axp2101")
+#define DRV2605_DRIVER driver_get_by_name("drv2605")
+#define BMA423_DRIVER  driver_get_by_name("bma423")
 
 #define DRIVER_EXCEPTION_BASE(n) (n << 24)
 
