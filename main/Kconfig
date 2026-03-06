@@ -1730,6 +1730,26 @@ menu "Lua RTOS"
                bool "Include ft6x36 touch controller module in build"
                default y
 
+            config LUA_RTOS_FT6X36_I2C_UNIT
+               int "FT6X36 I2C unit number"
+               depends on LUA_RTOS_LUA_USE_FT6X36
+               default 1
+
+            config LUA_RTOS_FT6X36_SDA_GPIO
+               int "FT6X36 SDA GPIO pin"
+               depends on LUA_RTOS_LUA_USE_FT6X36
+               default 39
+
+            config LUA_RTOS_FT6X36_SCL_GPIO
+               int "FT6X36 SCL GPIO pin"
+               depends on LUA_RTOS_LUA_USE_FT6X36
+               default 40
+
+            config LUA_RTOS_FT6X36_I2C_SPEED
+               int "FT6X36 I2C clock speed (Hz)"
+               depends on LUA_RTOS_LUA_USE_FT6X36
+               default 400000
+
             config LUA_RTOS_LUA_USE_DRV2605
                bool "Include drv2605 haptic motor module in build"
                default y

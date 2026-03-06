@@ -21,10 +21,10 @@
 /* ------------------------------------------------------------------ */
 
 #define FT6X36_I2C_ADDR   0x38
-#define FT6X36_I2C_UNIT   1
-#define FT6X36_SDA_GPIO   39
-#define FT6X36_SCL_GPIO   40
-#define FT6X36_I2C_SPEED  400000   /* 400 kHz */
+#define FT6X36_I2C_UNIT   CONFIG_LUA_RTOS_FT6X36_I2C_UNIT
+#define FT6X36_SDA_GPIO   CONFIG_LUA_RTOS_FT6X36_SDA_GPIO
+#define FT6X36_SCL_GPIO   CONFIG_LUA_RTOS_FT6X36_SCL_GPIO
+#define FT6X36_I2C_SPEED  CONFIG_LUA_RTOS_FT6X36_I2C_SPEED
 
 /* ------------------------------------------------------------------ */
 /* Register map                                                        */
