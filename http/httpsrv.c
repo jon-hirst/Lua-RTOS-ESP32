@@ -54,7 +54,7 @@
 #include <sys/path.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#include <linux/in6.h>
+//#include <linux/in6.h>
 
 #include <openssl/ssl.h>
 #include "mbedtls/platform.h"
