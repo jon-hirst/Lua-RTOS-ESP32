@@ -6,7 +6,7 @@
 --
 -- Hardware assumptions:
 --   BMA423 on I2C0 (SDA=GPIO10, SCL=GPIO11), INT1 → GPIO14
---   bma423conf.bin at /spiffs/bma423conf.bin
+--   bma423conf.bin at /bma423conf.bin
 
 -- -------------------------------------------------------------------------
 -- Helpers
@@ -118,8 +118,8 @@ print(string.format("  INT_STATUS_1 = 0x%02X", s1))
 -- -------------------------------------------------------------------------
 
 banner("Load Features Configuration")
-print("  Uploading /spiffs/bma423conf.bin ...")
-dev:loadconfig("/spiffs/bma423conf.bin")
+print("  Uploading /bma423conf.bin ...")
+dev:loadconfig("/bma423conf.bin")
 print("  OK — features engine initialised")
 
 -- -------------------------------------------------------------------------
