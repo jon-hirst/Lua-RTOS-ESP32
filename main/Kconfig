@@ -1701,6 +1701,31 @@ menu "Lua RTOS"
                bool "Include bma423 accelerometer module in build"
                default y
 
+            config LUA_RTOS_BMA423_I2C_UNIT
+               int "BMA423 I2C unit number"
+               depends on LUA_RTOS_LUA_USE_BMA423
+               default 0
+
+            config LUA_RTOS_BMA423_SDA_GPIO
+               int "BMA423 SDA GPIO pin"
+               depends on LUA_RTOS_LUA_USE_BMA423
+               default 10
+
+            config LUA_RTOS_BMA423_SCL_GPIO
+               int "BMA423 SCL GPIO pin"
+               depends on LUA_RTOS_LUA_USE_BMA423
+               default 11
+
+            config LUA_RTOS_BMA423_INT_GPIO
+               int "BMA423 interrupt GPIO pin (INT1)"
+               depends on LUA_RTOS_LUA_USE_BMA423
+               default 14
+
+            config LUA_RTOS_BMA423_I2C_SPEED
+               int "BMA423 I2C clock speed (Hz)"
+               depends on LUA_RTOS_LUA_USE_BMA423
+               default 400000
+
             config LUA_RTOS_LUA_USE_FT6X36
                bool "Include ft6x36 touch controller module in build"
                default y
@@ -1708,6 +1733,26 @@ menu "Lua RTOS"
             config LUA_RTOS_LUA_USE_DRV2605
                bool "Include drv2605 haptic motor module in build"
                default y
+
+            config LUA_RTOS_DRV2605_I2C_UNIT
+               int "DRV2605 I2C unit number"
+               depends on LUA_RTOS_LUA_USE_DRV2605
+               default 0
+
+            config LUA_RTOS_DRV2605_SDA_GPIO
+               int "DRV2605 SDA GPIO pin"
+               depends on LUA_RTOS_LUA_USE_DRV2605
+               default 10
+
+            config LUA_RTOS_DRV2605_SCL_GPIO
+               int "DRV2605 SCL GPIO pin"
+               depends on LUA_RTOS_LUA_USE_DRV2605
+               default 11
+
+            config LUA_RTOS_DRV2605_I2C_SPEED
+               int "DRV2605 I2C clock speed (Hz)"
+               depends on LUA_RTOS_LUA_USE_DRV2605
+               default 400000
 
             config LUA_RTOS_LUA_USE_EVENT
                bool "Include event module in build"
@@ -1776,9 +1821,54 @@ menu "Lua RTOS"
                bool "Include PCF8563 RTC module in build"
                default y
 
+            config LUA_RTOS_PCF8563_I2C_UNIT
+               int "PCF8563 I2C unit number"
+               depends on LUA_RTOS_LUA_USE_PCF8563
+               default 0
+
+            config LUA_RTOS_PCF8563_SDA_GPIO
+               int "PCF8563 SDA GPIO pin"
+               depends on LUA_RTOS_LUA_USE_PCF8563
+               default 10
+
+            config LUA_RTOS_PCF8563_SCL_GPIO
+               int "PCF8563 SCL GPIO pin"
+               depends on LUA_RTOS_LUA_USE_PCF8563
+               default 11
+
+            config LUA_RTOS_PCF8563_INT_GPIO
+               int "PCF8563 interrupt GPIO pin"
+               depends on LUA_RTOS_LUA_USE_PCF8563
+               default 17
+
+            config LUA_RTOS_PCF8563_I2C_SPEED
+               int "PCF8563 I2C clock speed (Hz)"
+               depends on LUA_RTOS_LUA_USE_PCF8563
+               default 400000
+
             config LUA_RTOS_LUA_USE_AXP2101
                bool "Include AXP2101 PMU module in build"
                default y
+
+            config LUA_RTOS_AXP2101_I2C_UNIT
+               int "AXP2101 I2C unit number"
+               depends on LUA_RTOS_LUA_USE_AXP2101
+               default 0
+
+            config LUA_RTOS_AXP2101_SDA_GPIO
+               int "AXP2101 SDA GPIO pin"
+               depends on LUA_RTOS_LUA_USE_AXP2101
+               default 10
+
+            config LUA_RTOS_AXP2101_SCL_GPIO
+               int "AXP2101 SCL GPIO pin"
+               depends on LUA_RTOS_LUA_USE_AXP2101
+               default 11
+
+            config LUA_RTOS_AXP2101_I2C_SPEED
+               int "AXP2101 I2C clock speed (Hz)"
+               depends on LUA_RTOS_LUA_USE_AXP2101
+               default 400000
 
             config LUA_RTOS_LUA_USE_RTC
                bool "Include RTC module in build"

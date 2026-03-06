@@ -46,11 +46,11 @@
 /* ------------------------------------------------------------------ */
 
 #define PCF8563_I2C_ADDR    0x51
-#define PCF8563_I2C_UNIT    0
-#define PCF8563_SDA_GPIO    10
-#define PCF8563_SCL_GPIO    11
-#define PCF8563_INT_GPIO    17
-#define PCF8563_I2C_SPEED   400000  /* 400 kHz */
+#define PCF8563_I2C_UNIT    CONFIG_LUA_RTOS_PCF8563_I2C_UNIT
+#define PCF8563_SDA_GPIO    CONFIG_LUA_RTOS_PCF8563_SDA_GPIO
+#define PCF8563_SCL_GPIO    CONFIG_LUA_RTOS_PCF8563_SCL_GPIO
+#define PCF8563_INT_GPIO    CONFIG_LUA_RTOS_PCF8563_INT_GPIO
+#define PCF8563_I2C_SPEED   CONFIG_LUA_RTOS_PCF8563_I2C_SPEED
 
 /* ------------------------------------------------------------------ */
 /* Register map                                                        */

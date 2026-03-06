@@ -23,10 +23,10 @@
 /* ------------------------------------------------------------------ */
 
 #define DRV2605_I2C_ADDR   0x5A
-#define DRV2605_I2C_UNIT   0
-#define DRV2605_SDA_GPIO   10
-#define DRV2605_SCL_GPIO   11
-#define DRV2605_I2C_SPEED  400000   /* 400 kHz */
+#define DRV2605_I2C_UNIT   CONFIG_LUA_RTOS_DRV2605_I2C_UNIT
+#define DRV2605_SDA_GPIO   CONFIG_LUA_RTOS_DRV2605_SDA_GPIO
+#define DRV2605_SCL_GPIO   CONFIG_LUA_RTOS_DRV2605_SCL_GPIO
+#define DRV2605_I2C_SPEED  CONFIG_LUA_RTOS_DRV2605_I2C_SPEED
 
 /* ------------------------------------------------------------------ */
 /* Register map                                                        */

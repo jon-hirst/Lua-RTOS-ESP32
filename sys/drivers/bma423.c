@@ -31,11 +31,11 @@
 /* Hardware configuration                                              */
 /* ------------------------------------------------------------------ */
 
-#define BMA423_I2C_UNIT    0
-#define BMA423_SDA_GPIO    10
-#define BMA423_SCL_GPIO    11
-#define BMA423_I2C_SPEED   400000  /* 400 kHz */
-#define BMA423_INT_GPIO    14      /* INT1 → GPIO14 */
+#define BMA423_I2C_UNIT    CONFIG_LUA_RTOS_BMA423_I2C_UNIT
+#define BMA423_SDA_GPIO    CONFIG_LUA_RTOS_BMA423_SDA_GPIO
+#define BMA423_SCL_GPIO    CONFIG_LUA_RTOS_BMA423_SCL_GPIO
+#define BMA423_I2C_SPEED   CONFIG_LUA_RTOS_BMA423_I2C_SPEED
+#define BMA423_INT_GPIO    CONFIG_LUA_RTOS_BMA423_INT_GPIO
 
 #define BMA423_CHIP_ID     0x13
 
