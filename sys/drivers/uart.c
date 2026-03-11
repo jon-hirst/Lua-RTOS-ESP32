@@ -150,7 +150,7 @@ struct uart uart[NUART] = {
 /*
  * This is for process deferred process for CONSOLE interrupt handler
  */
-static xQueueHandle deferred_q = NULL;
+static QueueHandle_t deferred_q = NULL;
 
 uint8_t console_raw = 0;
 

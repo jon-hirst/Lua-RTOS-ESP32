@@ -32,7 +32,7 @@ void IRAM_ATTR esp_restart_noos_dig(void)
 
     // make sure all the panic handler output is sent from UART FIFO
     if (CONFIG_ESP_CONSOLE_UART_NUM >= 0) {
-        esp_rom_uart_tx_wait_idle(CONFIG_ESP_CONSOLE_UART_NUM);
+        esp_rom_output_tx_wait_idle(CONFIG_ESP_CONSOLE_UART_NUM);
     }
 
 #if !CONFIG_APP_BUILD_TYPE_PURE_RAM_APP

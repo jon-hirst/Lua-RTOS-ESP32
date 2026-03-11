@@ -339,7 +339,7 @@ static owState_t TM_DS18B20_SetResolution(uint8_t dev, unsigned char *ROM, TM_DS
   TM_OneWire_WriteByte(dev, ONEWIRE_CMD_CPYSCRATCHPAD);
 
   if (ds_parasite_pwr) owdevice_pinpower(dev);
-  vTaskDelay(20 / portTICK_RATE_MS);
+  vTaskDelay(20 / portTICK_PERIOD_MS);
   if (ds_parasite_pwr) owdevice_input(dev);
 
   return ow_OK;
@@ -712,7 +712,7 @@ retry:
 	if (TM_DS18B20_Start(dev, (unsigned char *)&ow_devices[dev].roms[sens]) != ow_OK) {
         retries++;
         if (retries < 3) {
-            vTaskDelay(1 / portTICK_RATE_MS);
+            vTaskDelay(1 / portTICK_PERIOD_MS);
             goto retry;
         }
 
@@ -722,22 +722,22 @@ retry:
 
 	// Wait until measurement finished
 	if (ds_parasite_pwr) {
-		vTaskDelay(measure_time / portTICK_RATE_MS);
+		vTaskDelay(measure_time / portTICK_PERIOD_MS);
 		// Set owire pin to input mode
 		owdevice_input(dev);
 	}
 	else {
 		for (int mtime = 0; mtime < measure_time; mtime += 10) {
-			vTaskDelay(10 / portTICK_RATE_MS);
+			vTaskDelay(10 / portTICK_PERIOD_MS);
 			if (TM_OneWire_ReadBit(dev)) break;
 		}
 	}
-	vTaskDelay(10 / portTICK_RATE_MS);
+	vTaskDelay(10 / portTICK_PERIOD_MS);
 
 	if (!TM_OneWire_ReadBit(dev)) {
         retries++;
         if (retries < 3) {
-            vTaskDelay(1 / portTICK_RATE_MS);
+            vTaskDelay(1 / portTICK_PERIOD_MS);
             goto retry;
         }
         /* Timeout */
@@ -756,7 +756,7 @@ retry:
 		// Reading error
         retries++;
         if (retries < 3) {
-            vTaskDelay(1 / portTICK_RATE_MS);
+            vTaskDelay(1 / portTICK_PERIOD_MS);
             goto retry;
         }
 

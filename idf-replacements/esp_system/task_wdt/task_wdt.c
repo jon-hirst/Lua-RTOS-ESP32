@@ -280,7 +280,7 @@ static void unsubscribe_idle(uint32_t core_mask)
             ESP_ERROR_CHECK(esp_task_wdt_delete_user(core_user_handles[core_num]));
             core_user_handles[core_num] = NULL;
 #else // CONFIG_FREERTOS_SMP
-            TaskHandle_t idle_task_handle = xTaskGetIdleTaskHandleForCPU(core_num);
+            TaskHandle_t idle_task_handle = xTaskGetIdleTaskHandleForCore(core_num);
             assert(idle_task_handle);
             esp_deregister_freertos_idle_hook_for_cpu(idle_hook_cb, core_num);
             ESP_ERROR_CHECK(esp_task_wdt_delete(idle_task_handle));
@@ -307,7 +307,7 @@ static void subscribe_idle(uint32_t core_mask)
             ESP_ERROR_CHECK(esp_task_wdt_add_user((const char *)core_user_names[core_num], &core_user_handles[core_num]));
             ESP_ERROR_CHECK(esp_register_freertos_idle_hook_for_cpu(idle_hook_cb, core_num));
 #else // CONFIG_FREERTOS_SMP
-            TaskHandle_t idle_task_handle = xTaskGetIdleTaskHandleForCPU(core_num);
+            TaskHandle_t idle_task_handle = xTaskGetIdleTaskHandleForCore(core_num);
             assert(idle_task_handle);
             ESP_ERROR_CHECK(esp_task_wdt_add(idle_task_handle));
             ESP_ERROR_CHECK(esp_register_freertos_idle_hook_for_cpu(idle_hook_cb, core_num));
@@ -496,7 +496,7 @@ static void task_wdt_isr(void *arg)
 
     ESP_EARLY_LOGE(TAG, "%s", DRAM_STR("Tasks currently running:"));
     for (int x = 0; x < portNUM_PROCESSORS; x++) {
-        ESP_EARLY_LOGE(TAG, "CPU %d: %s", x, pcTaskGetName(xTaskGetCurrentTaskHandleForCPU(x)));
+        ESP_EARLY_LOGE(TAG, "CPU %d: %s", x, pcTaskGetName(xTaskGetCurrentTaskHandleForCore(x)));
     }
     portEXIT_CRITICAL_ISR(&spinlock);
 

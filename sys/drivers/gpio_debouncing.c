@@ -65,7 +65,11 @@ static uint32_t max_threshold = 0;
 void gpio_isr(void *args) {
     uint8_t pin = ((uint32_t)args);
 
+#if EXTERNAL_GPIO
     if ((debouncing->mask == 0) && (debouncing->mask_ext == 0)) {
+#else
+    if (debouncing->mask == 0) {
+#endif
         // Stop timer
     	tmr_ll_stop(GPIO_DEBOUNCING_TIMER);
     }
@@ -252,7 +256,7 @@ driver_error_t *gpio_debouncing_register(uint8_t pin, uint16_t threshold, gpio_d
             max_threshold = debouncing->threshold[pin];
         }
 
-        gpio_isr_attach(pin, gpio_isr, GPIO_PIN_INTR_ANYEDGE, (void *)((uint32_t)pin));
+        gpio_isr_attach(pin, gpio_isr, GPIO_INTR_ANYEDGE, (void *)((uint32_t)pin));
     } else {
         mtx_unlock(&debouncing->mtx);
 

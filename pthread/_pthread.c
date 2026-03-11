@@ -81,7 +81,7 @@ struct pthreadTaskArg {
     struct pthread *thread;                // Thread data
     void *(*pthread_function)(void *); // Thread start routine
     void *args;                         // Thread start routine arguments
-    xTaskHandle parent_task;            // Handle of parent task
+    TaskHandle_t parent_task;            // Handle of parent task
 };
 
 void pthreadTask(void *task_arguments);
@@ -208,7 +208,7 @@ int _pthread_create(pthread_t *thread, const pthread_attr_t *attr,
         cpu = tskNO_AFFINITY;
     }
 
-    xTaskHandle xCreatedTask; // Related task
+    TaskHandle_t xCreatedTask; // Related task
 
     if (cpu == tskNO_AFFINITY) {
         res = xTaskCreate(pthreadTask, "thread", cattr.stacksize, taskArgs,

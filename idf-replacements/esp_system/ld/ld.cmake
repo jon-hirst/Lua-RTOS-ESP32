@@ -41,6 +41,17 @@ function(preprocess_linker_file name_in name_out out_path)
     add_dependencies(${COMPONENT_LIB} "${name_out}")
 endfunction()
 
+# For the original ESP32, esp32.rom.redefined.ld provides uart_tx_wait_idle
+# (and other ROM symbol aliases) that esp32.rom.api.ld depends on but that are
+# not included anywhere in IDF v5.5's build system — include it explicitly here.
+if(target STREQUAL "esp32")
+    idf_build_get_property(idf_path IDF_PATH)
+    set(rom_redefined_ld "${idf_path}/components/esp_rom/esp32/ld/esp32.rom.redefined.ld")
+    if(EXISTS "${rom_redefined_ld}")
+        target_linker_script(${COMPONENT_LIB} INTERFACE "${rom_redefined_ld}")
+    endif()
+endif()
+
 # Generage memory.ld
 preprocess_linker_file("memory.ld.in" "memory.ld" ld_out_path)
 target_linker_script(${COMPONENT_LIB} INTERFACE "${ld_out_path}")

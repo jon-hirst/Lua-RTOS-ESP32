@@ -71,8 +71,8 @@ typedef struct {
     vfs_fd_local_storage_t *slave_local_storage;
     vfs_fd_local_storage_t *master_local_storage;
 
-    xQueueHandle slave_q;
-    xQueueHandle master_q;
+    QueueHandle_t slave_q;
+    QueueHandle_t master_q;
 } vfs_pty_t;
 
 // Register master functions

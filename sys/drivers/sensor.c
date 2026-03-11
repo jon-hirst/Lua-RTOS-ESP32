@@ -90,7 +90,7 @@ DRIVER_REGISTER_BEGIN(SENSOR,sensor,0,NULL,NULL);
     DRIVER_REGISTER_ERROR(SENSOR, sensor, SensorDetached, "sensor detached", SENSOR_ERR_DETACHED);
 DRIVER_REGISTER_END(SENSOR,sensor,0,NULL,NULL);
 
-static xQueueHandle queue = NULL;
+static QueueHandle_t queue = NULL;
 static TaskHandle_t task = NULL;
 static uint8_t attached = 0;
 static uint8_t counter = 0;
@@ -262,7 +262,7 @@ static driver_error_t *sensor_owire_setup(uint8_t interface, sensor_instance_t *
         if (dev < 0) {
             return driver_error(SENSOR_DRIVER, SENSOR_ERR_CANT_INIT, NULL);
         }
-        vTaskDelay(10 / portTICK_RATE_MS);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
         owdevice_input(dev);
         ow_devices_init(dev);
         unit->setup[interface].owire.owdevice = dev;
@@ -782,9 +782,9 @@ driver_error_t *sensor_register_callback(sensor_instance_t *unit, sensor_callbac
 }
 
 void sensor_queue_callbacks(sensor_instance_t *unit, uint8_t from, uint8_t to) {
-    portBASE_TYPE high_priority_task_awoken = 0;
+    BaseType_t high_priority_task_awoken = 0;
     sensor_deferred_data_t *data;
-    portBASE_TYPE yield = 0;
+    BaseType_t yield = 0;
 
     int i, j;
 

@@ -116,14 +116,14 @@ static const uint8_t ST7789_init_cmds[] = {
 static void st7789_reset(void) {
 #if CONFIG_LUA_RTOS_GDISPLAY_RESET == -1
 	gdisplay_ll_command(ST7789_SWRESET);
-	vTaskDelay(130 / portTICK_RATE_MS);
+	vTaskDelay(130 / portTICK_PERIOD_MS);
 #else
 	gpio_pin_set(CONFIG_LUA_RTOS_GDISPLAY_RESET);
-	vTaskDelay(10 / portTICK_RATE_MS);
+	vTaskDelay(10 / portTICK_PERIOD_MS);
 	gpio_pin_clr(CONFIG_LUA_RTOS_GDISPLAY_RESET);
-	vTaskDelay(50 / portTICK_RATE_MS);
+	vTaskDelay(50 / portTICK_PERIOD_MS);
 	gpio_pin_set(CONFIG_LUA_RTOS_GDISPLAY_RESET);
-	vTaskDelay(130 / portTICK_RATE_MS);
+	vTaskDelay(130 / portTICK_PERIOD_MS);
 #endif
 }
 

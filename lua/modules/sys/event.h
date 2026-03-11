@@ -63,7 +63,7 @@
 typedef struct {
     pthread_t thread;   // Thread id
     uint8_t is_waiting; // If 1 the caller is waiting for the termination of all subscribers
-    xQueueHandle q;     // Queue for sync listener thread with this event
+    QueueHandle_t q;     // Queue for sync listener thread with this event
 } listener_data_t;
 
 typedef struct {
@@ -71,7 +71,7 @@ typedef struct {
     struct list listeners; // List of listeners for this event
     uint8_t pending;       // Number of listeners that are processing the event
     uint8_t disabled;      // Is event disabled?
-    xQueueHandle q;        // This is used by the listener for inform the caller that event is processed
+    QueueHandle_t q;        // This is used by the listener for inform the caller that event is processed
 } event_userdata_t;
 
 #endif    /* LEVENT_H */

@@ -190,7 +190,7 @@ static void MCP23S17_task(void *arg) {
 // We process the interrupt as a deferred interrupt. We simply done a direct
 // task notification, and the interrupt will be processed later in a task.
 static void MCP23S17_isr(void* arg) {
-    portBASE_TYPE high_priority_task_awoken = 0;
+    BaseType_t high_priority_task_awoken = 0;
 
     vTaskNotifyGiveFromISR(MCP23S17->task, &high_priority_task_awoken);
     if (high_priority_task_awoken == pdTRUE) {

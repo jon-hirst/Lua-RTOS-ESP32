@@ -102,20 +102,13 @@ driver_error_t *BH1721FVC_presetup(sensor_instance_t *unit) {
 }
 
 driver_error_t *BH1721FVC_acquire(sensor_instance_t *unit, sensor_value_t *values) {
-	uint8_t i2c = unit->setup[0].i2c.id;
-	int16_t address = unit->setup[0].i2c.devid;
+	int i2c = unit->setup[0].i2c.id;
 	driver_error_t *error;
-
-	int transaction = I2C_TRANSACTION_INITIALIZER;
 	uint8_t buff[2];
 
 	// Power on
 	buff[0] = 0x01;
-
-	error = i2c_start(i2c, &transaction);if (error) return error;
-	error = i2c_write_address(i2c, &transaction, address, 0);if (error) return error;
-	error = i2c_write(i2c, &transaction, (char *)&buff, 1);if (error) return error;
-	error = i2c_stop(i2c, &transaction);if (error) return error;
+	error = i2c_write(i2c, buff, 1);if (error) return error;
 
 	delay(16);
 
@@ -127,30 +120,19 @@ driver_error_t *BH1721FVC_acquire(sensor_instance_t *unit, sensor_value_t *value
 		// H-Resolution Mode
 		buff[0] = 0b00010010;
 	} else if (unit->properties[0].integerd.value == 2) {
-		/// L-Resolution Mode
+		// L-Resolution Mode
 		buff[0] = 0b00010011;
 	}
-
-	error = i2c_start(i2c, &transaction);if (error) return error;
-	error = i2c_write_address(i2c, &transaction, address, 0);if (error) return error;
-	error = i2c_write(i2c, &transaction, (char *)&buff, 1);if (error) return error;
-	error = i2c_stop(i2c, &transaction);if (error) return error;
+	error = i2c_write(i2c, buff, 1);if (error) return error;
 
 	delay(180);
 
 	// Read
-	error = i2c_start(i2c, &transaction);if (error) return error;
-	error = i2c_write_address(i2c, &transaction, address, 1);if (error) return error;
-	error = i2c_read(i2c, &transaction, (char *)buff, 2);if (error) return error;
-	error = i2c_stop(i2c, &transaction);if (error) return error;
+	error = i2c_read(i2c, buff, 2);if (error) return error;
 
 	// Power down
 	buff[0] = 0x00;
-
-	error = i2c_start(i2c, &transaction);if (error) return error;
-	error = i2c_write_address(i2c, &transaction, address, 0);if (error) return error;
-	error = i2c_write(i2c, &transaction, (char *)&buff, 1);if (error) return error;
-	error = i2c_stop(i2c, &transaction);if (error) return error;
+	error = i2c_write(i2c, buff, 1);if (error) return error;
 
 	values[0].floatd.value = ((buff[0] << 8) + buff[1]) / 1.2;
 	values[0].floatd.value += unit->properties[1].floatd.value;

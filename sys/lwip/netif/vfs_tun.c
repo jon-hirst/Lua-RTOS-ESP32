@@ -75,8 +75,8 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 
-xQueueHandle tun_queue_rx = NULL;
-xQueueHandle tun_queue_tx = NULL;
+QueueHandle_t tun_queue_rx = NULL;
+QueueHandle_t tun_queue_tx = NULL;
 
 static int vfs_tun_open(const char *path, int flags, int mode);
 static ssize_t vfs_tun_write(int fd, const void *data, size_t size);

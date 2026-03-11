@@ -158,7 +158,7 @@ const uint8_t ttable[7][4] = {
 };
 #endif
 
-static xQueueHandle queue = NULL;
+static QueueHandle_t queue = NULL;
 static TaskHandle_t task = NULL;
 static uint8_t attached = 0;
 

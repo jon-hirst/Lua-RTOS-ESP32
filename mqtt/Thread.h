@@ -46,7 +46,7 @@
 	#elif __XTENSA__
 	  #include <sys/semaphore.h>
 	  #include <lwip/sys.h>
-	  typedef sem_t *sem_type;
+	  typedef sem_t sem_type;
 	#else
 	  #include <semaphore.h>
 	  typedef sem_t *sem_type;

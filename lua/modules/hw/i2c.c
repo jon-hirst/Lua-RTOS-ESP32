@@ -60,9 +60,17 @@
 
 extern i2c_t i2c[CPU_LAST_I2C + 1];
 
+#define I2C_WBUF_MAX 256
+
 typedef struct {
-    int unit;
-    int transaction;
+    int bus;        // raw I2C bus unit (0 or 1)
+    int mode;       // master/slave
+    int speed;      // bus speed in Hz
+    int deviceid;   // deviceid from i2c_attach (-1 if no device attached yet)
+    int reading;    // 1 = read mode, 0 = write mode
+    int transaction; // compat, unused
+    uint8_t wbuf[I2C_WBUF_MAX];
+    int wlen;
 } i2c_user_data_t;
 
 static int li2c_pins(lua_State* L) {
@@ -143,18 +151,12 @@ static int li2c_setpins(lua_State* L) {
 
 static int li2c_attach(lua_State* L) {
     int speed = -1;
-    driver_error_t *error;
-    int i2cdevice;
 
     int id = luaL_checkinteger(L, 1);
     int mode = luaL_checkinteger(L, 2);
 
     if (lua_gettop(L) == 3) {
         speed = luaL_checkinteger(L, 3);
-    }
-
-    if ((error = i2c_attach(id, mode, speed, 0, 0, &i2cdevice))) {
-        return luaL_driver_error(L, error);
     }
 
     // Allocate userdata
@@ -164,8 +166,13 @@ static int li2c_attach(lua_State* L) {
         return luaL_exception(L, I2C_ERR_NOT_ENOUGH_MEMORY);
     }
 
-    user_data->unit = i2cdevice;
+    user_data->bus = id;
+    user_data->mode = mode;
+    user_data->speed = speed;
+    user_data->deviceid = -1;
+    user_data->reading = 0;
     user_data->transaction = I2C_TRANSACTION_INITIALIZER;
+    user_data->wlen = 0;
 
     luaL_getmetatable(L, "i2c.trans");
     lua_setmetatable(L, -2);
@@ -178,43 +185,38 @@ static int li2c_detach(lua_State* L) {
     i2c_user_data_t *user_data = NULL;
 
     user_data = (i2c_user_data_t *) luaL_testudata(L, 1, "i2c.trans");
-    if (user_data) {
-        if ((error = i2c_detach(user_data->unit))) {
+    if (user_data && user_data->deviceid >= 0) {
+        if ((error = i2c_detach(user_data->deviceid))) {
             return luaL_driver_error(L, error);
         }
+        user_data->deviceid = -1;
     }
 
     return 0;
 }
 
 static int li2c_setspeed(lua_State* L) {
-    driver_error_t *error;
     i2c_user_data_t *user_data;
 
     // Get user data
     user_data = (i2c_user_data_t *) luaL_checkudata(L, 1, "i2c.trans");
     luaL_argcheck(L, user_data, 1, "i2c transaction expected");
 
-    int speed = luaL_checkinteger(L, 2);
-
-    if ((error = i2c_setspeed(user_data->unit, speed))) {
-        return luaL_driver_error(L, error);
-    }
+    user_data->speed = luaL_checkinteger(L, 2);
 
     return 0;
 }
 
 static int li2c_start(lua_State* L) {
-    driver_error_t *error;
     i2c_user_data_t *user_data;
 
     // Get user data
     user_data = (i2c_user_data_t *) luaL_checkudata(L, 1, "i2c.trans");
     luaL_argcheck(L, user_data, 1, "i2c transaction expected");
 
-    if ((error = i2c_start(user_data->unit, &user_data->transaction))) {
-        return luaL_driver_error(L, error);
-    }
+    // Reset write buffer for the new transaction
+    user_data->wlen = 0;
+    user_data->reading = 0;
 
     return 0;
 }
@@ -227,9 +229,14 @@ static int li2c_stop(lua_State* L) {
     user_data = (i2c_user_data_t *) luaL_checkudata(L, 1, "i2c.trans");
     luaL_argcheck(L, user_data, 1, "i2c transaction expected");
 
-    if ((error = i2c_stop(user_data->unit, &user_data->transaction))) {
-        return luaL_driver_error(L, error);
+    // Flush any buffered write data
+    if (!user_data->reading && user_data->wlen > 0 && user_data->deviceid >= 0) {
+        if ((error = i2c_write(user_data->deviceid, user_data->wbuf, user_data->wlen))) {
+            user_data->wlen = 0;
+            return luaL_driver_error(L, error);
+        }
     }
+    user_data->wlen = 0;
 
     return 0;
 }
@@ -250,10 +257,15 @@ static int li2c_address(lua_State* L) {
         read = 1;
     }
 
-    if ((error = i2c_write_address(user_data->unit, &user_data->transaction,
-            address, read))) {
+    // Attach (or retrieve existing) device at this address
+    int new_deviceid;
+    if ((error = i2c_attach(user_data->bus, user_data->mode, user_data->speed,
+            0, address, &new_deviceid))) {
         return luaL_driver_error(L, error);
     }
+    user_data->deviceid = new_deviceid;
+    user_data->reading = read;
+    user_data->wlen = 0;
 
     return 0;
 }
@@ -284,19 +296,18 @@ static int li2c_read(lua_State* L) {
         }
     }
 
-    char data[length]; // with length being a minimum of 1 and a maximum of MAX_DATA_BYTES
-
-    if ((error = i2c_read(user_data->unit, &user_data->transaction, data, length))) {
-        return luaL_driver_error(L, error);
+    if (user_data->deviceid < 0) {
+        return luaL_exception(L, I2C_ERR_INVALID_TRANSACTION);
     }
 
-    // We need to flush because we need to return read data now
-    if ((error = i2c_flush(user_data->unit, &user_data->transaction, 1))) {
+    uint8_t data[MAX_DATA_BYTES];
+
+    if ((error = i2c_read(user_data->deviceid, data, length))) {
         return luaL_driver_error(L, error);
     }
 
     if (asString == 1) {
-        lua_pushlstring(L, data, length);
+        lua_pushlstring(L, (char *)data, length);
         return 1;
     }
 
@@ -307,7 +318,6 @@ static int li2c_read(lua_State* L) {
 }
 
 static int li2c_write(lua_State* L) {
-    driver_error_t *error;
     i2c_user_data_t *user_data;
     int total = lua_gettop(L), i, j;
     char data;
@@ -321,18 +331,13 @@ static int li2c_write(lua_State* L) {
     for (i = 2; i <= total; i++) {
         if (lua_isnumber(L, i)) {
             data = (char) (luaL_checkinteger(L, i) & 0xff);
-
-            if ((error = i2c_write(user_data->unit, &user_data->transaction,
-                    &data, sizeof(data)))) {
-                return luaL_driver_error(L, error);
+            if (user_data->wlen < I2C_WBUF_MAX) {
+                user_data->wbuf[user_data->wlen++] = (uint8_t)data;
             }
         } else if (lua_isstring(L, i)) {
             sval = lua_tolstring(L, i, &len);
-            for (j = 0; j < len; j++) {
-                if ((error = i2c_write(user_data->unit, &user_data->transaction,
-                        (char *) &sval[j], sizeof(sval[j])))) {
-                    return luaL_driver_error(L, error);
-                }
+            for (j = 0; j < len && user_data->wlen < I2C_WBUF_MAX; j++) {
+                user_data->wbuf[user_data->wlen++] = (uint8_t)sval[j];
             }
         }
     }

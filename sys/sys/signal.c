@@ -52,7 +52,7 @@
 #include <sys/list.h>
 #include <sys/_signal.h>
 
-static xQueueHandle queue = NULL;
+static QueueHandle_t queue = NULL;
 
 static void signal_task(void *args) {
 	signal_data_t data;

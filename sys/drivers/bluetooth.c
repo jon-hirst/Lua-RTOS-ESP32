@@ -100,7 +100,7 @@ static uint8_t setup = 0;
 EventGroupHandle_t bt_event;
 
 // Queue and task to get data generated in the event handler
-static xQueueHandle queue = NULL;
+static QueueHandle_t queue = NULL;
 static TaskHandle_t task = NULL;
 
 bt_scan_callback_t callback;

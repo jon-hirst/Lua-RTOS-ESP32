@@ -234,7 +234,7 @@ static driver_error_t *i2c_flush_internal(int unit, int device,
     esp_err_t err = ESP_OK;
 
     // Flush
-    err = i2c_master_cmd_begin(unit, cmd, 1000 / portTICK_RATE_MS);
+    err = i2c_master_cmd_begin(unit, cmd, 1000 / portTICK_PERIOD_MS);
 
     i2c_cmd_link_delete(cmd);
     lstremove(&transactions, *transaction, 0);

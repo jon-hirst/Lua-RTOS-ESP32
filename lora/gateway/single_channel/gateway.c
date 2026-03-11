@@ -130,7 +130,7 @@ typedef struct {
 } lora_data_t;
 
 static int spi_device;                         // SPI device where phy is attached
-static xQueueHandle lora_rx_q = NULL;          // LoRa WAN data queue
+static QueueHandle_t lora_rx_q = NULL;          // LoRa WAN data queue
 static TaskHandle_t lora_ttn_up_task = NULL;   // TTN upload task
 static TaskHandle_t lora_ttn_down_task = NULL; // TTN download task
 
@@ -328,7 +328,7 @@ static void rx_mode() {
  * DIO ISR
  */
 static void dio_intr_handler(void* arg) {
-    portBASE_TYPE high_priority_task_awoken = 0;
+    BaseType_t high_priority_task_awoken = 0;
 
     // Get IRQ flags to decide what to do
     uint8_t flags = get_irq_flags();

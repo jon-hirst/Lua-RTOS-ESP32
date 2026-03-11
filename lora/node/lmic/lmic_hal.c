@@ -83,11 +83,11 @@ static int nestedInterrupts  = 0;
  #define evLMIC_SLEEP ( 1 << 0 )
 
 // This queue is for resume the os_runloop loop
-xQueueHandle lmicSleepEvent;
+QueueHandle_t lmicSleepEvent;
 
 // This queue is for send a command to LMIC for ensure that
 // this command is executed into the LMIC thread
-xQueueHandle lmicCommand;
+QueueHandle_t lmicCommand;
 
 /*
  * This is the LMIC interrupt handler. This interrupt is attached to the transceiver

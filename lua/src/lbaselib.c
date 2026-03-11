@@ -27,7 +27,7 @@ LUALIB_API void luaL_checkanytable (lua_State *L, int arg);
 // LUA RTOS END
 
 #if LUA_USE_ROTABLE && CONFIG_LUA_RTOS_LUA_USE_ROTABLE_CACHE && !CONFIG_LUA_RTOS_LUA_USE_JIT_BYTECODE_OPTIMIZER
-#include "lua/common/cache.h"
+#include "cache.h"
 #endif
 
 static int luaB_print (lua_State *L) {

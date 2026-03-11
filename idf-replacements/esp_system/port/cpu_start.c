@@ -67,8 +67,10 @@
 #include "esp_private/esp_mmu_map_private.h"
 #if CONFIG_SPIRAM
 #include "esp_psram.h"
-#include "esp_private/mmu_psram_flash.h"
 #include "esp_private/esp_psram_extram.h"
+#if SOC_SPIRAM_XIP_SUPPORTED
+#include "esp_private/mmu_psram_flash.h"
+#endif
 #endif
 
 #include "esp_private/spi_flash_os.h"
@@ -689,7 +691,7 @@ void IRAM_ATTR call_start_cpu0(void)
 #if ESP_ROM_UART_CLK_IS_XTAL
     clock_hz = esp_clk_xtal_freq(); // From esp32-s3 on, UART clock source is selected to XTAL in ROM
 #endif
-    esp_rom_uart_tx_wait_idle(CONFIG_ESP_CONSOLE_UART_NUM);
+    esp_rom_output_tx_wait_idle(CONFIG_ESP_CONSOLE_UART_NUM);
 
     // In a single thread mode, the freertos is not started yet. So don't have to use a critical section.
     int __DECLARE_RCC_ATOMIC_ENV __attribute__ ((unused)); // To avoid build errors about spinlock's __DECLARE_RCC_ATOMIC_ENV

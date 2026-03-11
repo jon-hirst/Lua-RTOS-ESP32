@@ -106,7 +106,7 @@ float IRAM_ATTR solve_third_order_newton_fast(float a, float a3, float b, float 
     float previous_unknown;
     float error;
 #ifndef CONFIG_IDF_TARGET_ESP32S3
-    float previous_error;
+    float __attribute__((unused)) previous_error;
 #endif
     uint32_t it = 0;
 

@@ -49,6 +49,8 @@
 #include "build_time.h"
 #include "build_commit.h"
 
+#include "esp_rom_sys.h"   /* esp_rom_printf - direct ROM UART, works before VFS */
+
 #if LUA_RTOS_INCLUDE_LUA
 #include "lua.h"
 #endif
@@ -184,11 +186,17 @@ void _sys_init() {
     #endif
 
     // Init important things for Lua RTOS
+    esp_rom_printf("DBG: _mount_init\r\n");
     _mount_init();
+    esp_rom_printf("DBG: _status_init\r\n");
     _status_init();
+    esp_rom_printf("DBG: _clock_init\r\n");
     _clock_init();
+    esp_rom_printf("DBG: _cpu_init\r\n");
     _cpu_init();
+    esp_rom_printf("DBG: _driver_init\r\n");
     _driver_init();
+    esp_rom_printf("DBG: _signal_init\r\n");
     _signal_init();
 
     status_set(STATUS_SYSCALLS_INITED, 0x00000000);
@@ -200,7 +208,9 @@ void _sys_init() {
     esp_vfs_lwip_sockets_register();
 	#endif
 
+    esp_rom_printf("DBG: vfs_tty_register\r\n");
     vfs_tty_register();
+    esp_rom_printf("DBG: vfs_tty_register done\r\n");
 
     printf("Booting Lua RTOS...\r\n");
     delay(100);

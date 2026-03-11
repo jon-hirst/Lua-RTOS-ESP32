@@ -181,7 +181,7 @@ static int remove_listener(lua_State* L, event_userdata_t *udata) {
 
     // If found, remove
     if (listener_id) {
-        vQueueDelete((xQueueHandle)clistener->q);
+        vQueueDelete((QueueHandle_t)clistener->q);
         lstremove(&udata->listeners, listener_id, 1);
     }
 
@@ -262,7 +262,7 @@ static int levent_disable( lua_State* L ) {
 
         // Unblock
         uint8_t d = 1;
-        xQueueSend((xQueueHandle)listener_data->q, &d, portMAX_DELAY);
+        xQueueSend((QueueHandle_t)listener_data->q, &d, portMAX_DELAY);
 
         mtx_lock(&udata->mtx);
 
@@ -330,7 +330,7 @@ static int levent_done( lua_State* L ) {
         mtx_unlock(&udata->mtx);
 
         uint8_t d = 0;
-        xQueueSend((xQueueHandle)udata->q, &d, portMAX_DELAY);
+        xQueueSend((QueueHandle_t)udata->q, &d, portMAX_DELAY);
 
         mtx_lock(&udata->mtx);
     }
@@ -396,7 +396,7 @@ static int levent_broadcast( lua_State* L ) {
 
         // Unblock
         uint8_t d = 0;
-        xQueueSend((xQueueHandle)clistener->q, &d, portMAX_DELAY);
+        xQueueSend((QueueHandle_t)clistener->q, &d, portMAX_DELAY);
 
         mtx_lock(&udata->mtx);
 
@@ -439,13 +439,13 @@ static int levent_ins_gc (lua_State *L) {
                 break;
             }
 
-            vQueueDelete((xQueueHandle)listener_data->q);
+            vQueueDelete((QueueHandle_t)listener_data->q);
 
             lstremove(&udata->listeners, idx, 1);
             idx = lstnext(&udata->listeners, idx);
         }
 
-        vQueueDelete((xQueueHandle)udata->q);
+        vQueueDelete((QueueHandle_t)udata->q);
 
         mtx_destroy(&udata->mtx);
         lstdestroy(&udata->listeners, 0);

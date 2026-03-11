@@ -11,6 +11,8 @@
 
 #include "luartos.h"
 
+#if CONFIG_LUA_RTOS_LUA_USE_DRV2605
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -277,3 +279,5 @@ driver_error_t *drv2605_get_status(uint8_t *status) {
     }
     return drv2605_read_reg(REG_STATUS, status);
 }
+
+#endif /* CONFIG_LUA_RTOS_LUA_USE_DRV2605 */

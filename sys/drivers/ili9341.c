@@ -284,14 +284,14 @@ driver_error_t *ili9341_init(uint8_t chip, uint8_t orientation, uint8_t address)
 	// Reset
 #if CONFIG_LUA_RTOS_GDISPLAY_RESET == -1
 	gdisplay_ll_command(ST7735_SWRESET);
-	vTaskDelay(130 / portTICK_RATE_MS);
+	vTaskDelay(130 / portTICK_PERIOD_MS);
 #else
 	gpio_pin_set(CONFIG_LUA_RTOS_GDISPLAY_RESET);
-	vTaskDelay(100 / portTICK_RATE_MS);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 	gpio_pin_clr(CONFIG_LUA_RTOS_GDISPLAY_RESET);
-	vTaskDelay(100 / portTICK_RATE_MS);
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 	gpio_pin_set(CONFIG_LUA_RTOS_GDISPLAY_RESET);
-	vTaskDelay(200 / portTICK_RATE_MS);
+	vTaskDelay(200 / portTICK_PERIOD_MS);
 #endif
 
 	// Init display

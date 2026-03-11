@@ -76,7 +76,7 @@ DRIVER_REGISTER_END(TIMER,timer,0,tmr_init,NULL);
 
 typedef struct {
 	tmr_t timer[CPU_LAST_TIMER + 1]; ///< Timer array with needed information about timers
-	xQueueHandle queue;			     ///< Alarm queue for deferred callbacks
+	QueueHandle_t queue;			     ///< Alarm queue for deferred callbacks
 	TaskHandle_t task;			     ///< Task handle for deferred callbacks
 } tmr_driver_t;
 

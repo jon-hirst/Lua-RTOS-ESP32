@@ -101,8 +101,8 @@
 #define IFNAME0 't'
 #define IFNAME1 'u'
 
-extern xQueueHandle tun_queue_rx;
-extern xQueueHandle tun_queue_tx;
+extern QueueHandle_t tun_queue_rx;
+extern QueueHandle_t tun_queue_tx;
 
 static struct netif *tun_netif = NULL;
 static TaskHandle_t xtask = 0; // the task itself

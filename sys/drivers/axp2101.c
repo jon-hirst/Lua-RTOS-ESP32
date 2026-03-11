@@ -12,6 +12,8 @@
 
 #include "luartos.h"
 
+#if CONFIG_LUA_RTOS_LUA_USE_AXP2101
+
 #include <string.h>
 #include <stdbool.h>
 
@@ -1140,3 +1142,5 @@ driver_error_t *axp2101_irq_clear_status(void)
     if ((error = reg_write(REG_INTSTS2, 0xFF))) return error;
     return reg_write(REG_INTSTS3, 0xFF);
 }
+
+#endif /* CONFIG_LUA_RTOS_LUA_USE_AXP2101 */

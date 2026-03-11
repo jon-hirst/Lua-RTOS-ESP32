@@ -142,11 +142,11 @@ struct pthread_clean {
 struct pthread {
     struct list clean_list;
     sig_t signals[PTHREAD_NSIG];
-    xTaskHandle task;
+    TaskHandle_t task;
     uint8_t is_delayed;
     uint8_t delay_interrupted;
     uint8_t active;
-    xTaskHandle joined_task;
+    TaskHandle_t joined_task;
     void *res;
     pthread_attr_t attr;
 };

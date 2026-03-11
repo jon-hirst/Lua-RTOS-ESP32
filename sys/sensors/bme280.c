@@ -2254,7 +2254,7 @@ s8 BME280_I2C_bus_read(u8 dev_addr, u8 reg_addr, u8 *reg_data, u8 cnt)
 //------------------------------
 void BME280_delay_msek(u32 msek)
 {
-    vTaskDelay(msek / portTICK_RATE_MS);
+    vTaskDelay(msek / portTICK_PERIOD_MS);
 }
 
 //--------------------------------------------------------------

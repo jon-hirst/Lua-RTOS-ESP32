@@ -227,7 +227,7 @@ void console_io_write(char c) {
 }
 
 #ifndef CONFIG_IDF_TARGET_ESP32S3
-static int vfs_tty_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout) {
+static int __attribute__((unused)) vfs_tty_select(int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, struct timeval *timeout) {
     return vfs_generic_select(local_storage, tty_has_bytes, tty_free, maxfdp1, readset, writeset, exceptset, timeout);
 }
 #endif
@@ -299,7 +299,7 @@ static int vfs_tty_close(int fd) {
 }
 
 #ifndef CONFIG_IDF_TARGET_ESP32S3
-static ssize_t vfs_tty_writev(int fd, const struct iovec *iov, int iovcnt) {
+static ssize_t __attribute__((unused)) vfs_tty_writev(int fd, const struct iovec *iov, int iovcnt) {
 	int ret;
 
 #ifdef CONSOLE_USB_SERIAL_JTAG

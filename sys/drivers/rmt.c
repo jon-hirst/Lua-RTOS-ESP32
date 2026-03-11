@@ -156,7 +156,7 @@ static void rmt_prepare_for_tx(uint8_t channel) {
         false, false
     );
 
-    gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[pin], PIN_FUNC_GPIO);
+    gpio_ll_func_sel(&GPIO, pin, PIN_FUNC_GPIO);
 }
 
 static void rmt_prepare_for_rx(uint8_t channel) {
@@ -180,7 +180,7 @@ static void rmt_prepare_for_rx(uint8_t channel) {
         false
 	);
 
-    gpio_hal_iomux_func_sel(GPIO_PIN_MUX_REG[pin], PIN_FUNC_GPIO);
+    gpio_ll_func_sel(&GPIO, pin, PIN_FUNC_GPIO);
 }
 
 static void switch_rx(int channel, void *args) {

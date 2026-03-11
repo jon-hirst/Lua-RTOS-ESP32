@@ -47,7 +47,7 @@ typedef struct {
 } pio_intr_data_t;
 
 static void pio_intr_handler(void* arg) {
-    portBASE_TYPE high_priority_task_awoken = 0;
+    BaseType_t high_priority_task_awoken = 0;
     pio_intr_t *args = (pio_intr_t *)arg;
     uint32_t data = 0;
 

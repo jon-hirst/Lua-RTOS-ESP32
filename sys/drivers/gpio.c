@@ -163,7 +163,7 @@ driver_error_t *gpio_pin_output(uint8_t pin) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN_DIRECTION, NULL);
         }
 
-        io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+        io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_OUTPUT;
         io_conf.pin_bit_mask = (GPIO_BIT_MASK << pin);
         io_conf.pull_down_en = 0;
@@ -202,7 +202,7 @@ driver_error_t *gpio_pin_input(uint8_t pin) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN_DIRECTION, NULL);
         }
 
-        io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+        io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_INPUT;
         io_conf.pin_bit_mask = (GPIO_BIT_MASK << pin);
         io_conf.pull_down_en = 0;
@@ -508,7 +508,7 @@ driver_error_t *gpio_pin_input_mask(uint8_t port, gpio_pin_mask_t pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN_DIRECTION, NULL);
         }
 
-        io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+        io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_INPUT;
         io_conf.pin_bit_mask = pinmask;
         io_conf.pull_down_en = 0;
@@ -549,7 +549,7 @@ driver_error_t *gpio_pin_output_mask(uint8_t port, gpio_pin_mask_t pinmask) {
             return driver_error(GPIO_DRIVER, GPIO_ERR_INVALID_PIN_DIRECTION, NULL);
         }
 
-        io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+        io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_OUTPUT;
         io_conf.pin_bit_mask = pinmask;
         io_conf.pull_down_en = 0;
