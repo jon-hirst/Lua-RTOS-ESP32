@@ -28,11 +28,6 @@ set(srcs
 	"drivers/owire.c"
 	"drivers/pca9xxx.c"
 	"drivers/pcd8544.c"
-	"drivers/axp2101.c"
-	"drivers/bma423.c"
-	"drivers/drv2605.c"
-	"drivers/ft6x36.c"
-	"drivers/pcf8563.c"
 	"drivers/power_bus.c"
 	"drivers/pwm.c"
 	"drivers/rmt.c"
@@ -155,6 +150,22 @@ set(include_dirs
 set(fragments
     "iram.lf"
 )	   
+
+if(CONFIG_LUA_RTOS_LUA_USE_BMA423)
+    list(APPEND srcs "drivers/bma423.c")
+endif()
+if(CONFIG_LUA_RTOS_LUA_USE_AXP2101)
+    list(APPEND srcs "drivers/axp2101.c")
+endif()
+if(CONFIG_LUA_RTOS_LUA_USE_DRV2605)
+    list(APPEND srcs "drivers/drv2605.c")
+endif()
+if(CONFIG_LUA_RTOS_LUA_USE_FT6X36)
+    list(APPEND srcs "drivers/ft6x36.c")
+endif()
+if(CONFIG_LUA_RTOS_LUA_USE_PCF8563)
+    list(APPEND srcs "drivers/pcf8563.c")
+endif()
 
 idf_component_register(
 	SRCS "${srcs}"

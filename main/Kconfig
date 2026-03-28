@@ -648,22 +648,22 @@ menu "Lua RTOS"
 
          config LUA_RTOS_I2C0_SCL
             int "I2C0 SCL"
-            range 0 48
+            range -1 48
             default 21
 
          config LUA_RTOS_I2C0_SDA
             int "I2C0 SDA"
-            range 0 48
+            range -1 48
             default 22
 
          config LUA_RTOS_I2C1_SCL
             int "I2C1 SCL"
-            range 0 48
+            range -1 48
             default 32
 
          config LUA_RTOS_I2C1_SDA
             int "I2C1 SDA"
-            range 0 48
+            range -1 48
             default 33
       endmenu
 
@@ -682,12 +682,12 @@ menu "Lua RTOS"
 
          config LUA_RTOS_SPI2_MOSI
             int "SPI2 MOSI"
-            range 0 48
+            range -1 48
             default 13
 
          config LUA_RTOS_SPI2_CLK
             int "SPI2 CLK"
-            range 0 48
+            range -1 48
             default 14
 
          config LUA_RTOS_SPI3_CS
@@ -699,49 +699,49 @@ menu "Lua RTOS"
 
          config LUA_RTOS_SPI3_MISO
             int "SPI3 MISO"
-            range 0 48
+            range -1 48
             default 19
 
          config LUA_RTOS_SPI3_MOSI
             int "SPI3 MOSI"
-            range 0 48
+            range -1 48
             default 23
 
          config LUA_RTOS_SPI3_CLK
             int "SPI3 CLK"
-            range 0 48
+            range -1 48
             default 18
       endmenu
 
       menu "UART pin map"
          config LUA_RTOS_UART0_RX
             int "UART0 RX"
-            range 0 48
+            range -1 48
             default 3
 
          config LUA_RTOS_UART0_TX
             int "UART0 TX"
-            range 0 48
+            range -1 48
             default 1
 
          config LUA_RTOS_UART1_RX
             int "UART1 RX"
-            range 0 48
+            range -1 48
             default 9
 
          config LUA_RTOS_UART1_TX
             int "UART1 TX"
-            range 0 48
+            range -1 48
             default 10
 
          config LUA_RTOS_UART2_RX
             int "UART2 RX"
-            range 0 48
+            range -1 48
             default 16
 
          config LUA_RTOS_UART2_TX
             int "UART2 TX"
-            range 0 48
+            range -1 48
             default 17
       endmenu
 
