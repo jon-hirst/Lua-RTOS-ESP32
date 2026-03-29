@@ -33,13 +33,16 @@
 #include <ctype.h>
 #include <math.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcpp"
 #include "driver/dac.h"
+#pragma GCC diagnostic pop
+// sigmadelta.h is no longer included; sdm.h is included via soundgen.h
 #include "soc/i2s_reg.h"
-#include "driver/periph_ctrl.h"
+#include "hal/clk_gate_ll.h"
 #include "soc/rtc.h"
 #include <soc/sens_reg.h>
 #include "esp_log.h"
-#include "driver/sigmadelta.h"
 
 
 #include "soundgen.h"
@@ -462,7 +465,8 @@ SoundGenerator::SoundGenerator(int sampleRate, gpio_num_t gpio, SoundGenMethod g
     m_DMAChain(nullptr),
     m_genMethod(genMethod),
     m_initDone(false),
-    m_timerHandle(nullptr)
+    m_timerHandle(nullptr),
+    m_sdmHandle(nullptr)
 {
 }
 
@@ -473,7 +477,7 @@ SoundGenerator::~SoundGenerator()
     
   if (m_isr_handle) {
     // cleanup DAC mode
-    periph_module_disable(PERIPH_I2S0_MODULE);
+    periph_ll_disable_clk_set_rst(PERIPH_I2S0_MODULE);
     esp_intr_free(m_isr_handle);
     for (int i = 0; i < 2; ++i)
       heap_caps_free(m_sampleBuffer[i]);
@@ -528,7 +532,7 @@ void SoundGenerator::dac_init()
   m_DMAChain[1].sosf = 1;
   m_DMAChain[1].qe.stqe_next = (lldesc_t *) m_DMAChain; // closes DMA chain
     
-  periph_module_enable(PERIPH_I2S0_MODULE);
+  periph_ll_enable_clk_clear_rst(PERIPH_I2S0_MODULE);
 
   // Initialize I2S device
   I2S0.conf.tx_reset                     = 1;
@@ -580,19 +584,19 @@ void SoundGenerator::dac_init()
   I2S0.conf.tx_start  = 1;
 
   dac_i2s_enable();
-  dac_output_enable(m_gpio == GPIO_NUM_25 ? DAC_CHANNEL_1 : DAC_CHANNEL_2);
+  dac_output_enable(m_gpio == GPIO_NUM_25 ? DAC_CHAN_0 : DAC_CHAN_1);
   #endif
 }
 
 
 void SoundGenerator::sigmadelta_init()
 {
-  sigmadelta_config_t sigmadelta_cfg;
-  sigmadelta_cfg.channel             = SIGMADELTA_CHANNEL_0;
-  sigmadelta_cfg.sigmadelta_prescale = 10;
-  sigmadelta_cfg.sigmadelta_duty     = 0;
-  sigmadelta_cfg.sigmadelta_gpio     = m_gpio;
-  sigmadelta_config(&sigmadelta_cfg);
+  sdm_config_t sdmCfg = {};
+  sdmCfg.gpio_num      = m_gpio;
+  sdmCfg.clk_src       = SDM_CLK_SRC_DEFAULT;
+  sdmCfg.sample_rate_hz = 312500;
+  sdm_new_channel(&sdmCfg, &m_sdmHandle);
+  sdm_channel_enable(m_sdmHandle);
 
   esp_timer_create_args_t args = { };
   args.callback        = timerHandler;
@@ -770,7 +774,7 @@ void SoundGenerator::timerHandler(void * args)
 {
   auto soundGenerator = (SoundGenerator *) args;
 
-  sigmadelta_set_duty(SIGMADELTA_CHANNEL_0, soundGenerator->getSample());
+  sdm_channel_set_pulse_density(soundGenerator->m_sdmHandle, soundGenerator->getSample());
 }
 
 

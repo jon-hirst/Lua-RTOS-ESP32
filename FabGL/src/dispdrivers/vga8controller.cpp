@@ -35,9 +35,9 @@
 
 #include "soc/i2s_struct.h"
 #include "soc/i2s_reg.h"
-#include "driver/periph_ctrl.h"
 #include "soc/rtc.h"
-#include "esp_spi_flash.h"
+#include "spi_flash_mmap.h"
+#include "esp_private/cache_utils.h"
 #include "esp_heap_caps.h"
 
 #include "fabutils.h"

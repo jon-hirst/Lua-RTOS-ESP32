@@ -176,7 +176,8 @@ Terminal::Terminal()
     m_mutex(nullptr),
     m_soundGenerator(nullptr),
     m_sprites(nullptr),
-    m_spritesCount(0)
+    m_spritesCount(0),
+    m_adcHandle(nullptr)
 {
   if (s_activeTerminal == nullptr)
     s_activeTerminal = this;
@@ -191,6 +192,11 @@ Terminal::~Terminal()
 
   if (m_soundGenerator)
     delete m_soundGenerator;
+
+  if (m_adcHandle) {
+    adc_oneshot_del_unit(m_adcHandle);
+    m_adcHandle = nullptr;
+  }
 
   freeSprites();
 }
@@ -653,7 +659,7 @@ void Terminal::loadFont(FontInfo const * font)
     if (m_glyphsBuffer.map)
       break;
     // no enough memory, reduce m_rows
-    --m_rows;
+    m_rows = m_rows - 1;
   }
   m_glyphsBuffer.columns      = m_columns;
   m_glyphsBuffer.rows         = m_rows;
@@ -3696,14 +3702,18 @@ void Terminal::consumeFabGLSeq()
     //    GPIONUM (text)     : '32'...'39'
     case FABGLEXTX_SETUPADC:
     {
-      auto width   = (adc_bits_width_t) (extGetIntParam() - 9);
+      auto bitwidth = (adc_bitwidth_t) extGetIntParam();
       extGetByteParam();  // ';'
-      auto atten   = (adc_atten_t) extGetIntParam();
+      auto atten    = (adc_atten_t) extGetIntParam();
       extGetByteParam();  // ';'
-      auto channel = ADC1_GPIO2Channel((gpio_num_t)extGetIntParam());
+      auto channel  = ADC1_GPIO2Channel((gpio_num_t)extGetIntParam());
       extGetByteParam();  // FABGLEXT_ENDCODE
-      adc1_config_width(width);
-      adc1_config_channel_atten(channel, atten);
+      if (!m_adcHandle) {
+        adc_oneshot_unit_init_cfg_t initCfg = { .unit_id = ADC_UNIT_1, .clk_src = (adc_oneshot_clk_src_t)0, .ulp_mode = ADC_ULP_MODE_DISABLE };
+        adc_oneshot_new_unit(&initCfg, &m_adcHandle);
+      }
+      adc_oneshot_chan_cfg_t chanCfg = { .atten = atten, .bitwidth = bitwidth };
+      adc_oneshot_config_channel(m_adcHandle, channel, &chanCfg);
       break;
     }
 
@@ -3724,7 +3734,9 @@ void Terminal::consumeFabGLSeq()
     //       '0'
     case FABGLEXTX_READADC:
     {
-      auto val = adc1_get_raw(ADC1_GPIO2Channel((gpio_num_t)extGetIntParam()));
+      int val = 0;
+      if (m_adcHandle)
+        adc_oneshot_read(m_adcHandle, ADC1_GPIO2Channel((gpio_num_t)extGetIntParam()), &val);
       extGetByteParam(); // FABGLEXT_ENDCODE
       send(FABGLEXT_REPLYCODE);
       send(toupper(digit2hex((val & 0xF00) >> 8)));

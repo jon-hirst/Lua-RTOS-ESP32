@@ -41,7 +41,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
-#include <driver/adc.h>
+#include <esp_adc/adc_oneshot.h>
+#include <driver/gpio.h>
 #include <esp_system.h>
 #include "sdmmc_cmd.h"
 #include "soc/frc_timer_reg.h"
@@ -282,6 +283,7 @@ struct Rect {
   Rect() : X1(0), Y1(0), X2(0), Y2(0) { }
   Rect(int X1_, int Y1_, int X2_, int Y2_) : X1(X1_), Y1(Y1_), X2(X2_), Y2(Y2_) { }
   Rect(Rect const & r) { X1 = r.X1; Y1 = r.Y1; X2 = r.X2; Y2 = r.Y2; }
+  Rect & operator=(Rect const &) = default;
 
   bool operator==(Rect const & r)                { return X1 == r.X1 && Y1 == r.Y1 && X2 == r.X2 && Y2 == r.Y2; }
   bool operator!=(Rect const & r)                { return X1 != r.X1 || Y1 != r.Y1 || X2 != r.X2 || Y2 != r.Y2; }
@@ -476,7 +478,7 @@ template <typename ...Params>
 struct Delegate {
 
   // empty constructor
-  Delegate() : m_func(nullptr) {
+  Delegate() : m_closure(nullptr), m_func(nullptr) {
   }
 
   // denied copy
@@ -1073,7 +1075,7 @@ inline __attribute__((always_inline)) uint32_t getCycleCount() {
 void replacePathSep(char * path, char newSep);
 
 
-adc1_channel_t ADC1_GPIO2Channel(gpio_num_t gpio);
+adc_channel_t ADC1_GPIO2Channel(gpio_num_t gpio);
 
 
 void esp_intr_alloc_pinnedToCore(int source, int flags, intr_handler_t handler, void * arg, intr_handle_t * ret_handle, int core);

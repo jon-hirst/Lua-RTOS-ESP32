@@ -27,6 +27,7 @@ set(EXTRA_COMPONENT_DIRS
   "zlib"
   "rc-switch"
   "eth_enc424j600"
+  "FabGL"
 )
 
 #set(EXTRA_COMPONENT_DIRS "components")

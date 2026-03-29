@@ -37,13 +37,14 @@ extern "C" {
 }
 #include "esp_vfs_fat.h"
 #include "esp_task_wdt.h"
+#include "esp_timer.h"
 #include "driver/sdspi_host.h"
 #include "sdmmc_cmd.h"
 #include "esp_spiffs.h"
 #include "soc/efuse_reg.h"
+#include "soc/gpio_periph.h"
 #include "soc/rtc.h"
 #include "esp_ipc.h"
-#include "soc/adc_channel.h"
 
 #include "fabutils.h"
 #include "fabglconf.h"
@@ -170,28 +171,13 @@ ChipPackage getChipPackage()
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-adc1_channel_t ADC1_GPIO2Channel(gpio_num_t gpio)
+adc_channel_t ADC1_GPIO2Channel(gpio_num_t gpio)
 {
-  switch (gpio) {
-    case ADC1_CHANNEL_0_GPIO_NUM:
-      return ADC1_CHANNEL_0;
-    case ADC1_CHANNEL_1_GPIO_NUM:
-      return ADC1_CHANNEL_1;
-    case ADC1_CHANNEL_2_GPIO_NUM:
-      return ADC1_CHANNEL_2;
-    case ADC1_CHANNEL_3_GPIO_NUM:
-      return ADC1_CHANNEL_3;
-    case ADC1_CHANNEL_4_GPIO_NUM:
-      return ADC1_CHANNEL_4;
-    case ADC1_CHANNEL_5_GPIO_NUM:
-      return ADC1_CHANNEL_5;
-    case ADC1_CHANNEL_6_GPIO_NUM:
-      return ADC1_CHANNEL_6;
-    case ADC1_CHANNEL_7_GPIO_NUM:
-      return ADC1_CHANNEL_7;
-    default:
-      return ADC1_CHANNEL_0;
-  }
+  adc_unit_t unit;
+  adc_channel_t channel;
+  if (adc_oneshot_io_to_channel((int)gpio, &unit, &channel) == ESP_OK && unit == ADC_UNIT_1)
+    return channel;
+  return ADC_CHANNEL_0;
 }
 
 
@@ -1177,7 +1163,8 @@ bool FileBrowser::format(DriveType driveType, int drive)
 
 bool FileBrowser::format(DriveType driveType, int drive)
 {
-  esp_task_wdt_init(45, false);
+  esp_task_wdt_config_t twConfig = { .timeout_ms = 45000, .idle_core_mask = 0, .trigger_panic = false };
+  esp_task_wdt_init(&twConfig);
 
   if (driveType == DriveType::SDCard && s_SDCardMounted) {
 
@@ -1197,7 +1184,10 @@ bool FileBrowser::format(DriveType driveType, int drive)
     }
 
     // make filesystem
-    if (f_mkfs(drv, FM_ANY, 16 * 1024, buffer, FF_MAX_SS) != FR_OK) {
+    MKFS_PARM mkfsOpt = {};
+    mkfsOpt.fmt     = FM_ANY;
+    mkfsOpt.au_size = 16 * 1024;
+    if (f_mkfs(drv, &mkfsOpt, buffer, FF_MAX_SS) != FR_OK) {
       free(buffer);
       return false;
     }

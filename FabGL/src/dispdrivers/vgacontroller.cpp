@@ -29,6 +29,7 @@
 #include <string.h>
 
 #include "freertos/FreeRTOS.h"
+#include "esp_timer.h"
 
 #include "soc/i2s_struct.h"
 

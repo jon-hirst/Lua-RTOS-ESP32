@@ -1778,6 +1778,10 @@ menu "Lua RTOS"
                bool "Include event module in build"
                default y
 
+            config LUA_RTOS_LUA_USE_FABGL
+               bool "Include FabGL module in build"
+               default y
+
             config LUA_RTOS_LUA_USE_GDISPLAY
                bool "Include gdisplay module in build"
                default y

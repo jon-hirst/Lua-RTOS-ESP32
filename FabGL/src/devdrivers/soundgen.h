@@ -47,6 +47,7 @@
   #include "rom/lldesc.h"
 #endif
 #include "soc/i2s_struct.h"
+#include "driver/sdm.h"
 #include "soc/sens_struct.h"
 #include "esp_timer.h"
 
@@ -525,6 +526,8 @@ private:
   bool                m_initDone;
   
   esp_timer_handle_t  m_timerHandle;
+
+  sdm_channel_handle_t m_sdmHandle;
   
   #ifdef FABGL_EMULATED
   SDL_AudioDeviceID   m_device;

@@ -29,9 +29,12 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcpp"
 #include "driver/dac.h"
+#pragma GCC diagnostic pop
 #include "soc/i2s_reg.h"
-#include "driver/periph_ctrl.h"
+#include "hal/clk_gate_ll.h"
 #include "soc/rtc.h"
 #include <soc/sens_reg.h>
 
@@ -300,7 +303,7 @@ void CVBSGenerator::setVideoGPIO(gpio_num_t gpio)
 void CVBSGenerator::runDMA(lldesc_t volatile * dmaBuffers)
 {
   if (!m_DMAStarted) {
-    periph_module_enable(PERIPH_I2S0_MODULE);
+    periph_ll_enable_clk_clear_rst(PERIPH_I2S0_MODULE);
 
     // Initialize I2S device
     I2S0.conf.tx_reset                     = 1;
@@ -355,7 +358,8 @@ void CVBSGenerator::runDMA(lldesc_t volatile * dmaBuffers)
       I2S0.clkm_conf.clkm_div_a            = a;
       I2S0.clkm_conf.clkm_div_num          = 2;  // not less than 2
       I2S0.sample_rate_conf.tx_bck_div_num = 1;  // this makes I2S0O_BCK = I2S0_CLK
-      rtc_clk_apll_enable(true, p.sdm0, p.sdm1, p.sdm2, p.o_div);
+      rtc_clk_apll_coeff_set(p.o_div, p.sdm0, p.sdm1, p.sdm2);
+      rtc_clk_apll_enable(true);
       I2S0.clkm_conf.clka_en               = 1;
     }
 
@@ -381,11 +385,11 @@ void CVBSGenerator::runDMA(lldesc_t volatile * dmaBuffers)
     dac_i2s_enable();
     if (usePLL) {
       // enable both DACs
-      dac_output_enable(DAC_CHANNEL_1); // GPIO25: DAC1, right channel
-      dac_output_enable(DAC_CHANNEL_2); // GPIO26: DAC2, left channel
+      dac_output_enable(DAC_CHAN_0); // GPIO25: DAC1, right channel
+      dac_output_enable(DAC_CHAN_1); // GPIO26: DAC2, left channel
     } else {
       // enable just used DAC
-      dac_output_enable(m_gpio == GPIO_NUM_25 ? DAC_CHANNEL_1 : DAC_CHANNEL_2);
+      dac_output_enable(m_gpio == GPIO_NUM_25 ? DAC_CHAN_0 : DAC_CHAN_1);
     }
 
     m_DMAStarted = true;
@@ -889,7 +893,7 @@ void CVBSGenerator::stop()
 {
   if (m_DMAStarted) {
 
-    periph_module_disable(PERIPH_I2S0_MODULE);
+    periph_ll_disable_clk_set_rst(PERIPH_I2S0_MODULE);
     m_DMAStarted = false;
 
     if (m_isr_handle) {
@@ -1007,8 +1011,8 @@ void IRAM_ATTR CVBSGenerator::ISRHandler(void * arg)
           *((uint32_t*)(visibleBuf)) = blackFillX2;
       }
       
-      ++s_activeLineIndex;
-      ++s_frameLine;
+      s_activeLineIndex = s_activeLineIndex + 1;
+      s_frameLine = s_frameLine + 1;
       ++s_subCarrierPhase;
       s_lineSwitch = !s_lineSwitch;
       

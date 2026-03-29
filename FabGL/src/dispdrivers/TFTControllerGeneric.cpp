@@ -31,6 +31,7 @@
 #include "freertos/task.h"
 
 #include "esp_log.h"
+#include "esp_timer.h"
 
 #include "fabutils.h"
 #include "TFTControllerGeneric.h"
@@ -655,7 +656,7 @@ void TFTController::updateTaskFunc(void * pvParameters)
 
 void TFTController::suspendBackgroundPrimitiveExecution()
 {
-  ++m_updateTaskFuncSuspended;
+  m_updateTaskFuncSuspended = m_updateTaskFuncSuspended + 1;
   while (m_updateTaskRunning)
     taskYIELD();
 }

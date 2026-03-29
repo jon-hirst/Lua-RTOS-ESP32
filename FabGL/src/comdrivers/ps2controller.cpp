@@ -28,9 +28,10 @@
 
 #include "freertos/FreeRTOS.h"
 
-#include "esp32/ulp.h"
+#include "ulp.h"
 #include "driver/rtc_io.h"
 #include "soc/sens_reg.h"
+#include "soc/rtc_io_reg.h"
 #if __has_include("soc/rtc_io_periph.h")
   #include "soc/rtc_io_periph.h"
 #endif

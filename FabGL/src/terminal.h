@@ -1605,6 +1605,8 @@ private:
   int                       m_coloredAttributesMask;    // related bit 1 if enabled
   Color                     m_coloredAttributesColor[4];
   
+  adc_oneshot_unit_handle_t m_adcHandle;
+
   // true if inside ::end()
   volatile bool             m_endingState;
 
