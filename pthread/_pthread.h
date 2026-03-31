@@ -151,6 +151,10 @@ struct pthread {
     pthread_attr_t attr;
 };
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Helper functions, only for internal use
 void  _pthread_lock();
 void  _pthread_unlock();
@@ -227,5 +231,9 @@ do { \
 	_pthread_cleanup(); \
 	return ((void *)ret); \
 } while (0)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* __PTHREAD_H */

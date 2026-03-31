@@ -1947,6 +1947,16 @@ menu "Lua RTOS"
                bool "Include uart module in build"
                default y
 
+            config LUA_RTOS_LUA_USE_VGA
+               bool "Include vga module in build (FabGL VGAController + Canvas)"
+               default n
+               help
+                  Enables the Lua 'vga' module which drives the FabGL VGA
+                  display controller. Provides begin/setResolution, drawing
+                  primitives, text rendering, and double-buffer support.
+                  Only useful on boards that have a VGA connector wired to
+                  the ESP32 GPIO pins.
+
             config LUA_RTOS_LUA_USE_ULP
                bool "Include ULP (Ultra Low Power coprocessor) module in build"
                default y

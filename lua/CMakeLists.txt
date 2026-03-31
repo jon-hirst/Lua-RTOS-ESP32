@@ -31,6 +31,8 @@ set(srcs
 	"modules/hw/stepper.c"
 	"modules/hw/touch.c"
 	"modules/hw/uart.c"
+	"modules/hw/FabGL_impl.cpp"
+	"modules/hw/FabGL.c"
 #	"modules/hw/ulp.c"
 	"modules/lua-cjson/fpconv.c"
 	"modules/lua-cjson/lua_cjson.c"
@@ -118,7 +120,7 @@ idf_component_register(
 	SRCS "${srcs}"
 	INCLUDE_DIRS "${include_dirs}"
 	LDFRAGMENTS "${fragments}"
-	PRIV_REQUIRES bt wpa_supplicant ulp app_update pthread libcrypt vfs nvs_flash lora sound sys mqtt esp_rom rc-switch esp_hw_support hal
+	PRIV_REQUIRES bt wpa_supplicant ulp app_update pthread libcrypt vfs nvs_flash lora sound sys mqtt esp_rom rc-switch esp_hw_support hal FabGL
 )
 
 # Force linker to link lua modules enabled in build
@@ -146,6 +148,7 @@ list(APPEND extra_link_flags "-u luaopen_spi")
 list(APPEND extra_link_flags "-u luaopen_stepper")
 list(APPEND extra_link_flags "-u luaopen_touch")
 list(APPEND extra_link_flags "-u luaopen_uart")
+list(APPEND extra_link_flags "-u luaopen_vga")
 #list(APPEND extra_link_flags "-u luaopen_ulp")
 #list(APPEND extra_link_flags "-u luaopen_bt")
 list(APPEND extra_link_flags "-u luaopen_lora")

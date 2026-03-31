@@ -469,7 +469,7 @@ driver_error_t *uart_init(int8_t unit, uint32_t brg, uint8_t databits, uint8_t p
 		return driver_error(UART_DRIVER, UART_ERR_PIN_NOT_ALLOWED, "tx, selected pin cannot be input");
     }
 
-    if (!TEST_UNIQUE2(uart[unit].rx, uart[unit].tx)) {
+    if (uart[unit].rx >= 0 && uart[unit].tx >= 0 && !TEST_UNIQUE2(uart[unit].rx, uart[unit].tx)) {
 		return driver_error(UART_DRIVER, UART_ERR_PIN_NOT_ALLOWED, "rx, and tx must be different");
     }
 
