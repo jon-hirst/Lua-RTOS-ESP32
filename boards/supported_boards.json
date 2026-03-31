@@ -375,11 +375,25 @@
         ]
     },
     {
+        "description": "TTGO VGA32",
+        "manufacturer": "TTGO",
+        "image": "",
+        "usb_vid_pid": "1A86:55D4",
+        "usb_port_exp": "",
+        "firmwares": [
+            {
+                "id": "TTGO-VGA32",
+                "description": "TTGO VGA32",
+                "filesystem": "default"
+            }
+        ]
+    },
+    {
         "description": "TTGO t-watch-s3",
         "manufacturer": "TTGO",
         "image": "",
         "usb_vid_pid": "303a:1001",
-        "usb_port_exp": "ttyACM0",
+        "usb_port_exp": "",
         "firmwares": [
             {
                 "id": "TTGO-T-WATCH-S3",
