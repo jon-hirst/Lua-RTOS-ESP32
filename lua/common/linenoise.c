@@ -124,6 +124,7 @@
 
 #include "linenoise.h"
 #include "lua.h"
+#include "luaconf_custom.h"
 
 #define LINENOISE_MAX_LINE LUA_MAXINPUT
 

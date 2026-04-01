@@ -46,6 +46,7 @@
 #include "sys.h"
 #include "lualib.h"
 #include "lauxlib.h"
+#include "luaconf_custom.h"
 
 #include <stdlib.h>
 

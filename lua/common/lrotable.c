@@ -40,7 +40,7 @@ void luaR_dump(luaR_entry *entry) {
 
 LUA_API void lua_pushrotable(lua_State *L, void *p) {
 	lua_lock(L);
-	setrvalue(L->top, p);
+	setrvalue(s2v(L->top.p), p);
 	api_incr_top(L); lua_unlock(L);
 }
 
@@ -52,8 +52,7 @@ const TValue *luaL_rometatable(const void *data) {
 }
 
 void luaA_pushobject(lua_State *L, const TValue *o) {
-	setobj2s(L, L->top, o)
-	;
+	setobj2s(L, L->top.p, o);
 	api_incr_top(L);
 }
 
@@ -200,8 +199,7 @@ static void luaR_next_helper(lua_State *L, const luaR_entry *pentries, int pos,
 			setsvalue(L, key, luaS_newro( L, pentries[pos].key.id.strkey))
 		else
 			setfltvalue(key, (lua_Number )pentries[pos].key.id.numkey)
-		setobj2s(L, val, &pentries[pos].value)
-		;
+		setobj(L, val, &pentries[pos].value);
 	}
 }
 
@@ -245,8 +243,8 @@ void luaR_getcstr(char *dest, const TString *src, size_t maxsize) {
 }
 
 int luaH_next_ro(lua_State *L, void *t, StkId key) {
-	luaR_next(L, t, key, key + 1);
-	return ttisnil(key) ? 0 : 1;
+	luaR_next(L, t, s2v(key), s2v(key + 1));
+	return ttisnil(s2v(key)) ? 0 : 1;
 }
 
 int luaR_index(lua_State *L, const void *funcs, const void *consts) {
@@ -258,7 +256,7 @@ int luaR_index(lua_State *L, const void *funcs, const void *consts) {
 	if (consts) {
 		const char *key = luaL_checkstring(L, 2);
 		const TValue *val = luaR_findentry(consts, key, 0, NULL);
-		if (val != luaO_nilobject) {
+		if (val != NULL) {
 			if (ttnov(val) == LUA_TROTABLE) {
 				lua_pushrotable(L, val->value_.p);
 			} else {
@@ -268,7 +266,59 @@ int luaR_index(lua_State *L, const void *funcs, const void *consts) {
 		}
 	}
 
-	return (int) luaO_nilobject;
+	return 0;
+}
+
+/*
+ * Materialise a read-only table (entries in ROM) as a regular Lua table on
+ * the stack.  Functions, integers, and floats are copied verbatim.
+ * Self-referential ROVAL entries (e.g. __index = self) become references to
+ * the table being built.  Other nested rotable entries are recursed into only
+ * when they are valid ROM addresses; invalid pointers are skipped.
+ */
+void luaR_push_as_table (lua_State *L, const luaR_entry *entries) {
+  const luaR_entry *e;
+  int table_idx;
+
+  lua_newtable(L);
+  table_idx = lua_gettop(L);
+
+  for (e = entries; e->key.id.strkey != NULL; e++) {
+    if (e->key.type != LUA_TSTRING) continue;
+
+    lua_pushstring(L, e->key.id.strkey);
+
+    switch (e->value.tt_) {
+      case LUA_VLCF:
+        lua_pushcfunction(L, e->value.value_.f);
+        break;
+      case LUA_VNUMINT:
+        lua_pushinteger(L, (lua_Integer)e->value.value_.i);
+        break;
+      case LUA_VNUMFLT:
+        lua_pushnumber(L, (lua_Number)e->value.value_.n);
+        break;
+      case LUA_TROTABLE:
+        if (e->value.value_.p == (void *)entries) {
+          /* self-reference (e.g. __index = self in a metatable) */
+          lua_pushvalue(L, table_idx);
+        } else if (luaR_isrotable(e->value.value_.p)) {
+          /* nested rotable that lives in ROM — recurse safely */
+          luaR_push_as_table(L, (const luaR_entry *)e->value.value_.p);
+        } else {
+          /* pointer outside ROM — skip rather than crash */
+          lua_pop(L, 1);  /* discard key */
+          continue;
+        }
+        break;
+      default:
+        lua_pop(L, 1);  /* discard key, emit nothing for unhandled types */
+        continue;
+    }
+
+    lua_settable(L, table_idx);
+  }
+  /* table is left on top of stack */
 }
 
 LUALIB_API int luaL_newmetarotable (lua_State *L, const char* tname, void *p) {
@@ -276,7 +326,10 @@ LUALIB_API int luaL_newmetarotable (lua_State *L, const char* tname, void *p) {
   if (!lua_isnil(L, -1))  /* name already in use? */
     return 0;  /* leave previous value on top, but return 0 */
   lua_pop(L, 1);
-  lua_pushrotable(L, p);
+  /* Build a regular Lua table from the rotable entries so that the stock
+   * Lua 5.5 VM (which has no rotable integration) can use it as a metatable
+   * via lua_setmetatable / luaL_checkudata. */
+  luaR_push_as_table(L, (const luaR_entry *)p);
   lua_pushvalue(L, -1);
   lua_setfield(L, LUA_REGISTRYINDEX, tname);  /* registry.name = metatable */
   return 1;

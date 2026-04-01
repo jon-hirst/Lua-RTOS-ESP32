@@ -16,14 +16,45 @@
 
   
   
+/*
+ * Lua 5.5 renamed internal type-tag constants to LUA_V* variant form.
+ * Provide backward-compatible aliases so the rest of the code compiles.
+ */
+#ifndef LUA_TNUMINT
+#define LUA_TNUMINT  LUA_VNUMINT   /* integer number variant */
+#endif
+#ifndef LUA_TNUMFLT
+#define LUA_TNUMFLT  LUA_VNUMFLT   /* float number variant */
+#endif
+
+/*
+ * LUA_TROTABLE: custom type tag for read-only (ROM) tables.
+ * Use a LUA_TTABLE variant (bit 4 set) that is NOT GC-collectable,
+ * so novariant() returns LUA_TTABLE and lua_type() returns LUA_TTABLE.
+ */
+#ifndef LUA_TROTABLE
+#define LUA_TROTABLE  makevariant(LUA_TTABLE, 1)
+#endif
+
+/* Type-check and value accessors for rotable TValues */
+#ifndef ttisrotable
+#define ttisrotable(o)    checktag((o), LUA_TROTABLE)
+#define rvalue(o)         (check_exp(ttisrotable(o), val_(o).p))
+#define setrvalue(obj,x)  { TValue *io_=(obj); val_(io_).p=(void*)(x); \
+                            settt_(io_, LUA_TROTABLE); }
+/* ttnov(o): full variant tag (used to distinguish rotable from plain table) */
+#define ttnov(o)          ttypetag(o)
+#endif
+
 /* Macros one can use to define rotable entries */
 #ifndef LUA_PACK_VALUE
-#define LRO_FUNCVAL(v)  {{.p = v}, LUA_TLCF}
-#define LRO_LUDATA(v)   {{.p = v}, LUA_TLIGHTUSERDATA}
-#define LRO_NUMVAL(v)   {{.n = v}, LUA_TNUMFLT}
-#define LRO_INTVAL(v)   {{.i = v}, LUA_TNUMINT}
+/* Lua 5.5: functions stored in .f (not .p); type tags renamed to LUA_V* */
+#define LRO_FUNCVAL(v)  {{.f = v}, LUA_VLCF}
+#define LRO_LUDATA(v)   {{.p = v}, LUA_VLIGHTUSERDATA}
+#define LRO_NUMVAL(v)   {{.n = v}, LUA_VNUMFLT}
+#define LRO_INTVAL(v)   {{.i = v}, LUA_VNUMINT}
 #define LRO_ROVAL(v)    {{.p = (void*)v}, LUA_TROTABLE}
-#define LRO_NILVAL      {{.p = NULL}, LUA_TNIL}
+#define LRO_NILVAL      {{.p = NULL}, LUA_VNIL}
 #define LRO_STRVAL(v)   {{.p = v}, LUA_TSTRING}
 #else // #ifndef LUA_PACK_VALUE
 #define LRO_NUMVAL(v)   {.value.n = v}
@@ -86,5 +117,6 @@ int luaH_next_ro (lua_State *L, void *t, StkId key);
 int luaR_index(lua_State *L, const void *funcs, const void *consts);
 int luaR_error(lua_State *L);
 LUALIB_API int luaL_newmetarotable (lua_State *L, const char* tname, void *p);
+void luaR_push_as_table (lua_State *L, const luaR_entry *entries);
 
 #endif

@@ -72,7 +72,6 @@ static QueueHandle_t usj_rx_queue = NULL;
 static pthread_mutex_t usj_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 extern pthread_t lua_thread;
-extern int _pthread_has_signal(int dst, int s);
 extern uint8_t console_raw;
 
 static void usj_reader_task(void *arg) {
@@ -88,9 +87,7 @@ static void usj_reader_task(void *arg) {
 				continue;
 			} else if ((byte == 0x03) && (!console_raw)) {
 				if (status_get(STATUS_LUA_RUNNING)) {
-					if (!_pthread_has_signal(lua_thread, SIGINT)) {
-						xQueueSend(usj_rx_queue, &byte, portMAX_DELAY);
-					}
+					pthread_kill(lua_thread, SIGINT);
 				}
 				continue;
 			}

@@ -59,7 +59,7 @@ add_compile_options("-DNEWLIB_HAVE_USLEEP=1")
 
 add_compile_options("-DCPU_HZ=240000000L")                   # CPU frequency in hertz
 add_compile_options("-DCORE_TIMER_HZ=240000000L")            # CPU core timer frequency
-add_compile_options("-D_CLOCKS_PER_SEC_=configTICK_RATE_HZ") # Number of interrupt ticks for reach 1 second
+add_compile_options("-D_CLOCKS_PER_SEC_=1000") # Number of interrupt ticks per second (CONFIG_FREERTOS_HZ)
 
 #add_compile_options("-DPATH_MAX=64")
 #add_compile_options("-DMAXNAMLEN=64")

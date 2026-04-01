@@ -48,6 +48,7 @@
 #if CONFIG_LUA_RTOS_LUA_USE_TMR
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "freertos/adds.h"
 #include "freertos/timers.h"
 
@@ -118,17 +119,21 @@ static void callback_sw_func(TimerHandle_t xTimer) {
 
 static int ltmr_delay( lua_State* L ) {
     unsigned int period = luaL_checkinteger( L, 1 );
-    
-    delay(period * 1000);
-    
+
+    /* Use vTaskDelay so the scheduler can run and the idle task feeds the
+     * watchdog.  Busy-waiting with delay() starves the idle task and triggers
+     * the Task Watchdog Timer after ~5 s. */
+    vTaskDelay(pdMS_TO_TICKS(period * 1000));
+
     return 0;
 }
 
 static int ltmr_delay_ms( lua_State* L ) {
     unsigned int period = luaL_checkinteger( L, 1 );
 
-    delay(period);
-        
+    /* Same rationale as ltmr_delay above. */
+    vTaskDelay(pdMS_TO_TICKS(period));
+
     return 0;
 }
 
@@ -141,7 +146,7 @@ static int ltmr_delay_us( lua_State* L ) {
     // Compute how many cycles are needed for the period delay, and discount
     // cycles need by lua vm to invoke this function and cycles needed by lua vm
     // to return function
-    int cycles = ((CPU_HZ / 1000000L) * period) - ((start >= L->ci->ccount)?(start - L->ci->ccount):(start + 0xffffffff - L->ci->ccount)) - 47;
+    int cycles = ((CPU_HZ / 1000000L) * period) - 47;
 
     unsigned int now = start;
     while (cycles > 0) {

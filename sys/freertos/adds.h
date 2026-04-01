@@ -47,7 +47,14 @@
 #define _FREERTOS_ADDS_H
 
 #if LUA_RTOS_INCLUDE_LUA
+#ifndef __cplusplus
 #include "lua.h"
+#else
+/* Forward-declare lua_State for C++ compilation (avoids pulling in luaconf.h
+   through the pthread -> adds.h chain, which fails LLONG_MAX check). */
+struct lua_State;
+typedef struct lua_State lua_State;
+#endif
 #endif
 
 #include "freertos/FreeRTOS.h"
