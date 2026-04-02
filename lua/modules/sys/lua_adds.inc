@@ -211,9 +211,13 @@ static void luaos_boot_scripts(lua_State *L) {
 static int luaos_pmain (lua_State *L) {
   status_set(STATUS_LUA_RUNNING, 0x00000000);
 
-  /* Store state and register SIGINT handler so Ctrl-C can interrupt the VM */
+  /* Store state, register SIGINT handler, and install the combined yield /
+   * interrupt hook.  The hook yields to the FreeRTOS scheduler every
+   * LUA_YIELD_COUNT instructions (preventing TWDT starvation of idle tasks)
+   * and raises "interrupted!" when Ctrl-C sets g_sigint_received. */
   g_L = L;
   _pthread_signal(SIGINT, lua_sigint_handler);
+  lua_sethook(L, vm_hook, LUA_MASKCOUNT, LUA_YIELD_COUNT);
 
 #if LUA_USE_ROTABLE && CONFIG_LUA_RTOS_LUA_USE_ROTABLE_CACHE && !CONFIG_LUA_RTOS_LUA_USE_JIT_BYTECODE_OPTIMIZER
     rotable_cache_init();

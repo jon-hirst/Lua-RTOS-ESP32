@@ -26,6 +26,8 @@
 #include <signal.h>
 #include <sys/status.h>
 #include <sys/debug.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 /* _pthread_signal registers a signal handler for the calling thread */
 extern sig_t _pthread_signal(int s, sig_t h);
@@ -33,21 +35,38 @@ extern sig_t _pthread_signal(int s, sig_t h);
 /* Lua state used by the REPL — stored so the SIGINT handler can reach it */
 static lua_State *g_L = NULL;
 
-/* Hook installed by the SIGINT handler: clears itself then raises "interrupted!" */
-static void lstop (lua_State *L, lua_Debug *ar) {
+/* Set to 1 by the SIGINT handler; cleared by vm_hook when it raises the error */
+static volatile sig_atomic_t g_sigint_received = 0;
+
+/*
+ * vm_hook — installed as a Lua count hook (fires every LUA_YIELD_COUNT
+ * VM instructions).  It serves two purposes:
+ *
+ *   1. SIGINT / Ctrl-C: if g_sigint_received is set, raises "interrupted!".
+ *   2. TWDT: calls vTaskDelay(1) to yield for one FreeRTOS tick so that
+ *      the idle tasks can run and reset the Task Watchdog Timer.  Without
+ *      this, long-running Lua loops (e.g. math-test randomness checks) keep
+ *      the CPU for several seconds and the TWDT fires.
+ *
+ * Overhead: at LUA_YIELD_COUNT = 50000 instructions the hook fires roughly
+ * every 25–100 ms (depending on instruction mix).  vTaskDelay(1) blocks for
+ * one tick (1 ms at CONFIG_FREERTOS_HZ = 1000), so the overhead is ~1–4 %.
+ */
+#define LUA_YIELD_COUNT  50000
+
+static void vm_hook (lua_State *L, lua_Debug *ar) {
     (void)ar;
-    lua_sethook(L, NULL, 0, 0);
-    luaL_error(L, "interrupted!");
+    if (g_sigint_received) {
+        g_sigint_received = 0;
+        luaL_error(L, "interrupted!");
+    }
+    vTaskDelay(1);   /* yield ≥1 tick → idle tasks run → TWDT stays fed */
 }
 
-/* Signal handler called (possibly from another task context) when Ctrl-C arrives */
+/* Signal handler: set the flag; vm_hook will raise the error on next fire */
 static void lua_sigint_handler (int sig) {
     (void)sig;
-    if (g_L) {
-        lua_sethook(g_L, lstop,
-                    LUA_MASKCALL | LUA_MASKRET | LUA_MASKLINE | LUA_MASKCOUNT,
-                    1);
-    }
+    g_sigint_received = 1;
 }
 
 /* --------------------------------------------------------------------------
