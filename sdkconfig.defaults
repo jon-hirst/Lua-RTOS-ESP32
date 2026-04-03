@@ -1,5 +1,0 @@
-# Increase Task WDT timeout to allow computationally intensive Lua scripts
-# (e.g. math.lua test suite) to run without spurious WDT warnings.
-# The Lua VM yield hook (vm_hook in lua_rtos_main.c) keeps idle tasks fed
-# for most code paths; this timeout covers long C-level operations (dtoa etc.).
-CONFIG_ESP_TASK_WDT_TIMEOUT_S=30
