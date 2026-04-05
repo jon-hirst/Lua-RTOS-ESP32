@@ -18,19 +18,27 @@ When Claude finishes a step it must change DOING: the start of the line into DON
 
 When a step is finished Claude must add a description of the work it carried below the DONE: line.
 
-Claude does not need to confirm actions that read files in this project using tools such as find, grep, less, sed, awk, and so on.
+The source code for the Lua langage is in the directory ./lua/src.
+The test suite for the Lua language is in the directory ./lua/tests.
+The source code for the FreeRTOS operating system is in the directory /home/jon/esp-idf/components/freertos.
+
+Claude does not need to confirm actions that read files in this project using tools such as find, grep, diff, less, sed, awk, and so on.
 
 Claude must confirm every action that changes source code in this project using tools such as sed, awk, and python3.
 
 Claude must confirm every action that builds or compiles any part of this project.
 
-Claude does not need to confirm actions that read files in the esp-idf framework under /home/jon/esp-idf using tools such as find, grep, less, sed, awk, and so on.
+The esp-idf framework is installed in /home/jon/esp-idf.
+
+Claude does not need to confirm actions that read files in the esp-idf framework under /home/jon/esp-idf using tools such as find, grep, diff, less, sed, awk, and so on.
 
 Claude must not change any file in the esp-idf framework under /home/jon/esp-idf.
 
 If Claude believes a change is needed in the esp-idf framework it must suggest the change, show it to the user, and wait for the user to carry it out.
 
-Claude does not need to confirm actions that read files in the espressif tools under /home/jon/.espressif using tools such as find, grep, less, sed, awk, and so on.
+The espressif tools are installed in /home/jon/.espressif.
+
+Claude does not need to confirm actions that read files in the espressif tools under /home/jon/.espressif using tools such as find, diff, grep, less, sed, awk, and so on.
 
 Claude must not change any file in the espressif tools under /home/jon/.espressif.
 
