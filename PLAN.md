@@ -1,3 +1,17 @@
+DONE: Fix coroutine.lua assertion at line 137 (stack overflow vs not enough memory)
+
+Two OOM sites both returned "not enough memory" instead of "stack overflow":
+1. lua/src/ldo.c:luaD_growstack — changed normal-growth realloc to raiseerror=0 and
+   fall through to "stack overflow" on failure; also changed ERRORSTACKSIZE realloc
+   to raiseerror=0 so OOM there doesn't clobber the "stack overflow" raise.
+2. lua/src/lstate.c:luaE_extendCI — replaced luaM_new (throws LUA_ERRMEM on OOM)
+   with luaM_realloc_(raiseerror=0) and explicit luaG_runerror("stack overflow").
+Root cause: on ESP32 with 8MB PSRAM, heap fragmentation exhausts memory long before
+LUAI_MAXSTACK=1000000 stack slots are reached, so both the value-stack realloc and
+CallInfo allocation triggered "not enough memory" instead of "stack overflow".
+
+TODO: Build and flash, then run dofile('coroutine.lua') to verify the fix
+
 DONE: Fix coroutine.lua crash (Interrupt WDT timeout on CPU0)
 
 Root cause: The sieve test in coroutine.lua creates 22 deeply-nested coroutine.wrap

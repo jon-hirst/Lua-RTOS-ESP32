@@ -61,6 +61,9 @@
 typedef struct lua_longjmp {
   struct lua_longjmp *previous;
   jmp_buf b;
+#if defined(__XTENSA__)
+  unsigned int windowbase;   /* WINDOWBASE at setjmp time (Xtensa alignment) */
+#endif
   volatile TStatus status;  /* error code */
 } lua_longjmp;
 
@@ -97,6 +100,104 @@ static void LUAI_TRY (lua_State *L, lua_longjmp *c, Pfunc f, void *ud) {
 /* in POSIX, use _longjmp/_setjmp (more efficient) */
 #define LUAI_THROW(L,c)		_longjmp((c)->b, 1)
 #define LUAI_TRY(L,c,f,ud)	if (_setjmp((c)->b) == 0) ((f)(L, ud))
+
+#elif defined(__XTENSA__)				/* }{ */
+
+/*
+** Xtensa (ESP32/ESP8266) uses a windowed register file with a hardware
+** register-window rotation on every call8/retw.  Plain longjmp has two
+** problems on this architecture:
+**
+** 1. WINDOWBASE MISALIGNMENT: longjmp returns to the setjmp site with a
+**    WINDOWBASE that differs from the one in effect when setjmp was called.
+**    Subsequent retw instructions then trigger WindowUnderflow exceptions
+**    that load from the wrong stack locations, corrupting return addresses
+**    and causing InstrFetchProhibited panics (observed during coroutine tests).
+**
+** 2. STACK POINTER MISMATCH: the WindowUnderflow8 handler restores a0-a3 of
+**    the returning window by reading from [a9-16], where a9 = the callee's
+**    (longjmp's) a1 = longjmp's SP.  longjmp's second save-area restore
+**    always writes to [jmp_buf[1]-16] (jmp_buf[1] = SP saved by setjmp).
+**    These only coincide when longjmp's SP == jmp_buf[1]; a depth-varying
+**    trampoline changes the stack pointer and breaks this invariant.
+**
+** 3. STALE OVERFLOW SAVE AREAS: live windows whose physical registers have
+**    not yet been flushed still hold values that WindowUnderflow will reload.
+**
+** Fix for (1): recurse via call8 until WINDOWBASE == setjmp-era value.
+**   In the Xtensa windowed ABI a call8 increments WINDOWBASE by 2, so
+**   at most 7 recursive calls are needed (WINDOWBASE is mod 16).
+**
+** Fix for (2): once WINDOWBASE is aligned, set a9 = jmp_buf[1] + 16 before
+**   issuing callx8 to longjmp.  In call8 ABI, the callee's pre-entry a1 =
+**   caller's a9; longjmp's "entry a1, 16" then produces
+**   SP_longjmp = a9 - 16 = jmp_buf[1] = SP_setjmp, restoring the invariant.
+**   (Verified against the ESP32 toolchain setjmp/longjmp disassembly.)
+**
+** Fix for (3): call xthal_window_spill() before the trampoline so every live
+**   register window is written to its correct overflow save area on the stack.
+*/
+#include <xtensa/hal.h>
+
+/*
+ * lua_xtensa_longjmp_trampoline — recurse via call8 until WINDOWBASE equals
+ * target_wb (the WINDOWBASE captured at LUAI_TRY time), then invoke longjmp
+ * with the correct stack pointer so the WindowUnderflow chain works properly.
+ * Never returns.
+ */
+static l_noret __attribute__((noinline, optimize("O0")))
+lua_xtensa_longjmp_trampoline(int *b, int val, int target_wb)
+{
+    unsigned int wb;
+    __asm__ volatile ("rsr %0, WINDOWBASE" : "=r"(wb));
+    if ((int)(wb & 0xF) != target_wb) {
+        lua_xtensa_longjmp_trampoline(b, val, target_wb);
+    } else {
+        /*
+         * WINDOWBASE is correct.  Now we must also fix the stack pointer:
+         * longjmp's WindowUnderflow restore reads from [longjmp_SP - 16], but
+         * longjmp writes the save-area data to [jmp_buf[1] - 16].  They must
+         * be the same address.
+         *
+         * In Xtensa call8 ABI, callee's pre-entry a1 = caller's a9.
+         * longjmp: "entry a1, 16" → SP_lj = a9 - 16.
+         * WindowUnderflow8 reads from [a9-16];
+         * longjmp writes jmp_buf[12..15] to [b[1]-16];
+         * Therefore a9 must equal b[1]
+         *
+         * We also need the function pointer in a stable register (a12) so
+         * that the a9/a10/a11 setup does not overwrite it before callx8.
+         */
+         int a9_val = b[1];
+         typedef void (*longjmp_fn_t)(jmp_buf, int);
+         longjmp_fn_t lj = longjmp;
+         __asm__ volatile (
+             "mov  a9,  %[a9_val]\n" /* callee pre-entry a1 → SP_lj = b[1] */
+             "mov  a10, %[buf]\n"    /* longjmp arg1: jmp_buf pointer        */
+             "mov  a11, %[v]\n"      /* longjmp arg2: val                    */
+             "mov  a12, %[fn]\n"     /* function pointer in a non-arg reg    */
+             "callx8 a12\n"          /* call longjmp; WINDOWBASE += 2        */
+             :
+             : [a9_val] "r"(a9_val),
+               [buf]    "r"(b),
+               [v]      "r"(val),
+               [fn]     "r"(lj)
+             : "a8", "a9", "a10", "a11", "a12", "memory"
+         );
+        __builtin_unreachable();
+    }
+    lua_assert(0);  /* NOTREACHED */
+}
+
+#define LUAI_THROW(L,c) \
+    (xthal_window_spill(), \
+     lua_xtensa_longjmp_trampoline((c)->b, 1, (int)((c)->windowbase & 0xF)))
+
+#define LUAI_TRY(L,c,f,ud) \
+    do { \
+        __asm__ volatile ("rsr %0, WINDOWBASE" : "=r"((c)->windowbase)); \
+        if (setjmp((c)->b) == 0) ((f)(L, ud)); \
+    } while (0)
 
 #else							/* }{ */
 
@@ -368,12 +469,15 @@ int luaD_growstack (lua_State *L, int n, int raiseerror) {
       newsize = MAXSTACK;
     if (newsize < needed)  /* but must respect what was asked for */
       newsize = needed;
-    if (l_likely(newsize <= MAXSTACK))
-      return luaD_reallocstack(L, newsize, raiseerror);
+    if (l_likely(newsize <= MAXSTACK)) {
+      if (luaD_reallocstack(L, newsize, 0))
+        return 1;  /* success */
+      /* OOM during stack growth: treat as stack overflow */
+    }
   }
-  /* else stack overflow */
+  /* stack overflow (or OOM treated as stack overflow) */
   /* add extra size to be able to handle the error message */
-  luaD_reallocstack(L, ERRORSTACKSIZE, raiseerror);
+  luaD_reallocstack(L, ERRORSTACKSIZE, 0);  /* try; ignore failure */
   if (raiseerror)
     luaG_runerror(L, "stack overflow");
   return 0;

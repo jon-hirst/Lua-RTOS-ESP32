@@ -71,7 +71,9 @@ void luaE_setdebt (global_State *g, l_mem debt) {
 CallInfo *luaE_extendCI (lua_State *L) {
   CallInfo *ci;
   lua_assert(L->ci->next == NULL);
-  ci = luaM_new(L, CallInfo);
+  ci = cast(CallInfo *, luaM_realloc_(L, NULL, 0, sizeof(CallInfo)));
+  if (l_unlikely(ci == NULL))
+    luaG_runerror(L, "stack overflow");  /* OOM allocating call frame */
   lua_assert(L->ci->next == NULL);
   L->ci->next = ci;
   ci->previous = L->ci;
