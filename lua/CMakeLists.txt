@@ -31,8 +31,6 @@ set(srcs
 	"modules/hw/stepper.c"
 	"modules/hw/touch.c"
 	"modules/hw/uart.c"
-	"modules/hw/FabGL_impl.cpp"
-	"modules/hw/FabGL.c"
 #	"modules/hw/ulp.c"
 	"modules/lua-cjson/fpconv.c"
 	"modules/lua-cjson/lua_cjson.c"
@@ -108,11 +106,39 @@ set(srcs
 	"src/lzio.c"
 )
 
+set(fabgl "")
+
+if(CONFIG_IDF_TARGET_ESP32)
+
+  set(fabgl "FabGL")
+
+  list(APPEND srcs
+	"modules/hw/FabGL_impl.cpp"
+	"modules/hw/FabGL.c"
+  )
+
+endif()
+
 set(include_dirs
-	"common" 
+	"common"
 	"src"
 	"modules/sys"
 )
+
+# FabGL does not propagate its include dirs via PRIV_REQUIRES in IDF v5.5;
+# add them explicitly so FabGL_impl.cpp can find fabgl.h.
+if(CONFIG_IDF_TARGET_ESP32)
+  list(APPEND include_dirs
+    "${CMAKE_CURRENT_SOURCE_DIR}/../FabGL/src"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../FabGL/src/fonts"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../FabGL/src/images"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../FabGL/src/comdrivers"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../FabGL/src/devdrivers"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../FabGL/src/dispdrivers"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../FabGL/src/emudevs"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../FabGL/src/network"
+  )
+endif()
 
 set(fragments
     "iram.lf"
@@ -122,7 +148,7 @@ idf_component_register(
 	SRCS "${srcs}"
 	INCLUDE_DIRS "${include_dirs}"
 	LDFRAGMENTS "${fragments}"
-	PRIV_REQUIRES bt wpa_supplicant ulp app_update pthread libcrypt vfs nvs_flash lora sound sys mqtt esp_rom rc-switch esp_hw_support hal FabGL
+	PRIV_REQUIRES bt wpa_supplicant ulp app_update pthread libcrypt vfs nvs_flash lora sound sys mqtt esp_rom rc-switch esp_hw_support hal "${fabgl}"
 )
 
 # Force linker to link lua modules enabled in build

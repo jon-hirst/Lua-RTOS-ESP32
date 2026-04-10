@@ -1,6 +1,11 @@
 idf_build_get_property(idf_path IDF_PATH)
 idf_build_get_property(idf_target IDF_TARGET)
 
+# FabGL only supports the original ESP32; skip registration on all other targets
+if(NOT idf_target STREQUAL "esp32")
+    return()
+endif()
+
 idf_component_register(SRC_DIRS src
                                 src/comdrivers
                                 src/devdrivers
