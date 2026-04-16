@@ -25,10 +25,19 @@ that section allocated from the already-corrupted heap region.
 Confirmed via GDB: pxTopOfStack=0x3fcb4c50 (7128 bytes past pxStack), corrupt node
 array at 0x3fcb2e4c (14812 bytes past pxStack), current SP a1=0x3fcb2d40.
 
-Fix: Changed CONFIG_LUA_RTOS_LUA_STACK_SIZE from 20480 to 65536 in sdkconfig.
+Fix: Changed CONFIG_LUA_RTOS_LUA_STACK_SIZE to 40960 in sdkconfig and Kconfig
+(widened Kconfig range from 1024–40960 to 1024–131072 and set default to 40960).
+65536 was tried first but consumed too much DRAM, causing OOM when compiling the
+1263-line coroutine.lua. 40960 clears the 35284-byte observed peak with 5676 bytes
+margin while keeping sufficient heap for compilation.
 Also reverted the debug instrumentation added to lgc.c (printf/abort checks).
 
-TODO: Build and flash, then run dofile('coroutine.lua') to verify the fix
+DONE: Build and flash, then run dofile('coroutine.lua') to verify the fix
+
+Verified: _soft=true; dofile('coroutine.lua') prints OK. (_soft=true is required
+to skip the lim=1000000 stack-overflow stress test at line 835 which attempts a
+~16MB Lua value stack — a legitimate OOM on embedded hardware. The _soft flag is
+the standard Lua test suite mechanism for memory-constrained platforms.)
 
 DONE: Fix coroutine.lua crash (Interrupt WDT timeout on CPU0)
 
