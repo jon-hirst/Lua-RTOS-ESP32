@@ -1519,8 +1519,8 @@ menu "Lua RTOS"
          menu "Tuning"
          config LUA_RTOS_LUA_STACK_SIZE
             int "Lua RTOS interpreter stack size"
-            range 1024 40960
-            default 20480
+            range 1024 131072
+            default 65536
             help
                Default stack size assigned to the Lua RTOS interpreter.
 

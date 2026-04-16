@@ -10,6 +10,24 @@ Root cause: on ESP32 with 8MB PSRAM, heap fragmentation exhausts memory long bef
 LUAI_MAXSTACK=1000000 stack slots are reached, so both the value-stack realloc and
 CallInfo allocation triggered "not enough memory" instead of "stack overflow".
 
+DONE: Debug and fix GC crashes in coroutine.lua (traverseproto / traversetable)
+
+Root cause: The sieve test (lines 99-127) creates 22 nested coroutine.wrap chains.
+Each nesting level consumes ~1255 bytes of C stack (Xtensa windowed register spills
+make each lua_resume→resume→luaV_execute→luaB_auxwrap chain far more expensive than
+the minimum estimate). 22 levels × 1255 = ~27600 bytes total, but the task stack was
+only 20480 bytes. The overflow extended ~15KB past the FreeRTOS stack bottom
+(pxStack=0x3fcb6828), corrupting heap allocations below it (e.g. a Table node array
+at 0x3fcb2e4c). Later emergency GC (traversetable, traverseproto) crashed reading the
+corrupt data. The crash appeared to come from "coroutines closing itself" only because
+that section allocated from the already-corrupted heap region.
+
+Confirmed via GDB: pxTopOfStack=0x3fcb4c50 (7128 bytes past pxStack), corrupt node
+array at 0x3fcb2e4c (14812 bytes past pxStack), current SP a1=0x3fcb2d40.
+
+Fix: Changed CONFIG_LUA_RTOS_LUA_STACK_SIZE from 20480 to 65536 in sdkconfig.
+Also reverted the debug instrumentation added to lgc.c (printf/abort checks).
+
 TODO: Build and flash, then run dofile('coroutine.lua') to verify the fix
 
 DONE: Fix coroutine.lua crash (Interrupt WDT timeout on CPU0)
