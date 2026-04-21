@@ -55,9 +55,9 @@
 #include <sys/stat.h>
 #include <sys/mount.h>
 
-extern int __real__stat_r(struct _reent *r, const char *path, int flags, int mode);
+extern int __real__stat_r(struct _reent *r, const char *path, struct stat *buf);
 
-int __wrap__stat_r(struct _reent *r, const char *path, int flags, int mode) {
+int __wrap__stat_r(struct _reent *r, const char *path, struct stat *buf) {
     char *ppath;
     int res;
 
@@ -73,7 +73,7 @@ int __wrap__stat_r(struct _reent *r, const char *path, int flags, int mode) {
 
     ppath = mount_resolve_to_physical(path);
     if (ppath) {
-        res = __real__stat_r(r, ppath, flags, mode);
+        res = __real__stat_r(r, ppath, buf);
         free(ppath);
         return res;
     } else {

@@ -70,6 +70,9 @@ int chdir(const char *path) {
     }
 
     char *npath = mount_normalize_path(path);
+    if (!npath) {
+        return -1;
+    }
 
     if (stat(npath, &statb) || !S_ISDIR(statb.st_mode)) {
         free(npath);
@@ -78,6 +81,7 @@ int chdir(const char *path) {
     }
 
     strncpy(currdir, npath, PATH_MAX);
+    currdir[PATH_MAX] = '\0';
 
     free(npath);
 
