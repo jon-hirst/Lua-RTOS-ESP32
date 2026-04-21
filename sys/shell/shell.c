@@ -72,9 +72,20 @@ static void *shell(void *arg) {
 	shell_config_t *config = (shell_config_t *)arg;
 
 	// Set standard i/o streams for the shell
-	__getreent()->_stdin  = fdopen(config->fdin,"a+");
-	__getreent()->_stdout = fdopen(config->fdout,"a+");
-	__getreent()->_stderr = fdopen(config->fderr,"a+");
+	FILE *s_in  = fdopen(config->fdin,  "a+");
+	FILE *s_out = fdopen(config->fdout, "a+");
+	FILE *s_err = fdopen(config->fderr, "a+");
+
+	if (!s_in || !s_out || !s_err) {
+		if (s_in)  fclose(s_in);
+		if (s_out) fclose(s_out);
+		if (s_err) fclose(s_err);
+		return NULL;
+	}
+
+	__getreent()->_stdin  = s_in;
+	__getreent()->_stdout = s_out;
+	__getreent()->_stderr = s_err;
 
 	// Work-around newlib is not compiled with HAVE_BLKSIZE flag
 	setvbuf(__getreent()->_stdin , NULL, _IONBF, 0);
@@ -131,6 +142,7 @@ int create_shell(shell_config_t *config) {
 
 	// Create thread
 	res = pthread_create(&thread, &attr, shell, (void *)config);
+	pthread_attr_destroy(&attr);
 	if (res) {
 		errno = ENOMEM;
 		return -1;
