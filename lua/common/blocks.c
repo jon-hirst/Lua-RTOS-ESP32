@@ -40,7 +40,7 @@ static char *parseErrMsg(const char *error_msg, int *err) {
 
     int size = (messageEnd - messageStart);
     char *msg = calloc(1, size + 1);
-    lua_assert(msg != NULL);
+    if (!msg) return NULL;
 
     memcpy(msg, messageStart, size);
 
@@ -232,6 +232,7 @@ void luaVB_emitMessage(lua_State *L, int type, int id) {
 			char * msg = parseErrMsg(error_msg, &err);
 			if (msg) {
 			    printf("<blockError,%d,%s>\r\n", id, msg);
+			    free(msg);
 			}
 
             break;
