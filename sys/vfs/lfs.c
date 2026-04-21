@@ -932,7 +932,7 @@ int vfs_lfs_format(const char *target) {
         vfs_lfs_mount(target);
     }
 
-    return -1;
+    return (err == LFS_ERR_OK) ? 0 : -1;
 }
 
 int vfs_lfs_fsstat(const char *target, uint32_t *total, uint32_t *used) {

@@ -541,6 +541,7 @@ static int vfs_ramfs_truncate(const char *path, off_t length) {
 
     if ((result = ramfs_file_truncate(&fs, &file, length)) != RAMFS_ERR_OK) {
         errno = ramfs_to_errno(result);
+        ramfs_file_close(&fs, &file);
         return -1;
     }
 

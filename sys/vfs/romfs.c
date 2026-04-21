@@ -158,11 +158,13 @@ static int vfs_romfs_open(const char *path, int flags, int mode) {
     if (access_mode == O_RDONLY) {
         romfs_flags |= ROMFS_O_RDONLY;
     } else if (access_mode == O_WRONLY) {
+        lstremove(&files, fd, 0);
         free(file->fs_file);
         free(file);
     		errno = EROFS;
     		return -1;
     } else if (access_mode == O_RDWR) {
+        lstremove(&files, fd, 0);
         free(file->fs_file);
         free(file);
 		errno = EROFS;
@@ -171,6 +173,7 @@ static int vfs_romfs_open(const char *path, int flags, int mode) {
 
     // File status
     if (flags & O_CREAT) {
+        lstremove(&files, fd, 0);
         free(file->fs_file);
         free(file);
 		errno = EROFS;
@@ -178,6 +181,7 @@ static int vfs_romfs_open(const char *path, int flags, int mode) {
     }
 
     if (flags & O_EXCL) {
+        lstremove(&files, fd, 0);
         free(file->fs_file);
         free(file);
 		errno = EROFS;
@@ -185,6 +189,7 @@ static int vfs_romfs_open(const char *path, int flags, int mode) {
     }
 
     if (flags & O_TRUNC) {
+        lstremove(&files, fd, 0);
         free(file->fs_file);
         free(file);
 		errno = EROFS;
@@ -192,6 +197,7 @@ static int vfs_romfs_open(const char *path, int flags, int mode) {
     }
 
     if (flags & O_APPEND) {
+        lstremove(&files, fd, 0);
         free(file->fs_file);
         free(file);
 		errno = EROFS;

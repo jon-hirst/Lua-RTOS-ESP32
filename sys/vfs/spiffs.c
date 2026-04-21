@@ -666,7 +666,8 @@ static int vfs_spiffs_stat(const char * path, struct stat * st) {
     }
 
     res = vfs_spiffs_fstat(fd, st);
-    if (fd < 0) {
+    if (res < 0) {
+        vfs_spiffs_close(fd);
         mtx_unlock(&vfs_mtx);
         errno = spiffs_result(fs.err_code);
         return -1;

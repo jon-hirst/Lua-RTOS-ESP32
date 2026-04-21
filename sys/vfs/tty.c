@@ -365,6 +365,10 @@ void vfs_tty_register() {
 	}
 #endif
 
+	assert(_GLOBAL_REENT->_stdin  != NULL);
+	assert(_GLOBAL_REENT->_stdout != NULL);
+	assert(_GLOBAL_REENT->_stderr != NULL);
+
 	// Work-around newlib is not compiled with HAVE_BLKSIZE flag
 	setvbuf(_GLOBAL_REENT->_stdin , NULL, _IONBF, 0);
 	setvbuf(_GLOBAL_REENT->_stdout, NULL, _IONBF, 0);
