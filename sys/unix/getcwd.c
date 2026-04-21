@@ -81,11 +81,12 @@ char *getcwd(char *buff, size_t size) {
 
     strcat(pt, currdir);
 
-    return pt;
+    return buff;
 }
 
 char *realpath(const char *path, char *resolved) {
-    strcpy(resolved, path);
+    strncpy(resolved, path, PATH_MAX);
+    resolved[PATH_MAX] = '\0';
 
     return resolved;
 }

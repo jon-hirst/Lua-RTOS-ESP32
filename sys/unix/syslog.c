@@ -194,10 +194,10 @@ vsyslog(pri, fmt, ap)
 	}
 
 	if (NULL != logFile) {
-		char *t = tbuf + strlen(tbuf);
+		char *t = tbuf + strlen(tbuf) - 1;
 
 		// Remove end \r | \n
-		while ((*t == '\r') || (*t == '\n')) {
+		while (t >= tbuf && ((*t == '\r') || (*t == '\n'))) {
 			*t = '\0';
 			t--;
 			cnt--;
