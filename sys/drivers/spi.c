@@ -775,7 +775,7 @@ int spi_ll_bulk_rw16(int deviceid, uint32_t nelements, uint16_t *data) {
     uint16_t *read = (uint16_t *) malloc(nelements * sizeof(uint16_t));
     if (read) {
         spi_master_op(deviceid, 2, nelements, (uint8_t *) data,(uint8_t *) read);
-        memcpy(data, read, nelements);
+        memcpy(data, read, nelements * sizeof(uint16_t));
         free(read);
     } else {
         return -1;
@@ -797,7 +797,7 @@ int spi_ll_bulk_rw32(int deviceid, uint32_t nelements, uint32_t *data) {
     if (read) {
         spi_master_op(deviceid, 4, nelements, (uint8_t *) data, (uint8_t *) read);
 
-        memcpy(data, read, nelements);
+        memcpy(data, read, nelements * sizeof(uint32_t));
         free(read);
     } else {
         return -1;

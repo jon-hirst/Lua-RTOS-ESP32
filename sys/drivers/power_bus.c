@@ -122,7 +122,6 @@ driver_error_t *pwbus_off() {
     	uptime.tv_nsec = 0;
 
 		gpio_pin_clr(CONFIG_LUA_RTOS_POWER_BUS_PIN);
-		mtx_unlock(&mtx);
     }
 
     if (power > 0) {

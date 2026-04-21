@@ -827,7 +827,7 @@ void uart_stop(int unit) {
 
 	for(cunit = 0;cunit < NUART; cunit++) {
 		if ((unit == -1) || (cunit == unit)) {
-		    WRITE_PERI_REG(UART_CONF0_REG(unit), 0);
+		    WRITE_PERI_REG(UART_CONF0_REG(cunit), 0);
 		}
 	}
 }

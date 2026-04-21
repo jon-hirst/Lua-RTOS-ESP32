@@ -459,40 +459,41 @@ void bt_eddystone_decode(uint8_t *data, uint8_t datalen, bt_adv_frame_t *frame) 
 			char c[2] = {0x00, 0x00};
 
 			memset(frame->data.eddystone_url.url, 0, sizeof(frame->data.eddystone_url.url));
+			size_t url_size = sizeof(frame->data.eddystone_url.url);
 
 			switch (data[pos]) {
-				case HTTP_WWW:  strcat((char *)frame->data.eddystone_url.url, "http://www.");break;
-				case HTTPS_WWW: strcat((char *)frame->data.eddystone_url.url, "https://www.");break;
-				case HTTP:      strcat((char *)frame->data.eddystone_url.url, "http://");break;
-				case HTTPS:     strcat((char *)frame->data.eddystone_url.url, "https://");break;
+				case HTTP_WWW:  strlcat((char *)frame->data.eddystone_url.url, "http://www.", url_size);break;
+				case HTTPS_WWW: strlcat((char *)frame->data.eddystone_url.url, "https://www.", url_size);break;
+				case HTTP:      strlcat((char *)frame->data.eddystone_url.url, "http://", url_size);break;
+				case HTTPS:     strlcat((char *)frame->data.eddystone_url.url, "https://", url_size);break;
 			}
 
 			for(i=0;i<len;i++) {
 				switch (data[++pos]) {
-					case DOT_COM_P:  strcat((char *)frame->data.eddystone_url.url, ".com/") ;break;
-					case DOT_ORG_P:  strcat((char *)frame->data.eddystone_url.url, ".org/") ;break;
-					case DOT_EDU_P:  strcat((char *)frame->data.eddystone_url.url, ".edu/") ;break;
-					case DOT_NET_P:  strcat((char *)frame->data.eddystone_url.url, ".net/") ;break;
-					case DOT_INFO_P: strcat((char *)frame->data.eddystone_url.url, ".info/");break;
-					case DOT_BIZ_P:  strcat((char *)frame->data.eddystone_url.url, ".biz/") ;break;
-					case DOT_GOV_P:  strcat((char *)frame->data.eddystone_url.url, ".gov/") ;break;
-					case DOT_COM_S:  strcat((char *)frame->data.eddystone_url.url, ".com")  ;break;
-					case DOT_ORG_S:  strcat((char *)frame->data.eddystone_url.url, ".org")  ;break;
-					case DOT_EDU_S:  strcat((char *)frame->data.eddystone_url.url, ".edu")  ;break;
-					case DOT_NET_S:  strcat((char *)frame->data.eddystone_url.url, ".net")  ;break;
-					case DOT_INFO_S: strcat((char *)frame->data.eddystone_url.url, ".info") ;break;
-					case DOT_BIZ_S:  strcat((char *)frame->data.eddystone_url.url, ".biz")  ;break;
-					case DOT_GOV_S:  strcat((char *)frame->data.eddystone_url.url, ".gov")  ;break;
+					case DOT_COM_P:  strlcat((char *)frame->data.eddystone_url.url, ".com/", url_size) ;break;
+					case DOT_ORG_P:  strlcat((char *)frame->data.eddystone_url.url, ".org/", url_size) ;break;
+					case DOT_EDU_P:  strlcat((char *)frame->data.eddystone_url.url, ".edu/", url_size) ;break;
+					case DOT_NET_P:  strlcat((char *)frame->data.eddystone_url.url, ".net/", url_size) ;break;
+					case DOT_INFO_P: strlcat((char *)frame->data.eddystone_url.url, ".info/", url_size);break;
+					case DOT_BIZ_P:  strlcat((char *)frame->data.eddystone_url.url, ".biz/", url_size) ;break;
+					case DOT_GOV_P:  strlcat((char *)frame->data.eddystone_url.url, ".gov/", url_size) ;break;
+					case DOT_COM_S:  strlcat((char *)frame->data.eddystone_url.url, ".com", url_size)  ;break;
+					case DOT_ORG_S:  strlcat((char *)frame->data.eddystone_url.url, ".org", url_size)  ;break;
+					case DOT_EDU_S:  strlcat((char *)frame->data.eddystone_url.url, ".edu", url_size)  ;break;
+					case DOT_NET_S:  strlcat((char *)frame->data.eddystone_url.url, ".net", url_size)  ;break;
+					case DOT_INFO_S: strlcat((char *)frame->data.eddystone_url.url, ".info", url_size) ;break;
+					case DOT_BIZ_S:  strlcat((char *)frame->data.eddystone_url.url, ".biz", url_size)  ;break;
+					case DOT_GOV_S:  strlcat((char *)frame->data.eddystone_url.url, ".gov", url_size)  ;break;
 
 					default:
 						c[0] = data[pos];
-						strcat((char *)frame->data.eddystone_url.url, c);
+						strlcat((char *)frame->data.eddystone_url.url, c, url_size);
 				}
 			}
 
 			frame->frame_type = BTAdvEddystoneURL;
 			frame->data.eddystone_url.tx_power = tx_power;
-			frame->data.eddystone_uid.distance = distance(frame->rssi, tx_power);
+			frame->data.eddystone_url.distance = distance(frame->rssi, tx_power);
 
 			return;
 		}

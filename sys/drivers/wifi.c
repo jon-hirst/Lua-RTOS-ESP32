@@ -417,7 +417,7 @@ driver_error_t *wifi_scan(uint16_t *count, wifi_ap_record_t **list) {
             if ((error = wifi_check_error(esp_wifi_scan_get_ap_records(count, *list)))) {
                 *list = NULL;
                 *count = 0;
-                free(list);
+                free(*list);
 
                 return error;
             }

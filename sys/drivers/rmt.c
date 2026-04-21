@@ -628,8 +628,8 @@ driver_error_t *rmt_rx(int deviceid, rmt_item_t *rx, size_t rx_pulses, uint32_t 
         int i;
 
         for(i = 0; i < rx_pulses;i++) {
-            cbuff->duration0 *= devices[channel].tx.scale;
-            cbuff->duration1 *= devices[channel].tx.scale;
+            cbuff->duration0 *= devices[channel].rx.scale;
+            cbuff->duration1 *= devices[channel].rx.scale;
 
             cbuff++;
         }
@@ -771,8 +771,8 @@ driver_error_t *rmt_tx_rx(int deviceid, rmt_item_t *tx, size_t tx_pulses, rmt_it
         int i;
 
         for(i = 0; i < rx_pulses;i++) {
-            cbuff->duration0 *= devices[channel].tx.scale;
-            cbuff->duration1 *= devices[channel].tx.scale;
+            cbuff->duration0 *= devices[channel].rx.scale;
+            cbuff->duration1 *= devices[channel].rx.scale;
 
             cbuff++;
         }

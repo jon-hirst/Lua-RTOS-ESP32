@@ -516,7 +516,7 @@ driver_error_t *stepper_setup(uint8_t step_pin, uint8_t dir_pin, float min_spd, 
         }
     }
 
-    if (i > NSTEP) {
+    if (i >= NSTEP) {
         // No free unit
         mtx_unlock(&stepper_mutex);
         return driver_error(STEPPER_DRIVER, STEPPER_ERR_NO_MORE_UNITS, NULL);
@@ -641,7 +641,7 @@ driver_error_t *stepper_setup(uint8_t step_pin, uint8_t dir_pin, float min_spd, 
 
 driver_error_t *stepper_move(uint8_t unit, float units, float initial_spd, float target_spd, float acc, float jerk) {
     // Sanity checks
-    if (unit > NSTEP) {
+    if (unit >= NSTEP) {
         // Invalid unit
         return driver_error(STEPPER_DRIVER, STEPPER_ERR_INVALID_UNIT, NULL);
     }
@@ -692,7 +692,7 @@ driver_error_t *stepper_move(uint8_t unit, float units, float initial_spd, float
 
 driver_error_t *stepper_get_distance(uint8_t unit, float* units) {
      // Sanity checks
-    if (unit > NSTEP) {
+    if (unit >= NSTEP) {
         // Invalid unit
         return driver_error(STEPPER_DRIVER, STEPPER_ERR_INVALID_UNIT, NULL);
     }
@@ -714,7 +714,7 @@ driver_error_t *stepper_get_distance(uint8_t unit, float* units) {
 
 driver_error_t *stepper_set_position(uint8_t unit, float units) {
      // Sanity checks
-    if (unit > NSTEP) {
+    if (unit >= NSTEP) {
         // Invalid unit
         return driver_error(STEPPER_DRIVER, STEPPER_ERR_INVALID_UNIT, NULL);
     }
@@ -736,7 +736,7 @@ driver_error_t *stepper_set_position(uint8_t unit, float units) {
 
 driver_error_t *stepper_get_position(uint8_t unit, float* units) {
      // Sanity checks
-    if (unit > NSTEP) {
+    if (unit >= NSTEP) {
         // Invalid unit
         return driver_error(STEPPER_DRIVER, STEPPER_ERR_INVALID_UNIT, NULL);
     }
@@ -758,7 +758,7 @@ driver_error_t *stepper_get_position(uint8_t unit, float* units) {
 
 driver_error_t *stepper_is_running(uint8_t unit, uint32_t* running) {
 	// Sanity checks
-    if (unit > NSTEP) {
+    if (unit >= NSTEP) {
         // Invalid unit
         return driver_error(STEPPER_DRIVER, STEPPER_ERR_INVALID_UNIT, NULL);
     }
