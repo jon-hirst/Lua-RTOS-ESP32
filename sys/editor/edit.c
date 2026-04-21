@@ -251,6 +251,7 @@ void reset_undo(struct editor *ed) {
 
 struct editor *create_editor(struct env *env) {
   struct editor *ed = (struct editor *) malloc(sizeof(struct editor));
+  if (!ed) return NULL;
   memset(ed, 0, sizeof(struct editor));
   if (env->current) {
     ed->next = env->current->next;
@@ -294,7 +295,8 @@ struct editor *find_editor(struct env *env, char *filename) {
 
 int new_file(struct editor *ed, char *filename) {
   if (*filename) {
-    strcpy(ed->filename, filename);
+    strncpy(ed->filename, filename, FILENAME_MAX - 1);
+    ed->filename[FILENAME_MAX - 1] = '\0';
   } else {
     sprintf(ed->filename, "Untitled-%d", ++ed->env->untitled);
     ed->newfile = 1;
@@ -405,7 +407,8 @@ void move_gap(struct editor *ed, int pos, int minsize) {
 
     if (gapsize + MINEXTEND > minsize) minsize = gapsize + MINEXTEND;
     newsize = (ed->end - ed->start) - gapsize + minsize;
-    start = (unsigned char *) malloc(newsize); // TODO check for out of memory
+    start = (unsigned char *) malloc(newsize);
+    if (!start) return;
     gap = start + pos;
     rest = gap + minsize;
     end = start + newsize;
@@ -484,18 +487,24 @@ void replace(struct editor *ed, int pos, int len, unsigned char *buf, int bufsiz
     undo = ed->undotail;
     if (undo && len == 0 && bufsize == 1 && undo->erased == 0 && pos == undo->pos + undo->inserted) {
       // Insert character at end of current redo buffer
-      undo->redobuf = realloc(undo->redobuf, undo->inserted + 1);
+      unsigned char *newredobuf = realloc(undo->redobuf, undo->inserted + 1);
+      if (!newredobuf) return;
+      undo->redobuf = newredobuf;
       undo->redobuf[undo->inserted] = *buf;
       undo->inserted++;
     } else if (undo && len == 1 && bufsize == 0 && undo->inserted == 0 && pos == undo->pos) {
       // Erase character at end of current undo buffer
-      undo->undobuf = realloc(undo->undobuf, undo->erased + 1);
+      unsigned char *newundobuf = realloc(undo->undobuf, undo->erased + 1);
+      if (!newundobuf) return;
+      undo->undobuf = newundobuf;
       undo->undobuf[undo->erased] = get(ed, pos);
       undo->erased++;
     } else if (undo && len == 1 && bufsize == 0 && undo->inserted == 0 && pos == undo->pos - 1) {
       // Erase character at beginning of current undo buffer
       undo->pos--;
-      undo->undobuf = realloc(undo->undobuf, undo->erased + 1);
+      unsigned char *newundobuf2 = realloc(undo->undobuf, undo->erased + 1);
+      if (!newundobuf2) { undo->pos++; return; }
+      undo->undobuf = newundobuf2;
       memmove(undo->undobuf + 1, undo->undobuf, undo->erased);
       undo->undobuf[0] = get(ed, pos);
       undo->erased++;
@@ -1753,7 +1762,8 @@ void save_editor(struct editor *ed) {
         return;
       }
     //}
-    strcpy(ed->filename, (char *)ed->env->linebuf);
+    strncpy(ed->filename, (char *)ed->env->linebuf, FILENAME_MAX - 1);
+    ed->filename[FILENAME_MAX - 1] = '\0';
     ed->newfile = 0;
   }
 
