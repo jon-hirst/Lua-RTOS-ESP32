@@ -604,7 +604,7 @@ esp_err_t esp_task_wdt_reconfigure(const esp_task_wdt_config_t *config)
 
     portEXIT_CRITICAL(&spinlock);
 err:
-    return ESP_OK;
+    return ret;
 }
 
 esp_err_t esp_task_wdt_stop(void)
