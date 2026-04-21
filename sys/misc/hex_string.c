@@ -53,7 +53,9 @@ void hex_string_to_val(char *hbuff, char *vbuff, int len, int reverse) {
 
     // If reverse, put hbuff at the last byte
     if (reverse) {
+        char *hstart = hbuff;
         while(*hbuff) hbuff++;
+        if (hbuff - hstart < 2) return;
         hbuff -= 2;
     }
 
@@ -109,21 +111,19 @@ void val_to_hex_string_caps(char *hbuff, char *vbuff, int len, int reverse, int 
     }
 
     for(i=0;i<len;i++) {
-        if ((((*vbuff & 0xf0) >> 4) >= 0) && (((*vbuff & 0xf0) >> 4) <= 9)) {
-            *hbuff = '0' + ((*vbuff & 0xf0) >> 4);
-        }
-
-        if ((((*vbuff & 0xf0) >> 4) >= 10) && (((*vbuff & 0xf0) >> 4) <= 15)) {
-            *hbuff = base + (((*vbuff & 0xf0) >> 4) - 10);
+        int hi = (*vbuff & 0xf0) >> 4;
+        if (hi <= 9) {
+            *hbuff = '0' + hi;
+        } else {
+            *hbuff = base + (hi - 10);
         }
         hbuff++;
 
-        if (((*vbuff & 0x0f) >= 0) && ((*vbuff & 0x0f) <= 9)) {
-            *hbuff = '0' + (*vbuff & 0x0f);
-        }
-
-        if (((*vbuff & 0x0f) >= 10) && ((*vbuff & 0x0f) <= 15)) {
-            *hbuff = base + ((*vbuff & 0x0f) - 10);
+        int lo = *vbuff & 0x0f;
+        if (lo <= 9) {
+            *hbuff = '0' + lo;
+        } else {
+            *hbuff = base + (lo - 10);
         }
         hbuff++;
 
