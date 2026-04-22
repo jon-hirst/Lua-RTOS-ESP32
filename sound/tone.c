@@ -71,6 +71,7 @@ driver_error_t *tone_setup(tone_gen_t gen, tone_gen_config_t *config, tone_gen_d
 			error = tone_pwm_setup(&config->pwm, (tone_pwm_device_h_t *)(&(*h)->h));
 			if (error) {
 				tone_unsetup(h);
+				return error;
 			}
 
 			break;
@@ -84,6 +85,7 @@ driver_error_t *tone_setup(tone_gen_t gen, tone_gen_config_t *config, tone_gen_d
 			error = tone_dac_setup(&config->dac, (tone_dac_device_h_t *)(&(*h)->h));
 			if (error) {
 				tone_unsetup(h);
+				return error;
 			}
 
 			break;

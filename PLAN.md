@@ -69,6 +69,12 @@ DONE: Fix faults found in romfs/romfs.c
 
 DONE: Fix faults found in sys/lwip/ping.c, sys/lwip/netif/vfs_tun.c, sys/sensors/ds1820.c and sys/vfs/vfs.c
 
+DONE: Fix faults found in sound/tone.c and sound/tone_dac.c
+
+- F1 (tone.c:72,85): added return error after tone_unsetup(h) in both PWM and DAC failure paths to prevent use-after-free and silent error discard
+- F2 (tone_dac.c:119): moved (*h)->channel = channel assignment to immediately after pin assignment, before first use at line 148; removed duplicate late assignment
+- F3 (tone_dac.c:177-178): guarded dac_continuous_disable/del_channels with NULL check on hndl to prevent crash when unsetup is called before channel setup completes
+
 - F1 (ping.c:168): added mem_free(iecho) before return to fix memory leak on every ping_send call
 - F2 (vfs_tun.c:177-179): memcpy now uses min(p->len, size) to prevent overflow of caller's buffer
 - F3 (ds1820.c:237): negative temperature formula fixed — shift unsigned absolute value before negating to avoid arithmetic-shift sign error on odd half-degree values

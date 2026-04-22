@@ -117,6 +117,7 @@ driver_error_t *tone_dac_setup(tone_dac_config_t *config, tone_dac_device_h_t *h
 #endif
 
 	(*h)->pin = config->pin;
+	(*h)->channel = channel;
 
 	// Allocate space for internal buffer
 #if CONFIG_DAC_DMA_AUTO_16BIT_ALIGN
@@ -160,7 +161,6 @@ driver_error_t *tone_dac_setup(tone_dac_config_t *config, tone_dac_device_h_t *h
 
 	(*h)->volume = 1.0;
 	(*h)->samples = TONE_DAC_SAMPLE_RATE;
-	(*h)->channel = channel;
 
 	_dac[(*h)->channel].device = *h;
 
@@ -174,8 +174,11 @@ void tone_dac_unsetup(tone_dac_device_h_t *h) {
 	driver_unlock(SOUND_DRIVER, 0, GPIO_DRIVER, (*h)->pin);
 	#endif
 
-	dac_continuous_disable(_dac[(*h)->channel].hndl);
-	dac_continuous_del_channels(_dac[(*h)->channel].hndl);
+	if (_dac[(*h)->channel].hndl) {
+		dac_continuous_disable(_dac[(*h)->channel].hndl);
+		dac_continuous_del_channels(_dac[(*h)->channel].hndl);
+		_dac[(*h)->channel].hndl = NULL;
+	}
 
 	// Free resources
 	if ((*h)->buff) {
