@@ -234,7 +234,7 @@ static owState_t TM_DS18B20_Read(uint8_t dev, unsigned char *ROM, double *destin
 		temperature = ((int)(data[0] >> 1))*1000;
 	}
 	else { // negative
-		temperature = 1000*(-1*(int)(0x100-data[0]) >> 1);
+		temperature = -(int)((0x100-data[0]) >> 1) * 1000;
 	}
 	temperature -= 250;
 	decimal = 1000*((int)(data[7] - data[6]));

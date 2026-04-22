@@ -165,6 +165,7 @@ static err_t ping_send(int s, ip_addr_t *addr, int size) {
         transmitted++;
     }
 
+    mem_free(iecho);
     return (err ? ERR_OK : ERR_VAL);
 }
 

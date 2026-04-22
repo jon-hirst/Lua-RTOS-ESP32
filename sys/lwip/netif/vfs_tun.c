@@ -174,9 +174,9 @@ static ssize_t vfs_tun_read(int fd, void * dst, size_t size) {
     if (tun_queue_rx && (len > 0)) {
         xQueueReceive(tun_queue_rx, &p, portMAX_DELAY);
 
-        len = p->len;
+        len = (p->len < size) ? p->len : size;
 
-        memcpy(dst, p->payload, p->len);
+        memcpy(dst, p->payload, len);
 
         pbuf_free(p);
     }

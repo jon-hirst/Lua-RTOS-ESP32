@@ -67,6 +67,13 @@ DONE: Fix faults found in ramfs/ramfs.c
 
 DONE: Fix faults found in romfs/romfs.c
 
+DONE: Fix faults found in sys/lwip/ping.c, sys/lwip/netif/vfs_tun.c, sys/sensors/ds1820.c and sys/vfs/vfs.c
+
+- F1 (ping.c:168): added mem_free(iecho) before return to fix memory leak on every ping_send call
+- F2 (vfs_tun.c:177-179): memcpy now uses min(p->len, size) to prevent overflow of caller's buffer
+- F3 (ds1820.c:237): negative temperature formula fixed — shift unsigned absolute value before negating to avoid arithmetic-shift sign error on odd half-degree values
+- F4 (vfs.c:298): fd <= maxfdp1 changed to fd < maxfdp1 to stop the select loop one fd short of the out-of-range descriptor
+
 - F1 (romfs.c:529): assert(ret >= 0) replaced with if (ret < 0) return ret so seek failure in romfs_file_open is properly propagated in release builds
 - F2 (romfs.c:95): name_len > 63 guard added before allocation in add_entry (MKROMFS) to prevent name length being silently truncated to 6 bits in flags
 

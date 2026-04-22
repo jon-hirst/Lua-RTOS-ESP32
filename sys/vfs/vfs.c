@@ -295,7 +295,7 @@ int vfs_generic_select(vfs_fd_local_storage_t *local_storage, vfs_has_bytes has_
     int num = 0; // Number of available file descriptors
     int fd;      // Current inspected file descriptor
 
-    for(fd = 0;fd <= maxfdp1;fd++) {
+    for(fd = 0;fd < maxfdp1;fd++) {
         if (readset && FD_ISSET(fd, readset)) {
             if (has_bytes(fd, to)) {
                 num++;
