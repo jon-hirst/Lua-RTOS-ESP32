@@ -92,6 +92,10 @@ static int add_entry(romfs_t *fs, const char *name, romfs_entry_t *pa_parent, ro
         file_entry_size = sizeof(romfs_file_content_t);
     }
 
+    if (name_len > (ROMFS_ENTRY_NAME_LEN_MSK >> ROMFS_ENTRY_NAME_LEN_POS)) {
+        return ROMFS_ERR_NAMETOOLONG;
+    }
+
     if (fs->current_size + entry_size + file_entry_size > fs->size) {
         return ROMFS_ERR_NOSPC;
     }
@@ -526,7 +530,9 @@ int romfs_file_open(romfs_t *fs, romfs_file_t *file, const char *path, int flags
 
     // Set file position
     ret = romfs_file_seek_internal(fs, file, 0, ROMFS_SEEK_SET);
-    assert(ret >= 0);
+    if (ret < 0) {
+        return ret;
+    }
 
     return ROMFS_ERR_OK;
 }

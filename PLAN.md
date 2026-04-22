@@ -65,6 +65,11 @@ DONE: Fix faults found in mqtt/Socket.c, mqtt/Thread.c and mqtt/MQTTPersistenceD
 
 DONE: Fix faults found in ramfs/ramfs.c
 
+DONE: Fix faults found in romfs/romfs.c
+
+- F1 (romfs.c:529): assert(ret >= 0) replaced with if (ret < 0) return ret so seek failure in romfs_file_open is properly propagated in release builds
+- F2 (romfs.c:95): name_len > 63 guard added before allocation in add_entry (MKROMFS) to prevent name length being silently truncated to 6 bits in flags
+
 - F1 (ramfs.c:525): block_delta truncate-to-zero bug fixed — now uses explicit -1 sentinel for "no last block" instead of relying on -1/block_size which truncates to 0 in C
 - F2 (ramfs.c:593): stack[++top] overflow in ramfs_umount fixed — added bounds check (top >= 255) returning RAMFS_ERR_INVAL before the push
 - F3 (ramfs.c:215): name length silently truncated to 6 bits fixed — added guard in add_entry rejecting names longer than 63 characters with RAMFS_ERR_NAMETOOLONG
