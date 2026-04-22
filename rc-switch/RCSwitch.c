@@ -515,6 +515,7 @@ char* getCodeWordD(char sGroup, int nDevice, bool bStatus) {
  * @param sCodeWord   a tristate code word consisting of the letter 0, 1, F
  */
 void RCSwitch_sendTriState(const char* sCodeWord) {
+  if (!sCodeWord) return;
   // turn the tristate code word into the corresponding bit pattern, then send it
   unsigned long code = 0;
   unsigned int length = 0;
@@ -542,6 +543,7 @@ void RCSwitch_sendTriState(const char* sCodeWord) {
  * @param sCodeWord   a binary code word consisting of the letter 0, 1
  */
 void RCSwitch_sendBinary(const char* sCodeWord) {
+  if (!sCodeWord) return;
   // turn the tristate code word into the corresponding bit pattern, then send it
   unsigned long code = 0;
   unsigned int length = 0;

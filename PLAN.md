@@ -71,6 +71,14 @@ DONE: Fix faults found in sys/lwip/ping.c, sys/lwip/netif/vfs_tun.c, sys/sensors
 
 DONE: Fix faults found in sound/tone.c and sound/tone_dac.c
 
+DONE: Fix faults found in rc-switch/RCSwitch.c
+
+- F1 (RCSwitch.c:517,544): added NULL guard at top of RCSwitch_sendTriState and RCSwitch_sendBinary to prevent null-pointer dereference when getCodeWordB/C/D returns NULL for invalid parameters
+
+DONE: Fix faults found in captivedns/captivedns.c
+
+- F1 (captivedns.c:158): added p->len < sizeof(struct DNSHeader) guard before casting p->payload to DNSHeader* to prevent out-of-bounds read on short/malformed UDP packets
+
 DONE: Fix faults found in FabGL/src
 
 - F1 (SSD1306Controller.cpp:384): malloc result checked before memset
