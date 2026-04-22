@@ -155,6 +155,12 @@ static void
 captivedns_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
   struct netif *netif = ip_current_input_netif();
+
+  if (p->len < sizeof(struct DNSHeader)) {
+    pbuf_free(p);
+    return;
+  }
+
   struct DNSHeader* dnsHeader = (struct DNSHeader*)p->payload;
 
   if (dnsHeader->QR == DNS_QR_QUERY && dnsHeader->OPCode == DNS_OPCODE_QUERY &&
