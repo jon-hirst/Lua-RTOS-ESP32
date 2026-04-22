@@ -701,14 +701,14 @@ driver_error_t *lora_gw_setup(int band, const char *host, int port, int frequenc
 
     // Frequency
     int i;
-    for(i=0;i<sizeof(freq);i++) {
+    for(i=0;i<sizeof(freq)/sizeof(freq[0]);i++) {
         if (freq[i] == frequency) {
             freq_idx = i;
             break;
         }
     }
 
-    if (i >= sizeof(freq)) {
+    if (i >= sizeof(freq)/sizeof(freq[0])) {
         return driver_error(LORA_DRIVER, LORA_ERR_INVALID_FREQ, NULL);
     }
 

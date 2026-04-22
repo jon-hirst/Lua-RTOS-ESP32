@@ -212,6 +212,7 @@ void onEvent (ev_t ev) {
 					  payload[LMIC.dataLen * 2] = 0x00;
 
 					  lora_rx_callback(1, (char *)payload);
+				  free(payload);
 				  }
 		      }
 
@@ -379,11 +380,13 @@ driver_error_t *lora_mac_set(const char command, const char *value) {
 		
 		case LORA_MAC_SET_DR:
 			if ((atoi((char *)value) < 0) || (atoi((char *)value) > 15)) {
+				mtx_unlock(&lora_mtx);
 				return driver_error(LORA_DRIVER, LORA_ERR_INVALID_DR, NULL);
 			}
 
 			u1_t dr = data_rates[atoi((char *)value)];
 			if (dr == DR_NONE) {
+				mtx_unlock(&lora_mtx);
 				return driver_error(LORA_DRIVER, LORA_ERR_INVALID_DR, NULL);
 			}
 
@@ -595,7 +598,6 @@ driver_error_t *lora_tx(int cnf, int port, const char *data) {
 	msgid++;
 
 	LMIC.seqnoUp = msgid;
-	payload[payload_len] = msgid;
 
 	// Set DR
 	if (!adr) {

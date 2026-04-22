@@ -57,6 +57,48 @@ the interrupt WDT to fire after 3 seconds.
 Fix: Changed CONFIG_LUA_RTOS_LUA_STACK_SIZE from 10240 to 20480 (the Kconfig default)
 in sdkconfig.
 
+DONE: Fix faults found in lora/gateway/single_channel/gateway.c and lora/node/lmic/
+
+- F1 (gateway.c:704,711): sizeof(freq) → sizeof(freq)/sizeof(freq[0]) at both loop bound and guard
+- F2 (lmic_hal.c:375): %s → %d for int line parameter in syslog format string
+- F3 (lora_lmic.c:381-388): added mtx_unlock(&lora_mtx) before each early return in LORA_MAC_SET_DR
+- F4 (lora_lmic.c:214): added free(payload) after lora_rx_callback to prevent memory leak
+- F5 (lora_lmic.c:598): removed payload[payload_len] = msgid (byte was never transmitted; seqnoUp already set)
+
+F1 (gateway.c:704,711) sizeof used instead of element count for freq[] array
+  freq is const uint32_t freq[9], so sizeof(freq) == 36 (bytes), not 9 (elements).
+  The loop "for(i=0;i<sizeof(freq);i++)" iterates 36 times instead of 9, reading
+  freq[9]..freq[35] which are out of bounds. The guard "if (i >= sizeof(freq))"
+  also uses 36 instead of 9, so a valid match would still incorrectly report
+  "not found". Fix: replace sizeof(freq) with sizeof(freq)/sizeof(freq[0]) at
+  both sites.
+
+F2 (lmic_hal.c:375) Wrong format specifier in hal_failed(): %s used for int
+  syslog(LOG_ERR, "... line %s\n", ..., file, line);
+  'line' is int but %s treats it as a char* pointer. This is undefined behaviour
+  and will print garbage or crash. Should be %d.
+
+F3 (lora_lmic.c:381-388) Mutex not released on early return for invalid DR
+  lora_mac_set() locks lora_mtx at line 340. Inside case LORA_MAC_SET_DR there
+  are two early returns:
+    if (atoi(value) < 0 || atoi(value) > 15) return driver_error(...);
+    if (dr == DR_NONE)                        return driver_error(...);
+  Neither calls mtx_unlock(&lora_mtx) before returning. The mutex is
+  permanently held, deadlocking every subsequent lora_mac_set() call.
+
+F4 (lora_lmic.c:208-215) Memory leak: rx payload buffer never freed
+  In onEvent(EV_TXCOMPLETE) a buffer is malloc'd for the hex-encoded downlink
+  payload and passed to lora_rx_callback(). After the callback returns the
+  pointer is discarded without free(). Every received downlink leaks
+  LMIC.dataLen * 2 + 1 bytes.
+
+F5 (lora_lmic.c:597-598) msgid written to payload but payload_len not updated
+  payload[payload_len] = msgid writes the message counter into the byte
+  immediately after the decoded payload, but payload_len is not incremented
+  before passing it to hal_lmic_tx(). The byte is therefore never transmitted.
+  Either the intent was to append it (fix: payload_len++) or the write should
+  be removed.
+
 DONE: Fix faults found in lfs/lfs.c, lfs/lfs.h and lfs/lfs_util.h
 
 - F1 (lfs.h:411): lfs_file_rewind comment corrected from LFS_SEEK_CUR to LFS_SEEK_SET

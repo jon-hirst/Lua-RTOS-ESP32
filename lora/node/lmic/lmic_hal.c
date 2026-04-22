@@ -372,7 +372,7 @@ u1_t hal_checkTimer (u8_t targettime) {
  *   - action could be HALT or reboot
  */
 void hal_failed (char *file, int line) {
-	syslog(LOG_ERR, "%lu: assert at %s, line %s\n", (u4_t)os_getTime(), file, line);
+	syslog(LOG_ERR, "%lu: assert at %s, line %d\n", (u4_t)os_getTime(), file, line);
 
 	for(;;);
 }
