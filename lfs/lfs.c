@@ -416,6 +416,7 @@ static int lfs_dir_alloc(lfs_t *lfs, lfs_dir_t *dir) {
 
     // rather than clobbering one of the blocks we just pretend
     // the revision may be valid
+    dir->d.rev = 0;
     int err = lfs_bd_read(lfs, dir->pair[0], 0, &dir->d.rev, 4);
     if (err && err != LFS_ERR_CORRUPT) {
         return err;
@@ -1141,7 +1142,7 @@ static int lfs_ctz_find(lfs_t *lfs,
             return err;
         }
 
-        LFS_ASSERT(head >= 2 && head <= lfs->cfg->block_count);
+        LFS_ASSERT(head >= 2 && head < lfs->cfg->block_count);
         current -= 1 << skip;
     }
 
@@ -1161,7 +1162,7 @@ static int lfs_ctz_extend(lfs_t *lfs,
         if (err) {
             return err;
         }
-        LFS_ASSERT(nblock >= 2 && nblock <= lfs->cfg->block_count);
+        LFS_ASSERT(nblock >= 2 && nblock < lfs->cfg->block_count);
 
         if (true) {
             err = lfs_bd_erase(lfs, nblock);
@@ -1232,7 +1233,7 @@ static int lfs_ctz_extend(lfs_t *lfs,
                     }
                 }
 
-                LFS_ASSERT(head >= 2 && head <= lfs->cfg->block_count);
+                LFS_ASSERT(head >= 2 && head < lfs->cfg->block_count);
             }
 
             *block = nblock;
@@ -1937,7 +1938,7 @@ int lfs_rename(lfs_t *lfs, const char *oldpath, const char *newpath) {
 
     // must have same type
     if (prevexists && preventry.d.type != oldentry.d.type) {
-        return LFS_ERR_ISDIR;
+        return (preventry.d.type == LFS_TYPE_DIR) ? LFS_ERR_ISDIR : LFS_ERR_NOTDIR;
     }
 
     lfs_dir_t dir;

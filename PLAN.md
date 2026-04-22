@@ -57,6 +57,50 @@ the interrupt WDT to fire after 3 seconds.
 Fix: Changed CONFIG_LUA_RTOS_LUA_STACK_SIZE from 10240 to 20480 (the Kconfig default)
 in sdkconfig.
 
+DONE: Fix faults found in lfs/lfs.c, lfs/lfs.h and lfs/lfs_util.h
+
+- F1 (lfs.h:411): lfs_file_rewind comment corrected from LFS_SEEK_CUR to LFS_SEEK_SET
+- F2 (lfs.c:419): dir->d.rev initialised to 0 before lfs_bd_read to prevent
+  uninitialized value being used on LFS_ERR_CORRUPT path
+- F3 (lfs.c:1144,1164,1235): three assertions changed from
+  "head/nblock <= block_count" to "head/nblock < block_count"
+- F4 (lfs_util.h:93): guard "if (a <= 1) return 1" added to lfs_npw2 to
+  prevent __builtin_clz(0) undefined behaviour when a == 1
+- F5 (lfs.c:1939): lfs_rename type-mismatch now returns LFS_ERR_ISDIR when
+  the destination is a directory, LFS_ERR_NOTDIR when it is a plain file
+
+F1 (lfs.h:411) Wrong comment on lfs_file_rewind
+  Doc says "Equivalent to lfs_file_seek(lfs, file, 0, LFS_SEEK_CUR)" but
+  LFS_SEEK_CUR with offset 0 is a no-op (returns current position). Should
+  say LFS_SEEK_SET.
+
+F2 (lfs.c:419-425) Uninitialized dir->d.rev used when lfs_bd_read returns
+  LFS_ERR_CORRUPT in lfs_dir_alloc.
+  When lfs_bd_read returns LFS_ERR_CORRUPT the read is skipped and the
+  lfs_fromle32 conversion is skipped, leaving dir->d.rev as uninitialised
+  stack garbage. The subsequent dir->d.rev += 1 writes that garbage + 1
+  as the directory revision number. Should initialise dir->d.rev = 0 before
+  the read so the CORRUPT path starts at revision 1.
+
+F3 (lfs.c:1144, 1164, 1235) Off-by-one in block-number assertions
+  Three assertions use "nblock <= lfs->cfg->block_count" but valid block
+  indices are 0 .. block_count-1, so the correct test is
+  "nblock < lfs->cfg->block_count". The current form permits block_count
+  itself to pass the assertion, which could then be used as an out-of-range
+  block address in a subsequent read/prog/erase call.
+
+F4 (lfs_util.h:93) Undefined behaviour in lfs_npw2 when a == 1
+  The GCC intrinsic implementation is: return 32 - __builtin_clz(a-1);
+  When a == 1, a-1 == 0, and __builtin_clz(0) is explicitly undefined
+  behaviour per GCC docs. Should add a special-case: if (a <= 1) return 0.
+
+F5 (lfs.c:1939-1940) Wrong error code in lfs_rename type-mismatch check
+  When source and destination exist but have different types (one is a file,
+  the other a directory) the code always returns LFS_ERR_ISDIR. POSIX
+  requires ENOTDIR (LFS_ERR_NOTDIR) when the new path is a non-directory
+  but the old path is a directory. The fix is to check which operand is the
+  directory and return the appropriate code.
+
 DONE: Fix faults found in http/httpsrv.c and http/preprocessor.c
 
 httpsrv.c:

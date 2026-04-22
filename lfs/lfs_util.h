@@ -89,6 +89,7 @@ static inline uint32_t lfs_min(uint32_t a, uint32_t b) {
 
 // Find the next smallest power of 2 less than or equal to a
 static inline uint32_t lfs_npw2(uint32_t a) {
+    if (a <= 1) return 1;
 #if !defined(LFS_NO_INTRINSICS) && (defined(__GNUC__) || defined(__CC_ARM))
     return 32 - __builtin_clz(a-1);
 #else
