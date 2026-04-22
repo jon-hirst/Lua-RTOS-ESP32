@@ -215,6 +215,10 @@ static int add_block(ramfs_t *fs, ramfs_file_t *file) {
 static int add_entry(ramfs_t *fs, const char *name, ramfs_entry_t *parent, ramfs_entry_t **entry, ramfs_entry_type_t entry_type) {
     int name_len = strlen(name);
 
+    if (name_len > (RAMFS_ENTRY_NAME_LEN_MSK >> RAMFS_ENTRY_NAME_LEN_POS)) {
+        return RAMFS_ERR_NAMETOOLONG;
+    }
+
     // Check for space
     ramfs_size_t entry_size = sizeof(ramfs_entry_t) + name_len - 1;
     ramfs_size_t header_size = 0;
@@ -522,7 +526,9 @@ static int ramfs_file_truncate_internal(ramfs_t *fs, ramfs_file_t *file, ramfs_o
         return RAMFS_ERR_INVAL;
     }
 
-    int block_delta = ((size - 1) / fs->block_size) - ((file->entry->file.header->size - 1) / fs->block_size);
+    int new_last = (size > 0) ? ((size - 1) / fs->block_size) : -1;
+    int old_last = (file->entry->file.header->size > 0) ? ((file->entry->file.header->size - 1) / fs->block_size) : -1;
+    int block_delta = new_last - old_last;
 
     if (block_delta < 0) {
         // Decrease size
@@ -590,6 +596,10 @@ int ramfs_umount(ramfs_t *fs) {
                 if (!centry->dir.child) {
                     remove_entry(fs, centry,  NULL, NULL, 1);
                 } else {
+                    if (top >= 255) {
+                        ramfs_lock_destroy(fs->lock);
+                        return RAMFS_ERR_INVAL;
+                    }
                     stack[++top] = centry;
                 }
             }
