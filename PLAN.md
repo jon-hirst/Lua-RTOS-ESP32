@@ -56,3 +56,62 @@ the interrupt WDT to fire after 3 seconds.
 
 Fix: Changed CONFIG_LUA_RTOS_LUA_STACK_SIZE from 10240 to 20480 (the Kconfig default)
 in sdkconfig.
+
+DONE: Fix faults found in http/httpsrv.c and http/preprocessor.c
+
+httpsrv.c:
+- F1 (line 152): .txt MIME type changed from "text/html" to "text/plain"
+- F2 (lines 300-302): Malformed cache headers fixed to "Pragma: no-cache\r\n" and "Expires: 0\r\n"
+- F3 (line 549): AI_NUMERICHOST replaced with NI_NUMERICHOST for getnameinfo()
+- F4 (line 676): sizeof(data) replaced with HTTP_BUFF_SIZE in fread() call
+- F5 (line 1020): contentlength clamped to HTTP_BUFF_SIZE to prevent heap buffer overflow
+
+preprocessor.c:
+- F6: nested counter now incremented/decremented only on full "<?lua"/"?>" token
+  match, not per-character; partial-match false starts no longer corrupt depth tracking
+- F7: string-delimiter tracking now gated on lua=1, guarded by prev!='\\' to handle
+  escape sequences; token matching gated on !string so ?> inside a string literal
+  is not treated as the closing tag; prev=c maintained on all code paths
+
+Faults found in http/httpsrv.c:
+
+F1 (httpsrv.c:152) Wrong MIME type for .txt
+  get_mime_type() returns "text/html" for .txt files; should be "text/plain".
+
+F2 (httpsrv.c:300-302) Malformed HTTP cache headers in send_headers()
+  Two lines are sent without a header-name prefix:
+    do_printf(request, "no-cache\r\n");   // should be "Pragma: no-cache\r\n"
+    do_printf(request, "0\r\n");          // should be "Expires: 0\r\n"
+  Clients receive invalid HTTP header lines and will reject or misparse them.
+
+F3 (httpsrv.c:549) Wrong flag passed to getnameinfo()
+  AI_NUMERICHOST (a getaddrinfo() flag, value 4) is passed where
+  NI_NUMERICHOST (value 1) is required. The remote address is either
+  looked up via DNS or returned incorrectly.
+
+F4 (httpsrv.c:676) sizeof(pointer) used instead of buffer size in fread()
+  data is char* so sizeof(data) is 4 or 8 bytes (pointer size), not
+  HTTP_BUFF_SIZE (1024). Static files are sent in 4/8-byte chunks, massively
+  increasing transfer time. Should be HTTP_BUFF_SIZE.
+
+F5 (httpsrv.c:996+1026) Buffer overflow in POST Content-Length handling
+  pathbuf is HTTP_BUFF_SIZE (1024) bytes. contentlength is taken from the
+  client-supplied Content-Length header (atoi(contentlen)+1), which can be
+  arbitrarily large. do_gets(pathbuf, contentlength, request) then writes up
+  to contentlength bytes into pathbuf — a heap buffer overflow if the client
+  sends Content-Length > 1024.
+
+Faults found in http/preprocessor.c:
+
+F6 (preprocessor.c: nested counter) Partial token matches corrupt nested counter
+  nested is incremented for every character matched in a partial match of
+  "<?lua" or "?>" and is never rolled back when the match fails. A sequence
+  like "<?x" leaves nested == 2 permanently, causing subsequent nesting checks
+  (nested > 1, nested > 0) to fire incorrectly, leading to garbled output.
+
+F7 (preprocessor.c:96-114) Escape sequences not handled in string tracking
+  The quote-tracking logic toggles the string flag on every unescaped " or ',
+  but does not check for a preceding backslash. A literal \" inside a string
+  incorrectly ends the tracked string, causing subsequent characters to be
+  treated as outside a string, potentially misidentifying <?lua or ?> tokens
+  embedded in string literals.

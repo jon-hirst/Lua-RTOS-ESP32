@@ -149,7 +149,7 @@ char *get_mime_type(char *name) {
 	if (!ext) return NULL;
 	if (strcmp(ext, ".html") == 0) return "text/html";
 	if (strcmp(ext, ".htm")  == 0) return "text/html";
-	if (strcmp(ext, ".txt")  == 0) return "text/html";
+	if (strcmp(ext, ".txt")  == 0) return "text/plain";
 	if (strcmp(ext, ".jpg")  == 0) return "image/jpeg";
 	if (strcmp(ext, ".jpeg") == 0) return "image/jpeg";
 	if (strcmp(ext, ".gif")  == 0) return "image/gif";
@@ -298,8 +298,8 @@ void send_headers(http_request_handle *request, int status, char *title, char *e
 	do_printf(request, "Connection: close\r\n");
 
 	do_printf(request, "Cache-Control: no-cache, no-store, must-revalidate\r\n");
-	do_printf(request, "no-cache\r\n");
-	do_printf(request, "0\r\n");
+	do_printf(request, "Pragma: no-cache\r\n");
+	do_printf(request, "Expires: 0\r\n");
 
 	do_printf(request, "\r\n");
 }
@@ -673,7 +673,7 @@ void send_file(http_request_handle *request, char *path, struct stat *statbuf) {
 			int length = S_ISREG(statbuf->st_mode) ? statbuf->st_size : -1;
 			send_headers(request, 200, "OK", NULL, get_mime_type(path), length);
 			int read = 0;
-			while ((read = fread(data, 1, sizeof (data), file)) > 0) request_write(request, data, read);
+			while ((read = fread(data, 1, HTTP_BUFF_SIZE, file)) > 0) request_write(request, data, read);
 			free(data);
 		}
 		fclose(file);
@@ -1018,6 +1018,7 @@ static int process(http_request_handle *request) {
 						contentlen = strtok_r(NULL, "\r", &save_ptr); //the actual content length
 						while(*contentlen==' ') contentlen++; //skip any spaces after the colon
 						contentlength = atoi(contentlen)+1;
+					if (contentlength > HTTP_BUFF_SIZE) contentlength = HTTP_BUFF_SIZE;
 					}
 				}
 			}

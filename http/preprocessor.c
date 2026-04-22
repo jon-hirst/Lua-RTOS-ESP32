@@ -92,32 +92,34 @@ int http_preprocess_lua_page(const char *ipath, const char *opath) {
 	fprintf(ofp, "do\n");
 	fprintf(ofp, "local print = net.service.http.print_chunk\n");
 
+	char prev = 0;
+
     while((c = fgetc(ifp)) != EOF) {
-    	if (c == '"') {
-    		if (!string) {
-    			delim = '\"';
-    			string = 1;
-    		} else {
-    			if (c == delim) {
+    	/* Track string delimiters inside Lua blocks to avoid treating ?>
+    	 * inside a string literal as the closing tag. Only toggle on
+    	 * unescaped quotes (prev != '\\'). */
+    	if (lua && prev != '\\') {
+    		if (c == '"') {
+    			if (!string) {
+    				delim = '\"';
+    				string = 1;
+    			} else if (c == delim) {
     				string = 0;
     			}
-    		}
-    	} else if (c == '\'') {
-    		if (!string) {
-    			delim = '\'';
-    			string = 1;
-    		} else {
-    			if (c == delim) {
+    		} else if (c == '\'') {
+    			if (!string) {
+    				delim = '\'';
+    				string = 1;
+    			} else if (c == delim) {
     				string = 0;
     			}
     		}
     	}
 
-		if (c == *cbt) {
-			nested++;
-
+		if (!string && c == *cbt) {
 			cbt++;
 			if (!*cbt) {
+				nested++;   /* increment only on full "<?lua" match */
 				lua = 1;
 				add_cr = 1;
 				cbuff = buff;
@@ -133,13 +135,14 @@ int http_preprocess_lua_page(const char *ipath, const char *opath) {
 			}
 
 			*cbuff = '\0';
+			prev = c;
 			continue;
-		} else if (c == *cet) {
-			nested--;
-
+		} else if (!string && c == *cet) {
 			cet++;
 			if (!*cet) {
+				nested--;   /* decrement only on full "?>" match */
 				lua = 0;
+				string = 0;
 				add_cr = 1;
 
 				if (nested > 0) {
@@ -155,6 +158,7 @@ int http_preprocess_lua_page(const char *ipath, const char *opath) {
 			}
 
 			*cbuff = '\0';
+			prev = c;
 			continue;
 		} else {
 			cbt = bt;
@@ -218,6 +222,7 @@ int http_preprocess_lua_page(const char *ipath, const char *opath) {
 
 			cbuff = buff;
 			*cbuff = '\0';
+			prev = c;
 		}
     }
 
