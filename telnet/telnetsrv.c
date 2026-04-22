@@ -275,6 +275,7 @@ static void *telnet_thread(void *arg) {
     rc = bind(*config->server, (struct sockaddr *) &sin, sizeof (sin));
     if(0 != rc) {
       syslog(LOG_ERR, "couldn't bind to port %d\n", config->port);
+      close(*config->server);
       return NULL;
     }
 
