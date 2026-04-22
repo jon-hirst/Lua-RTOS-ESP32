@@ -537,7 +537,8 @@ void StringList::set(int index, char const * str)
   if (m_ownStrings) {
     free((void*)m_items[index]);
     m_items[index] = (char const*) malloc(strlen(str) + 1);
-    strcpy((char*)m_items[index], str);
+    if (m_items[index])
+      strcpy((char*)m_items[index], str);
   } else {
     m_items[index] = str;
   }
@@ -867,7 +868,7 @@ bool FileBrowser::reload()
   bool retval = true;
 
   clear();
-  int namesAlloc;
+  int namesAlloc = 0;
   int c = countDirEntries(&namesAlloc);
   m_items = (DirItem*) malloc(sizeof(DirItem) * (c + 1));
   m_namesStorage = (char*) malloc(namesAlloc);

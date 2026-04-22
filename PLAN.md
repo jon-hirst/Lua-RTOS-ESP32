@@ -71,6 +71,16 @@ DONE: Fix faults found in sys/lwip/ping.c, sys/lwip/netif/vfs_tun.c, sys/sensors
 
 DONE: Fix faults found in sound/tone.c and sound/tone_dac.c
 
+DONE: Fix faults found in FabGL/src
+
+- F1 (SSD1306Controller.cpp:384): malloc result checked before memset
+- F2 (vgatextcontroller.cpp:195): heap_caps_malloc result checked before memcpy
+- F3 (TFTControllerGeneric.cpp:597-600): heap_caps_malloc results checked before use in allocViewPort()
+- F4 (fabutils.cpp:539): malloc result checked before strcpy in StringList::set()
+- F5 (fabutils.cpp:870): namesAlloc initialised to 0 to prevent UB when m_dir=="/" (countDirEntries skips writing *namesLength in root-dir path)
+- F6 (fabui.cpp:1948,2570,3217,3240): four realloc sites fixed with temp pointer to prevent memory leak and null deref on OOM
+- F7 (displaycontroller.cpp:191,199,572,699): four realloc sites fixed with temp pointer for same reason
+
 DONE: Fix faults found in telnet/telnetsrv.c
 
 - F1 (telnetsrv.c:276-278): added close(*config->server) before return NULL on bind() failure to prevent socket fd leak

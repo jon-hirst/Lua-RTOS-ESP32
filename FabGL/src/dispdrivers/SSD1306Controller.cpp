@@ -382,7 +382,8 @@ void SSD1306Controller::invert(bool value)
 void SSD1306Controller::allocScreenBuffer()
 {
   m_screenBuffer = (uint8_t*) malloc(m_viewPortWidth * m_viewPortHeight / 8);
-  memset(m_screenBuffer, 0, m_viewPortWidth * m_viewPortHeight / 8);
+  if (m_screenBuffer)
+    memset(m_screenBuffer, 0, m_viewPortWidth * m_viewPortHeight / 8);
 }
 
 

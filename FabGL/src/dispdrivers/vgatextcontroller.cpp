@@ -193,7 +193,8 @@ void VGATextController::setResolution(VGATimings const& timings)
     heap_caps_free(m_charData);
   int charDataSize = 256 * m_font->height * ((m_font->width + 7) / 8);
   m_charData = (uint8_t*) heap_caps_malloc(charDataSize, MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
-  memcpy(m_charData, m_font->data, charDataSize);
+  if (m_charData)
+    memcpy(m_charData, m_font->data, charDataSize);
 
   m_HVSync = packHVSync(false, false);
 

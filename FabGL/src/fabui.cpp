@@ -1945,8 +1945,11 @@ void uiFrame::setTitle(char const * value)
 {
   if (value) {
     m_titleLength = (int) strlen(value);
-    m_title = (char*) realloc(m_title, m_titleLength + 1);
-    strcpy(m_title, value);
+    char * newTitle = (char*) realloc(m_title, m_titleLength + 1);
+    if (newTitle) {
+      m_title = newTitle;
+      strcpy(m_title, value);
+    }
   } else {
     free(m_title);
     m_title = nullptr;
@@ -2567,8 +2570,11 @@ uiButton::~uiButton()
 void uiButton::setText(char const * value)
 {
   auto len = strlen(value);
-  m_text = (char*) realloc(m_text, len + 1);
-  strcpy(m_text, value);
+  char * newText = (char*) realloc(m_text, len + 1);
+  if (newText) {
+    m_text = newText;
+    strcpy(m_text, value);
+  }
 
   m_textExtent = canvas()->textExtent(m_buttonStyle.textFont, value);
 }
@@ -3214,8 +3220,11 @@ uiLabel::~uiLabel()
 void uiLabel::setText(char const * value)
 {
   auto len = strlen(value);
-  m_text = (char*) realloc(m_text, len + 1);
-  strcpy(m_text, value);
+  char * newText = (char*) realloc(m_text, len + 1);
+  if (newText) {
+    m_text = newText;
+    strcpy(m_text, value);
+  }
   update();
 }
 
@@ -3228,9 +3237,12 @@ void uiLabel::setTextFmt(const char *format, ...)
   if (size > 0) {
     va_end(ap);
     va_start(ap, format);
-    m_text = (char*) realloc(m_text, size + 1);
-    vsnprintf(m_text, size, format, ap);
-    update();
+    char * newText = (char*) realloc(m_text, size + 1);
+    if (newText) {
+      m_text = newText;
+      vsnprintf(m_text, size, format, ap);
+      update();
+    }
   }
   va_end(ap);
 }

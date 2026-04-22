@@ -188,18 +188,24 @@ void Sprite::clearBitmaps()
 Sprite * Sprite::addBitmap(Bitmap * bitmap)
 {
   ++framesCount;
-  frames = (Bitmap**) realloc(frames, sizeof(Bitmap*) * framesCount);
-  frames[framesCount - 1] = bitmap;
+  Bitmap ** newFrames = (Bitmap**) realloc(frames, sizeof(Bitmap*) * framesCount);
+  if (newFrames) {
+    frames = newFrames;
+    frames[framesCount - 1] = bitmap;
+  }
   return this;
 }
 
 
 Sprite * Sprite::addBitmap(Bitmap * bitmap[], int count)
 {
-  frames = (Bitmap**) realloc(frames, sizeof(Bitmap*) * (framesCount + count));
-  for (int i = 0; i < count; ++i)
-    frames[framesCount + i] = bitmap[i];
-  framesCount += count;
+  Bitmap ** newFrames = (Bitmap**) realloc(frames, sizeof(Bitmap*) * (framesCount + count));
+  if (newFrames) {
+    frames = newFrames;
+    for (int i = 0; i < count; ++i)
+      frames[framesCount + i] = bitmap[i];
+    framesCount += count;
+  }
   return this;
 }
 
@@ -568,8 +574,11 @@ void BitmappedDisplayController::setSprites(Sprite * sprites, int count, int spr
       int reqBackBufferSize = 0;
       for (int i = 0; i < sprite->framesCount; ++i)
         reqBackBufferSize = tmax(reqBackBufferSize, sprite->frames[i]->width * getBitmapSavePixelSize() * sprite->frames[i]->height);
-      if (reqBackBufferSize > 0)
-        sprite->savedBackground = (uint8_t*) realloc(sprite->savedBackground, reqBackBufferSize);
+      if (reqBackBufferSize > 0) {
+        uint8_t * newBg = (uint8_t*) realloc(sprite->savedBackground, reqBackBufferSize);
+        if (newBg)
+          sprite->savedBackground = newBg;
+      }
     }
   }
 }
@@ -695,8 +704,11 @@ void BitmappedDisplayController::setMouseCursor(Cursor * cursor)
       m_mouseCursor.addBitmap(&cursor->bitmap);
       m_mouseCursor.visible = true;
       m_mouseCursor.moveBy(-m_mouseHotspotX, -m_mouseHotspotY);
-      if (!isDoubleBufferedEnabled())
-        m_mouseCursor.savedBackground = (uint8_t*) realloc(m_mouseCursor.savedBackground, cursor->bitmap.width * getBitmapSavePixelSize() * cursor->bitmap.height);
+      if (!isDoubleBufferedEnabled()) {
+        uint8_t * newBg = (uint8_t*) realloc(m_mouseCursor.savedBackground, cursor->bitmap.width * getBitmapSavePixelSize() * cursor->bitmap.height);
+        if (newBg)
+          m_mouseCursor.savedBackground = newBg;
+      }
     }
     refreshSprites();
   }
