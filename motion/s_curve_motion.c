@@ -495,7 +495,7 @@ float IRAM_ATTR s_curve_next(motion_t *pmotion) {
 			pmotion->s_curve.newton_max_time_ = elapsed;
 		}
 		
-	    if (elapsed <= pmotion->s_curve.next_min_time_) {
+	    if (elapsed <= pmotion->s_curve.newton_min_time_) {
 			pmotion->s_curve.newton_min_time_ = elapsed;
 		}
 		

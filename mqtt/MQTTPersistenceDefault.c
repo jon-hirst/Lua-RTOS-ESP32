@@ -550,12 +550,15 @@ int clearUnix(char *dirname)
 	{
 		while((dir_entry = readdir(dp)) != NULL && rc == 0)
 		{
-			lstat(dir_entry->d_name, &stat_info);
+			char *fullpath = malloc(strlen(dirname) + strlen(dir_entry->d_name) + 2);
+			sprintf(fullpath, "%s/%s", dirname, dir_entry->d_name);
+			lstat(fullpath, &stat_info);
 			if(S_ISREG(stat_info.st_mode))
 			{
-				if ( remove(dir_entry->d_name) != 0 )
+				if ( remove(fullpath) != 0 )
 					rc = MQTTCLIENT_PERSISTENCE_ERROR;
 			}
+			free(fullpath);
 		}
 		closedir(dp);
 	} else

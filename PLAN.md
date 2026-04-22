@@ -59,6 +59,19 @@ in sdkconfig.
 
 DONE: Fix faults found in lora/gateway/single_channel/gateway.c and lora/node/lmic/
 
+DONE: Fix faults found in motion/motion.c, motion/motion_math.c and motion/s_curve_motion.c
+
+DONE: Fix faults found in mqtt/Socket.c, mqtt/Thread.c and mqtt/MQTTPersistenceDefault.c
+
+- F1 (Socket.c:89): fcntl flags check changed from != 0 to == -1 so existing flags are preserved when adding O_NONBLOCK
+- F2 (Thread.c:282): ts.tv_sec += timeout corrected to proper ms→s/ns conversion with carry handling
+- F3 (MQTTPersistenceDefault.c:553,556): lstat/remove now use full path (dirname + "/" + d_name) instead of bare filename
+
+- F1 (motion.c:32-34): moved memset before accleration_profile assignment so it is not zeroed out
+- F2 (motion_math.c:166): unknown == NAN → isnan(unknown) in solve_second_order_pos
+- F3 (motion_math.c:207): unknown == NAN → isnan(unknown) in solve_second_min_pos
+- F4 (s_curve_motion.c:498): condition next_min_time_ → newton_min_time_ to match the variable being updated
+
 - F1 (gateway.c:704,711): sizeof(freq) → sizeof(freq)/sizeof(freq[0]) at both loop bound and guard
 - F2 (lmic_hal.c:375): %s → %d for int line parameter in syslog format string
 - F3 (lora_lmic.c:381-388): added mtx_unlock(&lora_mtx) before each early return in LORA_MAC_SET_DR

@@ -163,8 +163,8 @@ float IRAM_ATTR solve_second_order_pos(float a, float b, float c) {
         unknown = NAN;
     }
 
-	if (unknown == NAN) {
-		printf("oops in solve third order\r\n");		
+	if (isnan(unknown)) {
+		printf("oops in solve third order\r\n");
 	}
 	
     return unknown;
@@ -204,8 +204,8 @@ float IRAM_ATTR solve_second_min_pos(float a, float b, float c) {
         unknown = NAN;
     }
 
-	if (unknown == NAN) {
-		printf("oops in solve second order\r\n");		
+	if (isnan(unknown)) {
+		printf("oops in solve second order\r\n");
 	}
 	
     return unknown;

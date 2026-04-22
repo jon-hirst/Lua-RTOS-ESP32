@@ -86,7 +86,7 @@ int Socket_setnonblocking(int sock)
 	int flags;
 
 	FUNC_ENTRY;
-	if ((flags = fcntl(sock, F_GETFL, 0)))
+	if ((flags = fcntl(sock, F_GETFL, 0)) == -1)
 		flags = 0;
 	rc = fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 #endif

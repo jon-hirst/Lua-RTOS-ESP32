@@ -279,7 +279,9 @@ int Thread_wait_sem(sem_type sem, int timeout)
 	#else
 		if (clock_gettime(CLOCK_REALTIME, &ts) != -1)
 		{
-			ts.tv_sec += timeout;
+			ts.tv_sec  += timeout / 1000;
+			ts.tv_nsec += (timeout % 1000) * 1000000L;
+			if (ts.tv_nsec >= 1000000000L) { ts.tv_sec++; ts.tv_nsec -= 1000000000L; }
 			rc = sem_timedwait(sem, &ts);
 		}
 	#endif

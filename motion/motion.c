@@ -29,9 +29,9 @@
 
 void motion_prepare(motion_constraints_t *pconstraints, motion_t *pmotion) {
     if (pconstraints->accleration_profile == MotionSCurve) {
-        pmotion->accleration_profile = MotionSCurve;
-
         memset(pmotion, 0, sizeof(motion_t));
+
+        pmotion->accleration_profile = MotionSCurve;
 
         pmotion->s_curve.v0 = pconstraints->s_curve.v0;
         pmotion->s_curve.v  = pconstraints->s_curve.v;
