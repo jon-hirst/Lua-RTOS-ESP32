@@ -261,3 +261,69 @@ F7 (preprocessor.c:96-114) Escape sequences not handled in string tracking
   incorrectly ends the tracked string, causing subsequent characters to be
   treated as outside a string, potentially misidentifying <?lua or ?> tokens
   embedded in string literals.
+
+DONE: Enable PSRAM (CONFIG_SPIRAM) and route the Lua allocator to PSRAM
+
+The ESP32-S3 module has 8MB Octal PSRAM but CONFIG_SPIRAM is not set in sdkconfig.
+The entire Lua heap competes with FreeRTOS stacks, lwIP, and display framebuffers for
+~512KB of internal DRAM. Enable CONFIG_SPIRAM and override the Lua allocator (lua_Alloc)
+to use heap_caps_malloc(size, MALLOC_CAP_SPIRAM) for all Lua objects, keeping task stacks
+and DMA buffers in internal SRAM where they belong.
+
+TODO: Reduce LUAI_MAXSTACK from 1,000,000 to a value appropriate for embedded use
+
+ldo.c:293 defines LUAI_MAXSTACK as 1,000,000 value slots (16MB at 16 bytes per TValue).
+On internal SRAM this limit is never reached — malloc fails first, producing misleading
+"not enough memory" errors instead of "stack overflow". Set LUAI_MAXSTACK to 8192
+(128KB of Lua value stack), which is ample for any realistic embedded script and gives
+a meaningful stack overflow error well before OOM.
+
+TODO: Tune Lua GC parameters for embedded memory constraints
+
+lgc.h defines LUAI_GCPAUSE 250 and LUAI_GCMUL 200 — desktop defaults. GCPAUSE=250
+means the GC waits until the heap grows to 2.5x its post-collection size before
+starting a new cycle, causing large peak allocation spikes on a constrained heap.
+Change to LUAI_GCPAUSE 110 (cycle starts after 10% growth) and LUAI_GCMUL 400
+(faster sweep) to reduce peak working-set size on embedded hardware.
+
+TODO: Enable task watchdog and feed it from within the Lua VM execution loop
+
+CONFIG_ESP_TASK_WDT_EN is not set. A Lua script in an infinite loop locks the system
+indefinitely with no recovery. Enable the task WDT, register the Lua task with
+esp_task_wdt_add(), and call esp_task_wdt_reset() at a suitable point inside
+luaV_execute's main dispatch loop (e.g. every N instructions via the hook count
+mechanism) so that any hung script is detected and the system can recover.
+
+TODO: Enable core dump output to diagnose crashes
+
+CONFIG_ESP_COREDUMP_ENABLE_TO_NONE=y means all register state, stack frames and heap
+content are lost on crash. Enable CONFIG_ESP_COREDUMP_ENABLE_TO_UART to print a
+decodable crash dump on the serial console at minimum. Consider
+CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH with a dedicated partition for fully off-line
+post-mortem analysis via idf.py coredump-info.
+
+TODO: Fix the Lua restart loop in main.c to handle abnormal exits cleanly
+
+main.c:70-74 calls luaos_main() in a bare for(;;) loop with no delay, no logging of
+the exit reason, and no hardware re-initialisation. When luaos_main() exits after a
+panic or error, hardware drivers (SPI, I2C, UART, network stack) are left in unknown
+state and the new Lua VM inherits that state. Add exit-reason logging, conditional
+esp_restart() on abnormal exit, and at minimum a short delay before re-entry so the
+system does not spin at full power in a crash loop.
+
+TODO: Raise the Lua interpreter task priority to reduce network callback latency
+
+The Lua task runs at priority 3 (the lowest non-idle priority) while the HTTP server
+runs at 18 and LoRa at 21. Lua network callbacks (MQTT, HTTP, LoRa) are posted into
+a queue by the high-priority network task but processed by the Lua VM only when every
+task at priorities 4-20 is blocked, causing multi-hundred-millisecond latency under
+load. Raise CONFIG_LUA_RTOS_LUA_TASK_PRIORITY to 10-15 and adjust the Kconfig range
+and default accordingly.
+
+TODO: Make LFS the default flash filesystem instead of SPIFFS
+
+The Kconfig default for LUA_RTOS_FLASH_STORAGE_FS is SPIFFS. SPIFFS has no power-cut
+safety (a crash during a write can corrupt the entire filesystem), no wear leveling,
+and a flat namespace. LFS (littlefs) is already in the codebase, is power-cut safe by
+design, has proper wear leveling, and supports directories. Change the Kconfig default
+to LUA_RTOS_USE_LFS and update the root filesystem default to LUA_RTOS_LFS_ROOT_FS.

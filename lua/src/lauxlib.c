@@ -17,6 +17,8 @@
 #include <string.h>
 
 
+#include "esp_heap_caps.h" // for MALLOC_CAP_8BITS and MALLOC_CAP_SPIRAM
+
 /*
 ** This file uses only the official API of Lua.
 ** Any function declared here could be written as an application function.
@@ -1049,11 +1051,11 @@ LUALIB_API const char *luaL_gsub (lua_State *L, const char *s,
 void *luaL_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
   UNUSED(ud); UNUSED(osize);
   if (nsize == 0) {
-    free(ptr);
+    heap_caps_free(ptr);
     return NULL;
   }
   else
-    return realloc(ptr, nsize);
+    return heap_caps_realloc(ptr, nsize, MALLOC_CAP_8BIT|MALLOC_CAP_SPIRAM);
 }
 
 
