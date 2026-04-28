@@ -188,14 +188,14 @@
 /* incremental */
 
 /* Number of bytes must be LUAI_GCPAUSE% before starting new cycle */
-#define LUAI_GCPAUSE    250
+#define LUAI_GCPAUSE    150
 
 /*
 ** Step multiplier: The collector handles LUAI_GCMUL% work units for
 ** each new allocated word. (Each "work unit" corresponds roughly to
 ** sweeping one object or traversing one slot.)
 */
-#define LUAI_GCMUL      200
+#define LUAI_GCMUL      400
 
 /* How many bytes to allocate before next GC step */
 #define LUAI_GCSTEPSIZE	(200 * sizeof(Table))

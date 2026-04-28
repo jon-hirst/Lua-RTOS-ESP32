@@ -278,7 +278,7 @@ On internal SRAM this limit is never reached — malloc fails first, producing m
 (128KB of Lua value stack), which is ample for any realistic embedded script and gives
 a meaningful stack overflow error well before OOM.
 
-TODO: Tune Lua GC parameters for embedded memory constraints
+DONE: Tune Lua GC parameters for embedded memory constraints
 
 lgc.h defines LUAI_GCPAUSE 250 and LUAI_GCMUL 200 — desktop defaults. GCPAUSE=250
 means the GC waits until the heap grows to 2.5x its post-collection size before
