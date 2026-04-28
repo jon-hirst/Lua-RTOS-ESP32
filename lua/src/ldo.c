@@ -289,8 +289,8 @@ TStatus luaD_rawrunprotected (lua_State *L, Pfunc f, void *ud) {
 */
 
 #if !defined(LUAI_MAXSTACK)
-#if 1000000 < (INT_MAX / 2)
-#define LUAI_MAXSTACK           1000000
+#if 8192 < (INT_MAX / 2)
+#define LUAI_MAXSTACK           8192
 #else
 #define LUAI_MAXSTACK           (INT_MAX / 2u)
 #endif

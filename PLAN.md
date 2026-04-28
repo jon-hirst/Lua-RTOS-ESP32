@@ -270,7 +270,7 @@ The entire Lua heap competes with FreeRTOS stacks, lwIP, and display framebuffer
 to use heap_caps_malloc(size, MALLOC_CAP_SPIRAM) for all Lua objects, keeping task stacks
 and DMA buffers in internal SRAM where they belong.
 
-TODO: Reduce LUAI_MAXSTACK from 1,000,000 to a value appropriate for embedded use
+DONE: Reduce LUAI_MAXSTACK from 1,000,000 to a value appropriate for embedded use
 
 ldo.c:293 defines LUAI_MAXSTACK as 1,000,000 value slots (16MB at 16 bytes per TValue).
 On internal SRAM this limit is never reached — malloc fails first, producing misleading
