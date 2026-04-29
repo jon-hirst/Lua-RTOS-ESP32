@@ -364,10 +364,15 @@ DONE: Check and fix LFS block sizes vs SPI flash geometry
   ~1.5 KB of heap per open file in LFS internal buffers.
 - block_size=4096 matches SPI_FLASH_SEC_SIZE=4096 exactly — no change needed.
 
-TODO: Make LFS the default flash filesystem instead of SPIFFS
+DONE: Make LFS the default flash filesystem instead of SPIFFS
 
-The Kconfig default for LUA_RTOS_FLASH_STORAGE_FS is SPIFFS. SPIFFS has no power-cut
-safety (a crash during a write can corrupt the entire filesystem), no wear leveling,
-and a flat namespace. LFS (littlefs) is already in the codebase, is power-cut safe by
-design, has proper wear leveling, and supports directories. Change the Kconfig default
-to LUA_RTOS_USE_LFS and update the root filesystem default to LUA_RTOS_LFS_ROOT_FS.
+- sdkconfig: CONFIG_LUA_RTOS_USE_LFS=y and CONFIG_LUA_RTOS_LFS_ROOT_FS=y set by user.
+- partitions.csv: storage partition subtype changed from 64 (0x40, SPIFFS) to 65 (0x41,
+  LFS) so esp_partition_find_first locates the correct partition at mount time.
+- sys/vfs/lfs.c: replaced legacy spi_flash_read/write/erase_sector (removed in ESP-IDF
+  v5) with esp_partition_read/write/erase_range.  Context struct now holds
+  esp_partition_t* instead of a raw base address; partition-relative offsets eliminate
+  manual address arithmetic and SPI_FLASH_SEC_SIZE dependency.
+- Kconfig/sdkconfig: LFS_READ_SIZE and LFS_PROG_SIZE defaults reduced from 1024 to 256
+  (SPI NOR flash page size) to reduce LFS internal buffer heap usage.
+- Kconfig: LFS_BLOCK_SIZE default remains 4096 = SPI_FLASH_SEC_SIZE (erase unit).
