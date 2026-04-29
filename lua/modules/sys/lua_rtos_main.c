@@ -28,6 +28,8 @@
 #include <sys/debug.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_timer.h"
+#include "esp_task_wdt.h"
 
 /* _pthread_signal registers a signal handler for the calling thread */
 extern sig_t _pthread_signal(int s, sig_t h);
@@ -38,15 +40,31 @@ static lua_State *g_L = NULL;
 /* Set to 1 by the SIGINT handler; cleared by vm_hook when it raises the error */
 static volatile sig_atomic_t g_sigint_received = 0;
 
+/* Wall-clock start of the current script execution (microseconds since boot).
+ * Reset before each docall/dofile so the timeout is per-command. */
+static int64_t g_exec_start_us = 0;
+
+/* Runtime execution timeout in seconds.  0 = disabled.
+ * Initialised from Kconfig; may be changed at runtime via os.timeout(). */
+int g_exec_timeout_s = CONFIG_LUA_RTOS_LUA_EXECUTION_TIMEOUT;
+
+static inline void lua_reset_exec_timer(void) {
+    g_exec_start_us = esp_timer_get_time();
+}
+
 /*
  * vm_hook — installed as a Lua count hook (fires every LUA_YIELD_COUNT
- * VM instructions).  It serves two purposes:
+ * VM instructions).  It serves three purposes:
  *
  *   1. SIGINT / Ctrl-C: if g_sigint_received is set, raises "interrupted!".
- *   2. TWDT: calls vTaskDelay(1) to yield for one FreeRTOS tick so that
- *      the idle tasks can run and reset the Task Watchdog Timer.  Without
- *      this, long-running Lua loops (e.g. math-test randomness checks) keep
- *      the CPU for several seconds and the TWDT fires.
+ *   2. TWDT: calls esp_task_wdt_reset() to feed the Task Watchdog Timer
+ *      directly, then vTaskDelay(1) to yield for one FreeRTOS tick so that
+ *      idle tasks can also run and reset their own TWDT subscriptions.
+ *      If the Lua VM is ever stuck in C code (hook stops firing), the TWDT
+ *      times out and triggers a system panic for post-mortem diagnosis.
+ *   3. Execution timeout: if a script runs longer than
+ *      CONFIG_LUA_RTOS_LUA_EXECUTION_TIMEOUT seconds, raises
+ *      "execution timeout" so the REPL can recover gracefully.
  *
  * Overhead: at LUA_YIELD_COUNT = 50000 instructions the hook fires roughly
  * every 25–100 ms (depending on instruction mix).  vTaskDelay(1) blocks for
@@ -60,7 +78,14 @@ static void vm_hook (lua_State *L, lua_Debug *ar) {
         g_sigint_received = 0;
         luaL_error(L, "interrupted!");
     }
-    vTaskDelay(1);   /* yield ≥1 tick → idle tasks run → TWDT stays fed */
+    esp_task_wdt_reset();  /* feed the Lua task's TWDT subscription */
+    vTaskDelay(1);         /* yield ≥1 tick → idle tasks run → their TWDT fed */
+    if (g_exec_timeout_s > 0) {
+        int64_t elapsed_s = (esp_timer_get_time() - g_exec_start_us) / 1000000LL;
+        if (elapsed_s >= g_exec_timeout_s) {
+            luaL_error(L, "execution timeout");
+        }
+    }
 }
 
 /* Signal handler: set the flag; vm_hook will raise the error on next fire */
@@ -124,6 +149,7 @@ static int dochunk (lua_State *L, int status) {
 
 /* Forward-declared static in lua_adds.inc line 58 — defined here */
 static int dofile (lua_State *L, const char *name) {
+    lua_reset_exec_timer();
     return dochunk(L, luaL_loadfile(L, name));
 }
 
@@ -209,7 +235,12 @@ static int repl_incomplete (lua_State *L, int status) {
 void doREPL (lua_State *L) {
     int status;
 
-    while (luaos_pushline(L, 1)) {
+    while (1) {
+        /* Unsubscribe from TWDT while blocking for user input — the task is
+         * intentionally idle here, not hung.  Resubscribe before executing. */
+        esp_task_wdt_delete(NULL);
+        if (!luaos_pushline(L, 1)) break;
+        esp_task_wdt_add(NULL);
         /* Stack: [line] at index 1.
          *
          * First try "return <line>;" so bare expressions are evaluated and
@@ -240,8 +271,10 @@ void doREPL (lua_State *L) {
 
         lua_remove(L, 1);   /* remove line string; chunk (or error) at top */
 
-        if (status == LUA_OK)
+        if (status == LUA_OK) {
+            lua_reset_exec_timer();
             status = docall(L, 0, LUA_MULTRET);
+        }
 
         if (status == LUA_OK && lua_gettop(L) > 0) {
             luaL_checkstack(L, LUA_MINSTACK, "too many results to print");

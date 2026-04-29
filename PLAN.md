@@ -286,13 +286,43 @@ starting a new cycle, causing large peak allocation spikes on a constrained heap
 Change to LUAI_GCPAUSE 110 (cycle starts after 10% growth) and LUAI_GCMUL 400
 (faster sweep) to reduce peak working-set size on embedded hardware.
 
-TODO: Enable task watchdog and feed it from within the Lua VM execution loop
+DONE: Enable task watchdog and feed it from within the Lua VM execution loop
 
-CONFIG_ESP_TASK_WDT_EN is not set. A Lua script in an infinite loop locks the system
-indefinitely with no recovery. Enable the task WDT, register the Lua task with
-esp_task_wdt_add(), and call esp_task_wdt_reset() at a suitable point inside
-luaV_execute's main dispatch loop (e.g. every N instructions via the hook count
-mechanism) so that any hung script is detected and the system can recover.
+- Enabled CONFIG_ESP_TASK_WDT_EN (and related settings) in sdkconfig.
+- Added CONFIG_LUA_RTOS_LUA_EXECUTION_TIMEOUT (default 30 s) to Kconfig and sdkconfig.
+- lua_rtos_main.c: added esp_task_wdt_reset() to vm_hook alongside existing vTaskDelay(1)
+  so the Lua task directly feeds its own TWDT subscription every LUA_YIELD_COUNT (50 000)
+  VM instructions.  If the VM is ever stuck in C code the hook stops firing, the TWDT
+  times out, and the system panics for post-mortem diagnosis.
+- lua_rtos_main.c: added wall-clock execution timer (g_exec_start_us / esp_timer_get_time).
+  vm_hook now raises "execution timeout" after CONFIG_LUA_RTOS_LUA_EXECUTION_TIMEOUT seconds
+  so Lua infinite loops (e.g. while true do end) terminate gracefully at the REPL instead
+  of locking the system indefinitely.  The timer is reset before each docall in doREPL and
+  at the start of each dofile call.
+- lua_adds.inc: added esp_task_wdt_add(NULL) in luaos_pmain to register the Lua task with
+  the TWDT immediately after the hook is installed.  Return value is ignored since on VM
+  restart the task may already be subscribed.
+
+DONE: Add runtime os.timeout() for Lua execution timeout
+
+- lua_rtos_main.c: replaced compile-time CONFIG_LUA_RTOS_LUA_EXECUTION_TIMEOUT constant
+  with runtime int g_exec_timeout_s (initialised from the Kconfig value).  vm_hook now
+  checks g_exec_timeout_s > 0 at runtime instead of a #if compile guard.
+- loslib_adds.c: added os_exec_timeout() registered as os.timeout([secs]).
+  Called with no argument it returns the current timeout; with an integer argument it sets
+  the timeout and returns the previous value.  0 disables the timeout.
+
+DONE: Fix TWDT-triggered reset every 5 s at idle REPL
+
+- Root cause: lua_main task was subscribed to TWDT in luaos_pmain but vm_hook (which calls
+  esp_task_wdt_reset) is a Lua count hook — it only fires during VM instruction execution.
+  At the REPL with no input the task blocks indefinitely in xQueueReceive (inside linenoise
+  read()), so vm_hook never fires, the TWDT times out after 5 s, and CONFIG_ESP_TASK_WDT_PANIC
+  resets the system.  Confirmed via GDB: lua_main backtrace showed the task frozen at
+  xQueueReceive ← vfs_generic_read ← linenoiseEdit ← luaos_pushline ← doREPL.
+- Fix (lua_rtos_main.c:doREPL): call esp_task_wdt_delete(NULL) before luaos_pushline and
+  esp_task_wdt_add(NULL) after it returns, so the task is unsubscribed from TWDT only during
+  the intentional idle wait for user input.
 
 TODO: Enable core dump output to diagnose crashes
 

@@ -30,6 +30,22 @@ static int os_time (lua_State *L) {
 /* loslib_adds.inc includes all other headers it needs at the top */
 #include "loslib_adds.inc"
 
+extern int g_exec_timeout_s;
+
+/* os.timeout([seconds])
+ * With no argument: returns the current execution timeout in seconds (0 = disabled).
+ * With an integer argument: sets the timeout and returns the previous value. */
+static int os_exec_timeout (lua_State *L) {
+    int prev = g_exec_timeout_s;
+    if (lua_gettop(L) >= 1) {
+        int v = (int)luaL_checkinteger(L, 1);
+        if (v < 0) luaL_error(L, "timeout must be >= 0");
+        g_exec_timeout_s = v;
+    }
+    lua_pushinteger(L, prev);
+    return 1;
+}
+
 void luaos_register_os_adds (lua_State *L) {
     static const luaL_Reg os_adds[] = {
         {"stdout",          os_stdout},
@@ -64,6 +80,7 @@ void luaos_register_os_adds (lua_State *L) {
         {"partitions",      os_partitions},
         {"passwd",          os_passwd},
         {"uptime",          os_uptime},
+        {"timeout",         os_exec_timeout},
         {"settime",         os_settime},
         {"format",          os_format},
         {"df",              os_df},

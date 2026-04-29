@@ -1563,6 +1563,16 @@ menu "Lua RTOS"
             help
                Default CPU affinity for Lua RTOS threads.
 
+         config LUA_RTOS_LUA_EXECUTION_TIMEOUT
+            int "Lua script execution timeout (seconds, 0 = unlimited)"
+            range 0 3600
+            default 30
+            help
+               Maximum number of seconds a Lua script may run continuously before the VM hook
+               raises an "execution timeout" error and returns control to the REPL.  Set to 0
+               to disable the timeout (scripts run until interrupted with Ctrl-C or reset).
+               This timeout also covers boot scripts (system.lua, autorun.lua).
+
          config LUA_RTOS_LUA_USE_LOCKS
             bool "Use locks when the program enters the Lua core"
             default y

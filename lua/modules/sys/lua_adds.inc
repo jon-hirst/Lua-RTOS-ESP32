@@ -213,11 +213,19 @@ static int luaos_pmain (lua_State *L) {
 
   /* Store state, register SIGINT handler, and install the combined yield /
    * interrupt hook.  The hook yields to the FreeRTOS scheduler every
-   * LUA_YIELD_COUNT instructions (preventing TWDT starvation of idle tasks)
-   * and raises "interrupted!" when Ctrl-C sets g_sigint_received. */
+   * LUA_YIELD_COUNT instructions (preventing TWDT starvation of idle tasks),
+   * feeds the Lua task's own TWDT subscription, and raises "interrupted!"
+   * when Ctrl-C sets g_sigint_received or "execution timeout" when a script
+   * runs longer than CONFIG_LUA_RTOS_LUA_EXECUTION_TIMEOUT seconds. */
   g_L = L;
   _pthread_signal(SIGINT, lua_sigint_handler);
   lua_sethook(L, vm_hook, LUA_MASKCOUNT, LUA_YIELD_COUNT);
+
+  /* Register the Lua interpreter task with the Task Watchdog Timer so that
+   * a C-level hang (hook stops firing) is caught within the WDT timeout
+   * even if the idle task on this CPU is also starved.  Ignore the return
+   * value: on restart the task may already be subscribed. */
+  esp_task_wdt_add(NULL);
 
 #if LUA_USE_ROTABLE && CONFIG_LUA_RTOS_LUA_USE_ROTABLE_CACHE && !CONFIG_LUA_RTOS_LUA_USE_JIT_BYTECODE_OPTIMIZER
     rotable_cache_init();
