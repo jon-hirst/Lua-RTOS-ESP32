@@ -350,6 +350,20 @@ task at priorities 4-20 is blocked, causing multi-hundred-millisecond latency un
 load. Raise CONFIG_LUA_RTOS_LUA_TASK_PRIORITY to 10-15 and adjust the Kconfig range
 and default accordingly.
 
+DONE: Check and fix LFS block sizes vs SPI flash geometry
+
+- partitions.csv: storage subtype changed from 64 (0x40 = LUA_RTOS_SPIFFS_PART) to 65
+  (0x41 = LUA_RTOS_LFS_PART).  Without this fix esp_partition_find_first returned NULL
+  and LFS logged "can't find a valid partition" at mount time.
+- sys/vfs/lfs.c lfs_erase: replaced single spi_flash_erase_sector call (always one 4 KB
+  sector) with a loop over block_size/SPI_FLASH_SEC_SIZE sectors.  With block_size=4096
+  the old code was correct, but would silently corrupt the filesystem if block_size were
+  ever changed to a larger multiple of 4096.
+- Kconfig/sdkconfig: reduced LFS_READ_SIZE and LFS_PROG_SIZE defaults from 1024 to 256
+  (the SPI NOR flash page size).  1024 was valid but 4x the natural write unit, wasting
+  ~1.5 KB of heap per open file in LFS internal buffers.
+- block_size=4096 matches SPI_FLASH_SEC_SIZE=4096 exactly — no change needed.
+
 TODO: Make LFS the default flash filesystem instead of SPIFFS
 
 The Kconfig default for LUA_RTOS_FLASH_STORAGE_FS is SPIFFS. SPIFFS has no power-cut

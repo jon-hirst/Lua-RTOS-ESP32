@@ -382,13 +382,13 @@ menu "Lua RTOS"
            depends on LUA_RTOS_USE_LFS
            int "LFS file system read size"
            range 64 65536
-           default 1024
+           default 256
 
         config LUA_RTOS_LFS_PROG_SIZE
            depends on LUA_RTOS_USE_LFS
            int "LFS file system prog size"
            range 64 65536
-           default 1024
+           default 256
       endmenu
 
       menu "Network services"

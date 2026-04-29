@@ -47,7 +47,6 @@
 
 #if CONFIG_LUA_RTOS_USE_LFS
 
-#include "rom/spi_flash.h"
 #include "esp_partition.h"
 
 #include <freertos/FreeRTOS.h>
@@ -69,7 +68,7 @@
 #include <sys/mutex.h>
 #include <sys/list.h>
 #include <sys/fcntl.h>
-#include <sys/vfs/vfs.h>
+#include <vfs/vfs.h>
 #include <dirent.h>
 
 static int vfs_lfs_open(const char *path, int flags, int mode);
@@ -85,7 +84,7 @@ static struct list files;
 static lfs_t lfs;
 
 struct vfs_lfs_context {
-    uint32_t base_addr;
+    const esp_partition_t *partition;
     struct mtx lock;
 };
 
@@ -723,31 +722,25 @@ static int vfs_lfs_ftruncate(int fd, off_t length) {
 
 static int lfs_read(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, void *buffer, lfs_size_t size) {
     struct vfs_lfs_context *ctx = (struct vfs_lfs_context *)c->context;
-
-    if (spi_flash_read(ctx->base_addr + (block * c->block_size) + off, buffer, size) != 0) {
+    uint32_t offset = (block * c->block_size) + off;
+    if (esp_partition_read(ctx->partition, offset, buffer, size) != ESP_OK)
         return LFS_ERR_IO;
-    }
-
     return 0;
 }
 
 static int lfs_prog(const struct lfs_config *c, lfs_block_t block, lfs_off_t off, const void *buffer, lfs_size_t size) {
     struct vfs_lfs_context *ctx = (struct vfs_lfs_context *)c->context;
-
-    if (spi_flash_write(ctx->base_addr + (block * c->block_size) + off, buffer, size) != 0) {
+    uint32_t offset = (block * c->block_size) + off;
+    if (esp_partition_write(ctx->partition, offset, buffer, size) != ESP_OK)
         return LFS_ERR_IO;
-    }
-
     return 0;
 }
 
 static int lfs_erase(const struct lfs_config *c, lfs_block_t block) {
     struct vfs_lfs_context *ctx = (struct vfs_lfs_context *)c->context;
-
-    if (spi_flash_erase_sector((ctx->base_addr + (block * c->block_size)) >> 12) != 0) {
+    uint32_t offset = block * c->block_size;
+    if (esp_partition_erase_range(ctx->partition, offset, c->block_size) != ESP_OK)
         return LFS_ERR_IO;
-    }
-
     return 0;
 }
 
@@ -756,21 +749,12 @@ static int lfs_sync(const struct lfs_config *c) {
 }
 
 static struct lfs_config *lfs_config() {
-    // Find a partition
-    uint32_t base_address = 0;
-    uint32_t fs_size = 0;
-
     const esp_partition_t *partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, LUA_RTOS_LFS_PART, NULL);
-
     if (!partition) {
         syslog(LOG_ERR, "lfs can't find a valid partition");
         return NULL;
-    } else {
-        base_address = partition->address;
-        fs_size = partition->size;
     }
 
-    // Allocate file system configuration data
     struct lfs_config *cfg = calloc(1, sizeof(struct lfs_config));
     if (!cfg) {
         syslog(LOG_ERR, "lfs not enough memory");
@@ -780,12 +764,10 @@ static struct lfs_config *lfs_config() {
     struct vfs_lfs_context *ctx = calloc(1, sizeof(struct vfs_lfs_context));
     if (!ctx) {
         free(cfg);
-
         syslog(LOG_ERR, "lfs not enough memory");
         return NULL;
     }
 
-    // Configure the file system
     cfg->read  = lfs_read;
     cfg->prog  = lfs_prog;
     cfg->erase = lfs_erase;
@@ -794,11 +776,11 @@ static struct lfs_config *lfs_config() {
     cfg->block_size  = CONFIG_LUA_RTOS_LFS_BLOCK_SIZE;
     cfg->read_size   = CONFIG_LUA_RTOS_LFS_READ_SIZE;
     cfg->prog_size   = CONFIG_LUA_RTOS_LFS_PROG_SIZE;
-    cfg->block_count = fs_size / cfg->block_size;
+    cfg->block_count = partition->size / cfg->block_size;
     cfg->lookahead   = cfg->block_count;
 
-    cfg->context = ctx;
-    ctx->base_addr = base_address;
+    cfg->context    = ctx;
+    ctx->partition  = partition;
 
     return cfg;
 }
@@ -839,7 +821,7 @@ int vfs_lfs_mount(const char *target) {
 
     syslog(LOG_INFO,
             "lfs start address at 0x%x, size %d Kb",
-            ctx->base_addr, (cfg->block_count * cfg->block_size) / 1024);
+            ctx->partition->address, (cfg->block_count * cfg->block_size) / 1024);
 
     syslog(LOG_INFO, "lfs %d blocks, %d bytes/block, %d bytes/read, %d bytes/write",cfg->block_count,cfg->block_size, cfg->read_size, cfg->prog_size);
 
