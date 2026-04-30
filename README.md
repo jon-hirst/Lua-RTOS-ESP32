@@ -25,7 +25,7 @@ I have tested Claude Code Sonnet, version 4.6, over the last few months and aske
 * Add the FabGL component (https://github.com/fdivitto/FabGL.git) to use on the TTGO-VGA32.
 * Review existing code.
 
-The results of these tests are at https://github.com/jon-hirst/Lua-RTOS-ESP32/tree/claude-
+The results of these tests are at https://github.com/jon-hirst/Lua-RTOS-ESP32/tree/claude-1
 
 The rest of this README is from the original project ...
 
