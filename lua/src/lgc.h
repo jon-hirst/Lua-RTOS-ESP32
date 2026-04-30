@@ -195,7 +195,7 @@
 ** each new allocated word. (Each "work unit" corresponds roughly to
 ** sweeping one object or traversing one slot.)
 */
-#define LUAI_GCMUL      400
+#define LUAI_GCMUL      200
 
 /* How many bytes to allocate before next GC step */
 #define LUAI_GCSTEPSIZE	(200 * sizeof(Table))

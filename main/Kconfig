@@ -1527,7 +1527,7 @@ menu "Lua RTOS"
          config LUA_RTOS_LUA_TASK_PRIORITY
             int "Lua RTOS interpreter task priority"
             range 3 25
-            default 3
+            default 12
             help
                Task priority assigned to the Lua RTOS interpreter. Lua RTOS has a thread-oriented programming model and
                basically the Lua RTOS interpreter is used only for launch new threads and configure the system, so

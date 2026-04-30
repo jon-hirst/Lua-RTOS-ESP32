@@ -283,8 +283,10 @@ DONE: Tune Lua GC parameters for embedded memory constraints
 lgc.h defines LUAI_GCPAUSE 250 and LUAI_GCMUL 200 — desktop defaults. GCPAUSE=250
 means the GC waits until the heap grows to 2.5x its post-collection size before
 starting a new cycle, causing large peak allocation spikes on a constrained heap.
-Change to LUAI_GCPAUSE 110 (cycle starts after 10% growth) and LUAI_GCMUL 400
-(faster sweep) to reduce peak working-set size on embedded hardware.
+Changed LUAI_GCPAUSE to 110 (cycle starts after 10% growth). LUAI_GCMUL was briefly
+raised to 400 but reverted to 200 after it caused GC list corruption during locals.lua
+(see "Debug and fix locals.lua crash" below) — 400 is too aggressive for PSRAM-backed
+allocations under heavy load/free cycling.
 
 DONE: Enable task watchdog and feed it from within the Lua VM execution loop
 
@@ -340,14 +342,14 @@ DONE: Fix the Lua restart loop in main.c to handle abnormal exits cleanly
   hardware drivers are cleanly reset by the bootloader rather than inherited in unknown state.
   On EXIT_SUCCESS: logs the normal exit, waits 500 ms, then re-enters the loop to restart the VM.
 
-TODO: Raise the Lua interpreter task priority to reduce network callback latency
+DONE: Raise the Lua interpreter task priority to reduce network callback latency
 
-The Lua task runs at priority 3 (the lowest non-idle priority) while the HTTP server
-runs at 18 and LoRa at 21. Lua network callbacks (MQTT, HTTP, LoRa) are posted into
-a queue by the high-priority network task but processed by the Lua VM only when every
-task at priorities 4-20 is blocked, causing multi-hundred-millisecond latency under
-load. Raise CONFIG_LUA_RTOS_LUA_TASK_PRIORITY to 10-15 and adjust the Kconfig range
-and default accordingly.
+- main/Kconfig: default for LUA_RTOS_LUA_TASK_PRIORITY changed from 3 to 12.
+- sdkconfig: CONFIG_LUA_RTOS_LUA_TASK_PRIORITY changed from 3 to 12.
+- boards/TTGO-T-WATCH-S3: CONFIG_LUA_RTOS_LUA_TASK_PRIORITY changed from 3 to 12.
+  Priority 12 sits above most middleware tasks (lwIP at ~5, BT at ~5-9) and below the
+  HTTP server (18) and LoRa (21), so network callbacks are processed promptly without
+  starving the network stack itself.
 
 DONE: Check and fix LFS block sizes vs SPI flash geometry
 
@@ -375,3 +377,22 @@ DONE: Make LFS the default flash filesystem instead of SPIFFS
 - Kconfig/sdkconfig: LFS_READ_SIZE and LFS_PROG_SIZE defaults reduced from 1024 to 256
   (SPI NOR flash page size) to reduce LFS internal buffer heap usage.
 - Kconfig: LFS_BLOCK_SIZE default remains 4096 = SPI_FLASH_SEC_SIZE (erase unit).
+
+DONE: Debug and fix locals.lua crash (sweeplist GC corruption)
+
+Root cause: LUAI_GCMUL=400 (set in commit 8a1283ef) was too aggressive for the 1,281
+load() calls in the locals.lua "special instructions" loop (lines 92-109). With GCMUL=400
+the GC does 4 bytes of sweep work per byte allocated — 2× the Lua default of 200. During
+heavy allocation/free cycling (each load() creates and then discards a Proto, LClosure,
+anchor Table, and multiple TString objects all in PSRAM), the rapid sweep pressure corrupted
+a GCObject->next pointer in the allgc linked list. The next GC cycle crashed at
+sweeplist (lgc.c:896) when it dereferenced the bad pointer.
+
+Confirmed via GDB connected to OpenOCD at 192.168.10.100:3333: full 50-frame backtrace
+decoded as sweeplist←sweepstep←singlestep←incstep←luaC_step←anchorstr(llex.c:146)←
+llex←luaX_next←statement(lparser.c:2054)←...←luaB_load←...←f_parser←luaY_parser←
+mainfunc←statlist←statement←..., confirming the crash is inside load() compilation,
+not the deliberate stack-overflow test at lines 632-663.
+
+Fix: Reverted LUAI_GCMUL from 400 back to 200 (Lua default) in lua/src/lgc.h.
+With GCMUL=200, locals.lua completes the entire 1,281-call load() loop without crashing.
