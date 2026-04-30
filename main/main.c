@@ -59,7 +59,7 @@
 #include <errno.h>
 #include <pthread.h>
 
-void luaos_main();
+int luaos_main(void);
 void _sys_init();
 
 pthread_t lua_thread;
@@ -68,7 +68,16 @@ pthread_t lua_thread;
 
 void *lua_start(void *arg) {
   for(;;) {
-    luaos_main();
+    int rc = luaos_main();
+    if (rc != EXIT_SUCCESS) {
+      printf("lua_start: luaos_main exited abnormally (rc=%d), restarting system\n", rc);
+      fflush(stdout);
+      vTaskDelay(pdMS_TO_TICKS(1000));
+      esp_restart();
+    }
+    printf("lua_start: luaos_main exited normally, restarting VM\n");
+    fflush(stdout);
+    vTaskDelay(pdMS_TO_TICKS(500));
   }
 
   return NULL;

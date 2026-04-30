@@ -332,14 +332,13 @@ decodable crash dump on the serial console at minimum. Consider
 CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH with a dedicated partition for fully off-line
 post-mortem analysis via idf.py coredump-info.
 
-TODO: Fix the Lua restart loop in main.c to handle abnormal exits cleanly
+DONE: Fix the Lua restart loop in main.c to handle abnormal exits cleanly
 
-main.c:70-74 calls luaos_main() in a bare for(;;) loop with no delay, no logging of
-the exit reason, and no hardware re-initialisation. When luaos_main() exits after a
-panic or error, hardware drivers (SPI, I2C, UART, network stack) are left in unknown
-state and the new Lua VM inherits that state. Add exit-reason logging, conditional
-esp_restart() on abnormal exit, and at minimum a short delay before re-entry so the
-system does not spin at full power in a crash loop.
+- main.c: corrected forward declaration from `void luaos_main()` to `int luaos_main(void)` to match the actual signature in lua_adds.inc.
+- main.c:lua_start: captures the int return value of luaos_main().
+  On EXIT_FAILURE: logs the rc, flushes stdout, waits 1 s, then calls esp_restart() so
+  hardware drivers are cleanly reset by the bootloader rather than inherited in unknown state.
+  On EXIT_SUCCESS: logs the normal exit, waits 500 ms, then re-enters the loop to restart the VM.
 
 TODO: Raise the Lua interpreter task priority to reduce network callback latency
 
