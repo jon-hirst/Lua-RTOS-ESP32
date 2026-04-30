@@ -1,3 +1,34 @@
+# A fork of Lua-RTOS-ESP32 to experiment with AI
+
+This is a fork from https://github.com/whitecatboard/Lua-RTOS-ESP32.  In this fork there is a branch named `claude-1` that contains changes created by Anthropic Claude Code.
+
+I wanted to learn about using Claude Code on an existing project: where it helped, where it did not help, and where it went wrong.
+
+I chose Lua-RTOS-ESP32 as an example project because it is well established, with a long history, and contains many components.  Also, because I enjoy using Lua and ESP32.
+
+I did not want the A.I. to create lots of new code.  Instead I wanted it to do chores: boring work that is always needed in a project with a long history:
+
+* Update tools and components used in the project, but supplied by people outside the project.
+* Add new components, again supplied by people outside the project.
+* Migrate the project to new hardware.
+* Translate code modules from one language to another.
+* Review old code and check for faults.
+
+I have tested Claude Code Sonnet, version 4.6, over the last few months and asked it to help with these tasks:
+
+* Upgrade esp-idf from version 5.2 to version 5.5
+* Upgrade Lua from version 5.3.4 to version 5.5.0
+* Port to ESP32-S3
+* Port to TTGO-T-WATCH-S3 (https://lilygo.cc › products › t-watch-s3)
+* Translate drivers written in Python to C for peripherals used in TTGO-T-WATCH-S3: AXP2101, BMA423, FT6x36, DRV2605, MAX98537A, PCF8563, ST7789
+* Port to TTGO-VGA32 (https://lilygo.cc › products › fabgl-vga32)
+* Add the FabGL component (https://github.com/fdivitto/FabGL.git) to use on the TTGO-VGA32.
+* Review existing code.
+
+The results of these tests are at https://github.com/jon-hirst/Lua-RTOS-ESP32/tree/claude-
+
+The rest of this README is from the original project ...
+
 # What's Lua RTOS?
 
 Lua RTOS is a real-time operating system designed to run on embedded systems, with minimal requirements of FLASH and RAM memory. Currently Lua RTOS is available for ESP32, ESP8266 and PIC32MZ platforms, and can be easilly ported to other 32-bit platforms.
