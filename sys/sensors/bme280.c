@@ -2393,7 +2393,7 @@ driver_error_t *bme280_setup(sensor_instance_t *unit) {
 		return driver_error(SENSOR_DRIVER, SENSOR_ERR_INVALID_ADDRESS, NULL);
 	}
 
-    p_bme280 = calloc(sizeof(struct bme280_user_data_t), sizeof(char));
+    p_bme280 = calloc(1, sizeof(struct bme280_user_data_t));
     if (!p_bme280) {
 		return driver_error(SENSOR_DRIVER, SENSOR_ERR_NOT_ENOUGH_MEMORY, "NULL");
     }
@@ -2468,6 +2468,8 @@ driver_error_t *bme280_setup(sensor_instance_t *unit) {
 		_bme280_get(&temp, &hum, &pres);
 	}
 	else {
+		free(p_bme280);
+		unit->setup[0].i2c.userdata = NULL;
 		return driver_error(SENSOR_DRIVER, SENSOR_ERR_CANT_INIT, "cannot detect device");
 	}
 
@@ -2561,8 +2563,8 @@ driver_error_t *bme280_set(sensor_instance_t *unit, const char *id, sensor_value
 							// set mode string
 							if (!unit->properties[3].stringd.value) {
 								// Allocate space for buffer
-								property->stringd.value = (char *)calloc(32, 1);
-								if (!property->stringd.value) {
+								unit->properties[3].stringd.value = (char *)calloc(32, 1);
+								if (!unit->properties[3].stringd.value) {
 									return driver_error(SENSOR_DRIVER, SENSOR_ERR_NOT_ENOUGH_MEMORY, NULL);
 								}
 							}

@@ -202,7 +202,7 @@ static void spi_lock(uint8_t unit) {
 }
 
 static void spi_unlock(uint8_t unit) {
-    while (xSemaphoreGiveRecursive(spi_bus[spi_idx(unit)].mtx) == pdTRUE);
+    xSemaphoreGiveRecursive(spi_bus[spi_idx(unit)].mtx);
 }
 
 static void spi_enable_unit(uint8_t unit) {
@@ -258,7 +258,7 @@ static driver_error_t *spi_tranfer_sanity_checks(int deviceid) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_UNIT, NULL);
     }
 
-    if ((device < 0) || (device > SPI_BUS_DEVICES)) {
+    if ((device < 0) || (device >= SPI_BUS_DEVICES)) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_DEVICE, NULL);
     }
 
@@ -860,29 +860,25 @@ driver_error_t *spi_pin_map(int unit, int miso, int mosi, int clk) {
         return driver_error(SPI_DRIVER, SPI_ERR_CANNOT_CHANGE_PINMAP, NULL);
     }
 
-    if ((!(GPIO_ALL_IN & (GPIO_BIT_MASK << spi_bus[spi_idx(unit)].miso)))
-            && (miso >= 0)) {
+    if ((!(GPIO_ALL_IN & (GPIO_BIT_MASK << miso))) && (miso >= 0)) {
         spi_unlock(unit);
         return driver_error(SPI_DRIVER, SPI_ERR_PIN_NOT_ALLOWED,
                 "miso, selected pin cannot be input");
     }
 
-    if ((!(GPIO_ALL_OUT & (GPIO_BIT_MASK << spi_bus[spi_idx(unit)].mosi)))
-            && (mosi >= 0)) {
+    if ((!(GPIO_ALL_OUT & (GPIO_BIT_MASK << mosi))) && (mosi >= 0)) {
         spi_unlock(unit);
         return driver_error(SPI_DRIVER, SPI_ERR_PIN_NOT_ALLOWED,
                 "mosi, selected pin cannot be output");
     }
 
-    if ((!(GPIO_ALL_IN & (GPIO_BIT_MASK << spi_bus[spi_idx(unit)].clk)))
-            && (clk >= 0)) {
+    if ((!(GPIO_ALL_OUT & (GPIO_BIT_MASK << clk))) && (clk >= 0)) {
         spi_unlock(unit);
         return driver_error(SPI_DRIVER, SPI_ERR_PIN_NOT_ALLOWED,
                 "clk, selected pin cannot be output");
     }
 
-    if (!TEST_UNIQUE3(spi_bus[spi_idx(unit)].mosi, spi_bus[spi_idx(unit)].miso,
-            spi_bus[spi_idx(unit)].clk)) {
+    if (!TEST_UNIQUE3(mosi, miso, clk)) {
         spi_unlock(unit);
         return driver_error(SPI_DRIVER, SPI_ERR_PIN_NOT_ALLOWED,
                 "miso, mosi and clk must be different");
@@ -990,7 +986,7 @@ driver_error_t *spi_select(int deviceid) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_UNIT, NULL);
     }
 
-    if ((device < 0) || (device > SPI_BUS_DEVICES)) {
+    if ((device < 0) || (device >= SPI_BUS_DEVICES)) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_DEVICE, NULL);
     }
 
@@ -1012,7 +1008,7 @@ driver_error_t *spi_deselect(int deviceid) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_UNIT, NULL);
     }
 
-    if ((device < 0) || (device > SPI_BUS_DEVICES)) {
+    if ((device < 0) || (device >= SPI_BUS_DEVICES)) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_DEVICE, NULL);
     }
 
@@ -1034,7 +1030,7 @@ driver_error_t *spi_get_speed(int deviceid, uint32_t *speed) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_UNIT, NULL);
     }
 
-    if ((device < 0) || (device > SPI_BUS_DEVICES)) {
+    if ((device < 0) || (device >= SPI_BUS_DEVICES)) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_DEVICE, NULL);
     }
 
@@ -1058,7 +1054,7 @@ driver_error_t *spi_set_speed(int deviceid, uint32_t speed) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_UNIT, NULL);
     }
 
-    if ((device < 0) || (device > SPI_BUS_DEVICES)) {
+    if ((device < 0) || (device >= SPI_BUS_DEVICES)) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_DEVICE, NULL);
     }
 
@@ -1305,7 +1301,7 @@ driver_error_t *spi_unsetup(int deviceid) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_UNIT, NULL);
     }
 
-    if ((device < 0) || (device > SPI_BUS_DEVICES)) {
+    if ((device < 0) || (device >= SPI_BUS_DEVICES)) {
         return driver_error(SPI_DRIVER, SPI_ERR_INVALID_DEVICE, NULL);
     }
 

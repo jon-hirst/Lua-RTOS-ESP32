@@ -120,7 +120,7 @@ driver_error_t *  gpio_ll_pin_inv(int8_t pin) {
             return gpio_ll_pin_set(pin);
         }
     } else if (pin < GPIO_PER_PORT) {
-        if (GPIO.out1.val & (1 << pin)) {
+        if (GPIO.out1.val & (1 << (pin - 32))) {
             return gpio_ll_pin_clr(pin);
         } else {
             return gpio_ll_pin_set(pin);
@@ -431,8 +431,6 @@ driver_error_t *gpio_pin_pulldwn(uint8_t pin) {
 			return error;
 		}
 	#endif
-
-		return driver_error(GPIO_DRIVER, GPIO_ERR_PULL_DOWN_NOT_ALLOWED, NULL);
     }
 #else
     else {
@@ -665,8 +663,6 @@ driver_error_t *gpio_pin_pulldwn_mask(uint8_t port, gpio_pin_mask_t pinmask) {
 				return error;
 			}
 		#endif
-
-        return driver_error(GPIO_DRIVER, GPIO_ERR_PULL_DOWN_NOT_ALLOWED, NULL);
     }
 #else
     else {

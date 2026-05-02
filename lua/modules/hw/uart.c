@@ -278,7 +278,7 @@ static int luart_read( lua_State* L ) {
             return luaL_error(L, "could not allocate memory to read *l");
         }
 
-        res = uart_reads(id, str, 0, timeout);
+        res = uart_reads(id, str, LUAL_BUFFERSIZE, 0, timeout);
         if (res) {
             lua_pushlstring(L, str, strlen(str));
         } else {
@@ -292,8 +292,8 @@ static int luart_read( lua_State* L ) {
         if (NULL == str) {
             return luaL_error(L, "could not allocate memory to read *el");
         }
-        
-        res = uart_reads(id, str, 1, timeout);
+
+        res = uart_reads(id, str, LUAL_BUFFERSIZE, 1, timeout);
         if (res) {
             lua_pushlstring(L, str, strlen(str));
         } else {

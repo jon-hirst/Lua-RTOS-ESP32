@@ -415,9 +415,9 @@ driver_error_t *wifi_scan(uint16_t *count, wifi_ap_record_t **list) {
 
             // Get AP list
             if ((error = wifi_check_error(esp_wifi_scan_get_ap_records(count, *list)))) {
+                free(*list);
                 *list = NULL;
                 *count = 0;
-                free(*list);
 
                 return error;
             }
@@ -491,7 +491,7 @@ driver_error_t *wifi_setup(wifi_mode_t mode, char *ssid, char *password, uint32_
 		#endif
     }
     if (mode == WIFI_MODE_AP || mode == WIFI_MODE_APSTA) {
-    	netif = esp_netif_create_default_wifi_sta();
+    	netif = esp_netif_create_default_wifi_ap();
 
         // Setup mode and config related to desired mode
         wifi_config_t wifi_config;

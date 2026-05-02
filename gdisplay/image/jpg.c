@@ -272,6 +272,7 @@ driver_error_t *gdisplay_image_jpg(int x, int y, int8_t maxscale, const char *fn
 		// Start to decompress the JPEG file
 		rc = jd_decomp(&jd, tjd_output, scale);
 		if (rc != JDR_OK) {
+			gdisplay_end();
 			fclose(dev.fhndl);
 			free(work);
 			if (dev.membuff) free(dev.membuff);
@@ -279,6 +280,7 @@ driver_error_t *gdisplay_image_jpg(int x, int y, int8_t maxscale, const char *fn
 		}
 	}
 	else {
+		gdisplay_end();
 		fclose(dev.fhndl);
 		free(work);
 		if (dev.membuff) free(dev.membuff);

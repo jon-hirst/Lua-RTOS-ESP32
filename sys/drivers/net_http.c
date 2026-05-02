@@ -214,8 +214,7 @@ driver_error_t *net_http_get(net_http_client_t *client, const char *resource, co
     sprintf(http_request, HTTP_CLIENT_GET, resource, client->host, client->port);
     if (SSL_write(client->ssl, http_request, strlen(http_request)) <= 0) {
         free(http_request);
-
-        return NULL;
+        return driver_error(NET_DRIVER, NET_ERR_CANNOT_CONNECT_SSL, "write failed");
     }
 
     free(http_request);
@@ -234,6 +233,9 @@ driver_error_t *net_http_get(net_http_client_t *client, const char *resource, co
     (void)(version);
 
     code = strtok(NULL, " ");
+    if (!code) {
+        return driver_error(NET_DRIVER, NET_ERR_INVALID_RESPONSE, "missing status code");
+    }
 
     response->code = atoi(code);
 
@@ -266,12 +268,9 @@ driver_error_t *net_http_get(net_http_client_t *client, const char *resource, co
                             //content type matches, ignore anything trailing
                         }
                         else {
-                            char *buffer = malloc(250);
-                            if (!buffer) {
-                                    return driver_error(NET_DRIVER, NET_ERR_INVALID_CONTENT, "Content-Type");
-                            }
-                            snprintf(buffer, 250, "Content-Type is '%s', expected '%s'", content_type, expected_content_type);
-                            return driver_error(NET_DRIVER, NET_ERR_INVALID_CONTENT, buffer);
+                            char errbuf[250];
+                            snprintf(errbuf, sizeof(errbuf), "Content-Type is '%s', expected '%s'", content_type, expected_content_type);
+                            return driver_error(NET_DRIVER, NET_ERR_INVALID_CONTENT, errbuf);
                         }
                     }
                 } else if (strcmp(header,"Content-Length") == 0) {

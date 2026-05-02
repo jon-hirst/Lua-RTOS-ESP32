@@ -166,6 +166,11 @@ driver_error_t *gdisplay_image_bmp(int x, int y, const char *fname) {
 
 	// Load palette
 	if (header.bits < 24) {
+		if (header.bits == 0) {
+			free(buf);
+			fclose(fhndl);
+			return driver_error(GDISPLAY_DRIVER, GDISPLAY_ERR_IMAGE, "invalid BMP bit depth");
+		}
 		int palette_size = 4 * (header.ncolours?header.ncolours:2 << (header.bits - 1));
 
 		palette = malloc(palette_size);
@@ -176,6 +181,7 @@ driver_error_t *gdisplay_image_bmp(int x, int y, const char *fname) {
 		}
 
 		if (fseek(fhndl, header.offset - palette_size, SEEK_SET) != 0) {
+			free(palette);
 			free(buf);
 			fclose(fhndl);
 			return driver_error(GDISPLAY_DRIVER, GDISPLAY_ERR_IMAGE, strerror(errno));
@@ -183,6 +189,7 @@ driver_error_t *gdisplay_image_bmp(int x, int y, const char *fname) {
 
 		int rd = fread(palette, 1, palette_size, fhndl);
 		if (rd != palette_size) {
+			free(palette);
 			free(buf);
 			fclose(fhndl);
 			return driver_error(GDISPLAY_DRIVER, GDISPLAY_ERR_IMAGE, strerror(errno));
@@ -236,6 +243,7 @@ driver_error_t *gdisplay_image_bmp(int x, int y, const char *fname) {
 
 			for (i=0;i < xrd;i += 1) {
 				for(k=0;k < 8;k++) {
+					if (j >= disp_xsize) break;
 					if ((buf[i] & (1 << (7-k))) == 0) {
 						gdisplay_rgb_to_color(palette[2], palette[1], palette[0], &color);
 					} else {

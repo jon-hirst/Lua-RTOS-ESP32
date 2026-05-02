@@ -146,7 +146,7 @@ static int ltmr_delay_us( lua_State* L ) {
     // Compute how many cycles are needed for the period delay, and discount
     // cycles need by lua vm to invoke this function and cycles needed by lua vm
     // to return function
-    int cycles = ((CPU_HZ / 1000000L) * period) - 47;
+    int64_t cycles = ((int64_t)(CPU_HZ / 1000000L) * period) - 47;
 
     unsigned int now = start;
     while (cycles > 0) {

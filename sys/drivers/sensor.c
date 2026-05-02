@@ -501,6 +501,8 @@ driver_error_t *sensor_setup(const sensor_t *sensor, sensor_setup_t *setup, sens
     // Call to specific postsetup function
     if (instance->sensor->postsetup) {
         if ((error = instance->sensor->postsetup(instance))) {
+            *unit = NULL;
+            attached--;
             mtx_destroy(&instance->mtx);
             free(instance);
 
@@ -783,13 +785,11 @@ driver_error_t *sensor_register_callback(sensor_instance_t *unit, sensor_callbac
 
 void sensor_queue_callbacks(sensor_instance_t *unit, uint8_t from, uint8_t to) {
     BaseType_t high_priority_task_awoken = 0;
-    sensor_deferred_data_t *data;
+    sensor_deferred_data_t deferred;
+    sensor_deferred_data_t *data = &deferred;
     BaseType_t yield = 0;
 
     int i, j;
-
-    data = calloc(1,sizeof(sensor_deferred_data_t));
-    assert(data);
 
     for(i=0;i < SENSOR_MAX_CALLBACKS;i++) {
         if (unit->callbacks[i].callback) {
@@ -809,8 +809,6 @@ void sensor_queue_callbacks(sensor_instance_t *unit, uint8_t from, uint8_t to) {
                         xQueueSend(queue, data, 0);
                     }
 
-                    free(data);
-
                     if (yield == pdTRUE) {
                         portYIELD_FROM_ISR();
                     }
@@ -820,8 +818,6 @@ void sensor_queue_callbacks(sensor_instance_t *unit, uint8_t from, uint8_t to) {
             }
         }
     }
-
-    free(data);
 
     if (yield == pdTRUE) {
         portYIELD_FROM_ISR();
@@ -893,8 +889,8 @@ void sensor_update_data(sensor_instance_t *unit, uint8_t from, uint8_t to, senso
 
     sensor_queue_callbacks(unit, from, to);
 
-    if (unit->latch[i].timeout || unit->latch[i].repeat) {
-        unit->latch[i].t = now;
+    if (unit->latch[to].timeout || unit->latch[to].repeat) {
+        unit->latch[to].t = now;
     }
 
     mtx_unlock(&unit->mtx);

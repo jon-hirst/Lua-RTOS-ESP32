@@ -334,169 +334,229 @@ decodable crash dump on the serial console at minimum. Consider
 CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH with a dedicated partition for fully off-line
 post-mortem analysis via idf.py coredump-info.
 
-TODO: Fix fault in sys/drivers/gpio.c:123 — wrong bit shift for GPIO pins >= 32
+DONE: Fix fault in sys/drivers/gpio.c:123 — wrong bit shift for GPIO pins >= 32
 
 In gpio_ll_pin_inv, reading GPIO.out1 uses (1 << pin) but GPIO.out1 holds only the
 high GPIO bits (32-39), so the correct mask is (1 << (pin - 32)). The current code
 tests the wrong bit for any pin >= 32.
 
-TODO: Fix fault in sys/drivers/gpio.c:435,669 — unconditional error return on success path
+- gpio.c:123: (1 << pin) changed to (1 << (pin - 32)) in the GPIO.out1.val test.
+
+DONE: Fix fault in sys/drivers/gpio.c:435,669 — unconditional error return on success path
 
 In gpio_pin_pulldwn and gpio_pin_pulldwn_mask the return driver_error(PULL_DOWN_NOT_ALLOWED)
 sits outside the #if//#else block. A successful external pull-down always falls through to
 this unconditional error return. The error return must be inside the
 #if !EXTERNAL_GPIO_HAS_PROGRAMABLE_PULLDOWNS block only.
 
-TODO: Fix fault in sys/drivers/uart.c:534 — driver_error return value discarded on queue failure
+- gpio.c:435: stray return driver_error(PULL_DOWN_NOT_ALLOWED) removed from after #endif in gpio_pin_pulldwn
+- gpio.c:669: same stray return removed from gpio_pin_pulldwn_mask; both functions now fall through to return NULL on success
+
+DONE: Fix fault in sys/drivers/uart.c:534 — driver_error return value discarded on queue failure
 
 driver_error() return value is silently discarded when xQueueCreate fails. Execution
 continues with a NULL queue and will crash in the ISR on the first received byte.
 Fix: return driver_error(UART_DRIVER, UART_ERR_NOT_ENOUGH_MEMORY, NULL).
 
-TODO: Fix fault in sys/drivers/uart.c:429 — wrong driver ID in error return
+- uart.c:534: added return before driver_error() call so queue allocation failure propagates to the caller.
+
+DONE: Fix fault in sys/drivers/uart.c:429 — wrong driver ID in error return
 
 SPI_DRIVER used instead of UART_DRIVER in the error return for UART_ERR_CANNOT_CHANGE_PINMAP.
 Produces a misleading error message and wrong driver attribution.
 
-TODO: Fix fault in sys/drivers/uart.c:713 — stack buffer overflow via unbounded uart_reads
+- uart.c:429: SPI_DRIVER changed to UART_DRIVER in uart_pin_map error return.
+
+DONE: Fix fault in sys/drivers/uart.c:713 — stack buffer overflow via unbounded uart_reads
 
 _uart_wait_response has a fixed 80-byte stack buffer passed to uart_reads with no
 length limit. A received line longer than 79 characters overflows the buffer.
 uart_reads must be called with a maximum length, or switched to a bounded variant.
 
-TODO: Fix fault in sys/drivers/i2c.c:399-403 — mutex not released on no-free-device error path
+- uart.h/uart.c: added size_t maxlen parameter to uart_reads; writes bounded to maxlen-1 chars.
+- uart.c:718,730: internal call sites pass sizeof(buffer).
+- sys/sensors/gps.c:84: passes sizeof(sentence).
+- lua/modules/hw/uart.c:281,296: pass LUAL_BUFFERSIZE.
+
+DONE: Fix fault in sys/drivers/i2c.c:399-403 — mutex not released on no-free-device error path
 
 i2c_lock(unit) is acquired before the device search. When no free device slot is found
 the function returns driver_error without calling i2c_unlock(unit), permanently holding
 the recursive mutex and deadlocking all subsequent I2C calls on that unit.
 
-TODO: Fix fault in sys/drivers/i2c.c:413-418 — incomplete error check after i2c_master_bus_add_device
+- i2c.c:399-403: added i2c_unlock(unit) before return on no-free-device error path.
+
+DONE: Fix fault in sys/drivers/i2c.c:413-418 — incomplete error check after i2c_master_bus_add_device
 
 Only ESP_ERR_NO_MEM is checked; any other non-OK result (e.g. ESP_ERR_INVALID_ARG) leaves
 the bus handle open, the device handle uninitialised, and the mutex held. Change the
 condition to err != ESP_OK.
 
-TODO: Fix fault in sys/drivers/spi.c:205 — spi_unlock drains all recursive lock counts
+- i2c.c:413: condition changed from err == ESP_ERR_NO_MEM to err != ESP_OK; error code
+  changed to I2C_ERR_CANT_INIT to cover all failure modes.
+
+DONE: Fix fault in sys/drivers/spi.c:205 — spi_unlock drains all recursive lock counts
 
 spi_unlock loops xSemaphoreGiveRecursive until it returns pdFALSE, releasing all nesting
 levels at once. An inner spi_unlock call fully releases the mutex while the outer lock is
 still logically held, breaking mutual exclusion. Fix: give the semaphore exactly once.
 
-TODO: Fix fault in sys/drivers/spi.c:261 — off-by-one device index bound check (6 sites)
+- spi.c:205: while loop replaced with a single xSemaphoreGiveRecursive call.
+
+DONE: Fix fault in sys/drivers/spi.c:261 — off-by-one device index bound check (6 sites)
 
 The guard uses device > SPI_BUS_DEVICES instead of device >= SPI_BUS_DEVICES. When
 device == SPI_BUS_DEVICES the check passes and spi_bus[...].device[SPI_BUS_DEVICES] is
 accessed one element past the end of the array. Same error at lines 993, 1015, 1037,
 1061, 1308.
 
-TODO: Fix fault in sys/drivers/spi.c:863-882 — spi_pin_map validates stored pins not new ones
+- spi.c:261,993,1015,1037,1061,1308: all six instances of > SPI_BUS_DEVICES changed to >= SPI_BUS_DEVICES.
+
+DONE: Fix fault in sys/drivers/spi.c:863-882 — spi_pin_map validates stored pins not new ones
 
 All three pin validation checks in spi_pin_map compare spi_bus[...].miso/mosi/clk (the
 currently stored values) instead of the incoming miso, mosi, clk arguments. New pin
 numbers are never validated and any invalid value is silently accepted and stored.
 
-TODO: Fix fault in sys/drivers/wifi.c:417-422 — memory leak on scan error path
+- spi.c:863-885: all four validation expressions (miso, mosi, clk, TEST_UNIQUE3) now use
+  the incoming function arguments instead of the currently stored bus values.
+
+DONE: Fix fault in sys/drivers/wifi.c:417-422 — memory leak on scan error path
 
 *list is set to NULL before free(*list) is called, so free(NULL) is a no-op and the
 original heap allocation leaks. Swap the two lines: free(*list) first, then *list = NULL.
 
-TODO: Fix fault in sys/drivers/wifi.c:494 — wrong netif type created for AP/APSTA mode
+- wifi.c:418-420: free(*list) moved before *list = NULL so the allocation is freed on error.
+
+DONE: Fix fault in sys/drivers/wifi.c:494 — wrong netif type created for AP/APSTA mode
 
 esp_netif_create_default_wifi_sta() is called when mode is WIFI_MODE_AP or WIFI_MODE_APSTA.
 It should be esp_netif_create_default_wifi_ap(). This attaches the wrong network interface
 to the AP logical interface, breaking DHCP and IP address assignment in AP mode.
 
-TODO: Fix fault in gdisplay/gdisplay.c:622 — wrong variable checked in gdisplay_set_orientation
+- wifi.c:494: esp_netif_create_default_wifi_sta() changed to esp_netif_create_default_wifi_ap().
+
+DONE: Fix fault in gdisplay/gdisplay.c:622 — wrong variable checked in gdisplay_set_orientation
 
 The orientation validity guard tests rotation (the image rotation state variable) instead
 of the incoming orient argument. Valid orient values are rejected and invalid ones accepted
 depending on what rotation happens to hold. Replace rotation with orient in all four
 comparisons on that line.
 
-TODO: Fix fault in gdisplay/gdisplay.c:585-590 — uint8_t nested counter underflow in gdisplay_end
+- gdisplay.c:622: all four rotation comparisons changed to orient.
+
+DONE: Fix fault in gdisplay/gdisplay.c:585-590 — uint8_t nested counter underflow in gdisplay_end
 
 nested is declared uint8_t. gdisplay_end() decrements it with no guard against zero. An
 unmatched call wraps nested to 255, preventing any future screen update until 255 extra
 gdisplay_end() calls bring it back to zero. Add: if (nested == 0) return; at the top of
 gdisplay_end().
 
-TODO: Fix fault in gdisplay/image/bmp.c:178-189 — palette leaked on fseek/fread error paths
+- gdisplay.c:585: added if (nested == 0) return; guard before the decrement.
+
+DONE: Fix fault in gdisplay/image/bmp.c:178-189 — palette leaked on fseek/fread error paths
 
 After palette is allocated at line 171, two early-return error paths (fseek failure and
 fread failure) call free(buf) and fclose(fhndl) but do not call free(palette). The
 allocation leaks on every malformed or truncated BMP file.
 
-TODO: Fix fault in gdisplay/image/bmp.c:169 — undefined behaviour on shift when header.bits == 0
+- bmp.c:178-188: free(palette) added to both the fseek and fread failure paths.
+
+DONE: Fix fault in gdisplay/image/bmp.c:169 — undefined behaviour on shift when header.bits == 0
 
 If header.ncolours == 0 and header.bits == 0 (malformed BMP), the expression
 2 << (header.bits - 1) becomes 2 << 0xFFFFFFFF — a shift count exceeding the integer
 width, which is undefined behaviour. Add a header.bits > 0 guard before the palette-size
 calculation.
 
-TODO: Fix fault in gdisplay/image/bmp.c:237-248 — out-of-bounds pixel writes for 1-bit BMP
+- bmp.c:168: added guard rejecting header.bits == 0 with GDISPLAY_ERR_IMAGE before the palette_size calculation.
+
+DONE: Fix fault in gdisplay/image/bmp.c:237-248 — out-of-bounds pixel writes for 1-bit BMP
 
 The 1-bit BMP pixel expansion loop emits 8 pixels per byte with no check against
 disp_xsize. When disp_xsize is not a multiple of 8, pixels beyond the right edge are
 written. Add: if (j >= disp_xsize) break; inside the inner pixel loop.
 
-TODO: Fix fault in gdisplay/image/jpg.c:274-286 — gdisplay_begin without matching gdisplay_end on error paths
+- bmp.c:238: added if (j >= disp_xsize) break; at the top of the inner pixel loop.
+
+DONE: Fix fault in gdisplay/image/jpg.c:274-286 — gdisplay_begin without matching gdisplay_end on error paths
 
 gdisplay_begin() is called before JPEG decode. Both the jd_prepare failure path (line 282)
 and the jd_decomp failure path (line 274) return without calling gdisplay_end(). The nested
 counter is permanently incremented by 1 and the screen will never update again after a
 JPEG decode error.
 
-TODO: Fix fault in eth_enc424j600/eth_mac_enc424j600.c:862-863 — emac struct leaked on SPI setup failure
+- jpg.c:274,282: gdisplay_end() added to both the jd_decomp and jd_prepare error paths.
+
+DONE: Fix fault in eth_enc424j600/eth_mac_enc424j600.c:862-863 — emac struct leaked on SPI setup failure
 
 In esp_eth_mac_new_enc424j600, when spi_setup() fails the function returns NULL without
 freeing the already-allocated emac structure. Add free(emac) before the return NULL.
 
-TODO: Fix fault in eth_enc424j600/eth_mac_enc424j600.c:887-908 — NULL semaphore unchecked; leaked on task failure
+- eth_mac_enc424j600.c:861: free(emac) added before return NULL on spi_setup failure.
+
+DONE: Fix fault in eth_enc424j600/eth_mac_enc424j600.c:887-908 — NULL semaphore unchecked; leaked on task failure
 
 xSemaphoreCreateMutex() result is stored but never checked for NULL. A NULL mutex is
 silently passed to xSemaphoreTake in all subsequent lock calls — undefined behaviour.
 Additionally the err: cleanup path never calls vSemaphoreDelete(emac->lock), leaking
 the semaphore when task creation fails after the mutex is successfully created.
 
-TODO: Fix fault in eth_enc424j600/eth_mac_enc424j600.c:579-594 — infinite spin loop on malloc failure in RX task
+- eth_mac_enc424j600.c:888: MAC_CHECK added after xSemaphoreCreateMutex to fail to err on NULL.
+- eth_mac_enc424j600.c:err block: vSemaphoreDelete(emac->lock) added to cleanup path.
+
+DONE: Fix fault in eth_enc424j600/eth_mac_enc424j600.c:579-594 — infinite spin loop on malloc failure in RX task
 
 In emac_enc424j600_task, when heap_caps_malloc fails, packets_remain is still non-zero
 so the do-while loop immediately retries. With no break or delay on allocation failure
 this spins the CPU indefinitely. Add: break; on the malloc failure path to exit the inner
 loop and wait for the next interrupt.
 
-TODO: Fix fault in eth_enc424j600/eth_mac_enc424j600.c:728 — integer underflow in ByteCount - 4
+- eth_mac_enc424j600.c:583: break added after the malloc failure log message.
+
+DONE: Fix fault in eth_enc424j600/eth_mac_enc424j600.c:728 — integer underflow in ByteCount - 4
 
 len = statusVector.bits.ByteCount - 4 is computed with no check that ByteCount >= 4.
 A malformed packet with ByteCount < 4 wraps len to a huge uint16_t value, causing a
 massive out-of-bounds SPI read. Add a guard: if (statusVector.bits.ByteCount < 4) goto exit;
 
-TODO: Fix fault in sys/drivers/net.c:325-340 — wrong pointer freed in net_lookup after search loop
+- eth_mac_enc424j600.c:728: guard added — if ByteCount < 4, goto exit before the subtraction.
+
+DONE: Fix fault in sys/drivers/net.c:325-340 — wrong pointer freed in net_lookup after search loop
 
 net_lookup reassigns the result pointer inside the getaddrinfo search loop. If no AF_INET
 entry is found, freeaddrinfo is called on the modified pointer rather than the original.
 The unfound case also leaves the caller's address struct uninitialised. Use a separate
 search pointer; always pass the original result to freeaddrinfo.
 
-TODO: Fix fault in sys/drivers/net_http.c:215-218 — SSL_write failure returns NULL (treated as success)
+- net.c:325-340: introduced separate found pointer for the AF_INET search; result is never
+  modified so freeaddrinfo always receives the original pointer; address filled only when found != NULL.
+
+DONE: Fix fault in sys/drivers/net_http.c:215-218 — SSL_write failure returns NULL (treated as success)
 
 When SSL_write returns <= 0, the function frees http_request and returns NULL. The caller
 interprets NULL as success, leaving response->code and response->size uninitialised. A
 spurious OTA attempt can result. Return a proper driver_error on SSL write failure.
 
-TODO: Fix fault in sys/drivers/net_http.c:236-238 — atoi(NULL) on malformed HTTP status line
+- net_http.c:215-218: return NULL replaced with return driver_error(NET_ERR_CANNOT_CONNECT_SSL).
+
+DONE: Fix fault in sys/drivers/net_http.c:236-238 — atoi(NULL) on malformed HTTP status line
 
 strtok(NULL, " ") at line 236 returns NULL if the HTTP status line has no status code.
 The immediately following atoi(NULL) is undefined behaviour. Add a NULL check on code
 before calling atoi.
 
-TODO: Fix fault in sys/drivers/net_http.c:269-274 — heap buffer leaked as driver_error detail string
+- net_http.c:236: NULL check on code added; returns NET_ERR_INVALID_RESPONSE if missing.
+
+DONE: Fix fault in sys/drivers/net_http.c:269-274 — heap buffer leaked as driver_error detail string
 
 On content-type mismatch a heap buffer is allocated and passed to driver_error() as the
 detail string. If driver_error copies the string the buffer leaks unconditionally. Use a
 stack buffer for the formatted message instead.
 
-TODO: Fix fault in sys/drivers/adc.c:168-204 — channel at index 0 incorrectly treated as new
+- net_http.c:269-274: heap malloc replaced with stack char errbuf[250] and snprintf.
+
+DONE: Fix fault in sys/drivers/adc.c:168-204 — channel at index 0 incorrectly treated as new
 
 get_channel() sets the index output only when a channel is found; it is initialised to 0.
 If an existing channel is found at list position 0, !index is still true and lstadd()
@@ -504,13 +564,18 @@ inserts a duplicate. Also free(chan) on the error path is called on a list-owned
 when a channel was not newly allocated — a double-free. Track new/existing with an
 explicit boolean flag.
 
-TODO: Fix fault in sys/drivers/sensor.c:896 — off-by-one out-of-bounds array access after loop
+- adc.c:168-204: introduced is_new boolean; lstadd called only when is_new; free(chan)
+  on setup failure guarded by is_new to prevent double-free of list-owned pointer.
+
+DONE: Fix fault in sys/drivers/sensor.c:896 — off-by-one out-of-bounds array access after loop
 
 After for(i = from; i <= to; i++), i equals to + 1. The post-loop access
 unit->latch[i] reads one element past the last valid index. When to == SENSOR_MAX_PROPERTIES - 1
 this is an out-of-bounds access. Replace i with to in the post-loop latch check.
 
-TODO: Fix fault in sys/drivers/sensor.c:791,806-812 — calloc in ISR and use-after-free in sensor callbacks
+- sensor.c:896-897: unit->latch[i] changed to unit->latch[to] at both the check and the assignment.
+
+DONE: Fix fault in sys/drivers/sensor.c:791,806-812 — calloc in ISR and use-after-free in sensor callbacks
 
 sensor_queue_callbacks() is called from an ISR. It calls calloc() which is not
 interrupt-safe in FreeRTOS. It then calls free(data) after xQueueSendFromISR; if
@@ -518,90 +583,126 @@ portYIELD_FROM_ISR immediately schedules sensor_task, the task reads the freed b
 The queue should be created to hold sensor_deferred_data_t by value (not pointer) to
 eliminate the heap allocation entirely.
 
-TODO: Fix fault in sys/drivers/sensor.c:497-513 — dangling pointer and counter corruption on postsetup failure
+- sensor.c:784-829: replaced heap-allocated sensor_deferred_data_t with a stack-allocated
+  struct; xQueueSend already copies the struct by value (queue item size = sizeof struct),
+  so no malloc/free is needed. Both ISR-unsafe calloc and the use-after-free are eliminated.
+
+DONE: Fix fault in sys/drivers/sensor.c:497-513 — dangling pointer and counter corruption on postsetup failure
 
 When postsetup fails, *unit already points to the freed instance (dangling pointer) and
 attached has already been incremented. Neither is rolled back before the error return.
 Set *unit = NULL and decrement attached before freeing instance on the postsetup failure path.
 
-TODO: Fix fault in sys/sensors/bme280.c:2396 — calloc arguments reversed
+- sensor.c:503-512: *unit = NULL and attached-- added before mtx_destroy/free on postsetup failure.
+
+DONE: Fix fault in sys/sensors/bme280.c:2396 — calloc arguments reversed
 
 calloc(sizeof(struct bme280_user_data_t), sizeof(char)) has nmemb and size swapped.
 Allocates the correct total bytes by accident but is wrong API usage. Should be
 calloc(1, sizeof(struct bme280_user_data_t)).
 
-TODO: Fix fault in sys/sensors/bme280.c:2396-2471 — p_bme280 leaked on bme280_init failure
+- bme280.c:2396: calloc arguments corrected to calloc(1, sizeof(struct bme280_user_data_t)).
+
+DONE: Fix fault in sys/sensors/bme280.c:2396-2471 — p_bme280 leaked on bme280_init failure
 
 p_bme280 is allocated at line 2396 and stored as unit->setup[0].i2c.userdata. If
 bme280_init fails and the function returns an error, sensor_setup frees instance but does
 not chase the userdata pointer, so p_bme280 leaks. Free p_bme280 and NULL the userdata
 pointer before returning the error.
 
-TODO: Fix fault in sys/sensors/bme280.c:2563-2569 — null pointer write due to wrong variable in allocation
+- bme280.c:2471: free(p_bme280) and userdata = NULL added before the error return.
+
+DONE: Fix fault in sys/sensors/bme280.c:2563-2569 — null pointer write due to wrong variable in allocation
 
 The NULL check uses unit->properties[3].stringd.value but the calloc result is assigned
 to property->stringd.value (wrong variable). bm280_get_mode then writes through the still-
 NULL unit->properties[3].stringd.value, causing a null pointer write. Assign the calloc
 result to unit->properties[3].stringd.value.
 
-TODO: Fix fault in sys/sensors/gps.c:93 — task creation failure not checked
+- bme280.c:2564: calloc result and NULL check both changed to unit->properties[3].stringd.value.
+
+DONE: Fix fault in sys/sensors/gps.c:93 — task creation failure not checked
 
 xTaskCreatePinnedToCore return value is not checked. If task creation fails (OOM), GPS
 silently never receives data and the caller gets no indication of failure. Check the
 return value and return driver_error on pdFAIL.
 
-TODO: Fix fault in pthread/_pthread.c:311 — mutex not released on early return in _pthread_detach
+- gps.c:93: return value captured; returns SENSOR_ERR_NOT_ENOUGH_MEMORY if pdPASS is not returned.
+
+DONE: Fix fault in pthread/_pthread.c:311 — mutex not released on early return in _pthread_detach
 
 When thread->attr.detachstate == PTHREAD_CREATE_DETACHED is detected, the function
 returns EINVAL without calling _pthread_unlock(). The global thread_mtx is left
 permanently locked, deadlocking every subsequent pthread operation on this system.
 Add _pthread_unlock() before the return EINVAL.
 
-TODO: Fix fault in pthread/_pthread.c:420,436,457 — off-by-one in signal array index guard
+- _pthread.c:311: _pthread_unlock() added before return EINVAL.
+
+DONE: Fix fault in pthread/_pthread.c:420,436,457 — off-by-one in signal array index guard
 
 The guard if (s > PTHREAD_NSIG) allows s == PTHREAD_NSIG through. signals[] is declared
 as sig_t signals[PTHREAD_NSIG] with valid indices 0..PTHREAD_NSIG-1. Accessing
 signals[PTHREAD_NSIG] is one past the end of the array. Change > to >= at all three sites.
 
-TODO: Fix fault in pthread/_pthread.c:737-742 — inverted bounds check and buffer overflow in pthread_getname_np
+- _pthread.c:421,437,458: all three s > PTHREAD_NSIG guards changed to s >= PTHREAD_NSIG.
+
+DONE: Fix fault in pthread/_pthread.c:737-742 — inverted bounds check and buffer overflow in pthread_getname_np
 
 The ERANGE check is inverted: it returns ERANGE when the buffer is large enough and falls
 through when the buffer may be too small. Additionally strncpy uses configMAX_TASK_NAME_LEN
 instead of the caller-supplied len, ignoring the caller's buffer size and allowing overflow.
 Fix the condition to strlen(task->pcTaskName) >= len, and use len-1 as the strncpy limit.
 
-TODO: Fix fault in pthread/cond.c:106-108 — resource leak in pthread_cond_destroy
+- _pthread.c:738: condition < len-1 corrected to >= len; strncpy limit changed from
+  configMAX_TASK_NAME_LEN-1 to len-1; explicit NUL terminator added.
+
+DONE: Fix fault in pthread/cond.c:106-108 — resource leak in pthread_cond_destroy
 
 pthread_cond_destroy destroys the internal mutex but never calls vEventGroupDelete(scond->ev)
 and never calls free(scond). Every destroyed condvar leaks one FreeRTOS event group handle
 and one heap allocation. *cond is also not reset to PTHREAD_COND_INITIALIZER, enabling
 use-after-free on the next call with the same cond variable.
 
-TODO: Fix fault in pthread/mutex.c:102,200-208 — free(NULL), missing free, and use-after-free in mutex destroy
+Added vEventGroupDelete(scond->ev), free(scond), and *cond = PTHREAD_COND_INITIALIZER after
+mtx_destroy in pthread_cond_destroy.
+
+DONE: Fix fault in pthread/mutex.c:102,200-208 — free(NULL), missing free, and use-after-free in mutex destroy
 
 pthread_mutex_init calls free(mutex->sem) when sem is NULL — a no-op but a logic error.
 pthread_mutex_destroy never calls free(mutex), leaking every destroyed mutex struct. *mut
 is never reset to PTHREAD_MUTEX_INITIALIZER, enabling use-after-free. The pre-destroy
 xSemaphoreGive is also incorrect — remove it and just call vSemaphoreDelete then free(mutex).
 
-TODO: Fix fault in lua/modules/sys/thread.c:137-140 — lthread_t leaked on malloc failure in lthread_start_task
+Removed free(mutex->sem) from init failure path (sem is NULL there, nothing to free).
+Removed xSemaphoreGive/xSemaphoreGiveRecursive before delete in destroy. Added free(mutex)
+and *mut = PTHREAD_MUTEX_INITIALIZER after vSemaphoreDelete.
+
+DONE: Fix fault in lua/modules/sys/thread.c:137-140 — lthread_t leaked on malloc failure in lthread_start_task
 
 When malloc(sizeof(lcleanup_info_t)) fails, pthread_exit(NULL) is called without freeing
 the lthread_t *thread argument. Since no cleanup handler has been pushed yet, POSIX
 cleanup mechanisms do not free it. Add free(thread) before pthread_exit on this error path.
 
-TODO: Fix fault in lua/modules/sys/thread.c:301-319 — lthread_t struct leaked on forced thread stop
+Added free(thread) before pthread_exit(NULL) on the malloc failure path.
+
+DONE: Fix fault in lua/modules/sys/thread.c:301-319 — lthread_t struct leaked on forced thread stop
 
 lthread_stop_pthreads calls _pthread_stop and _pthread_free but never calls
 free(cinfo->lthread). The lthread_t allocated in new_thread leaks on every forced
 thread stop. Add free(cinfo->lthread) after each _pthread_free call.
 
-TODO: Fix fault in lua/modules/sys/tmr.c:149 — integer overflow in ltmr_delay_us for large periods
+Added free(cinfo->lthread) after _pthread_free in both the single-thread and all-threads
+stop branches.
+
+DONE: Fix fault in lua/modules/sys/tmr.c:149 — integer overflow in ltmr_delay_us for large periods
 
 (CPU_HZ / 1000000L) * period is computed as int. At 240 MHz, CPU_HZ/1000000 = 240.
 For period > ~8,947,848 us (~9 s) the product exceeds INT_MAX, wraps to a large negative
 value, and the while (cycles > 0) loop is skipped — the delay is silently not applied.
 Use int64_t for the cycles computation.
+
+Changed cycles from int to int64_t, cast the multiplier to int64_t to force 64-bit
+arithmetic: int64_t cycles = ((int64_t)(CPU_HZ / 1000000L) * period) - 47;
 
 DONE: Fix the Lua restart loop in main.c to handle abnormal exits cleanly
 

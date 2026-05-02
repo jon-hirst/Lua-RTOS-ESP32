@@ -399,7 +399,7 @@ driver_error_t *i2c_attach(int unit, int mode, int speed, int addr10_en, int add
             // No more devices
         	i2c_del_master_bus(i2c[unit].hdnl);
         	i2c[unit].hdnl = NULL;
-        	
+            i2c_unlock(unit);
             return driver_error(I2C_DRIVER, I2C_ERR_NO_MORE_DEVICES_ALLOWED, NULL);
         }
 
@@ -411,11 +411,11 @@ driver_error_t *i2c_attach(int unit, int mode, int speed, int addr10_en, int add
         };
 
         err = i2c_master_bus_add_device(i2c[unit].hdnl, &i2c_dev_conf, &i2c[unit].device[device].hdnl);
-        if (err == ESP_ERR_NO_MEM) {
+        if (err != ESP_OK) {
         	i2c_del_master_bus(i2c[unit].hdnl);
         	i2c[unit].hdnl = NULL;
             i2c_unlock(unit);
-        	return driver_error(I2C_DRIVER, I2C_ERR_NOT_ENOUGH_MEMORY, NULL);
+        	return driver_error(I2C_DRIVER, I2C_ERR_CANT_INIT, NULL);
         }
 
         i2c[unit].device[device].address = addr;

@@ -426,7 +426,7 @@ driver_error_t *uart_pin_map(int unit, int rx, int tx) {
 	}
 
     if (uart[unit].flags & UART_FLAG_INIT) {
-		return driver_error(SPI_DRIVER, UART_ERR_CANNOT_CHANGE_PINMAP, NULL);
+		return driver_error(UART_DRIVER, UART_ERR_CANNOT_CHANGE_PINMAP, NULL);
     }
 
     if ((!(GPIO_ALL_IN & (GPIO_BIT_MASK << rx))) && (rx >= 0)) {
@@ -531,7 +531,7 @@ driver_error_t *uart_init(int8_t unit, uint32_t brg, uint8_t databits, uint8_t p
 
 		uart[unit].q  = xQueueCreate(qs, sizeof(uint8_t));
 		if (!uart[unit].q) {
-			driver_error(UART_DRIVER, UART_ERR_NOT_ENOUGH_MEMORY, NULL);
+			return driver_error(UART_DRIVER, UART_ERR_NOT_ENOUGH_MEMORY, NULL);
 		}
 	}
 
@@ -670,9 +670,10 @@ driver_error_t *uart_consume(int8_t unit) {
 } 
 
 // Reads a string from the UART, ended by the CR + LF character
-uint8_t uart_reads(int8_t unit, char *buff, uint8_t crlf, uint32_t timeout) {
+uint8_t uart_reads(int8_t unit, char *buff, size_t maxlen, uint8_t crlf, uint32_t timeout) {
     char c;
     int n = 0;
+    char *start = buff;
 
     for (;;) {
         if (uart_read(unit, &c, timeout)) {
@@ -690,8 +691,10 @@ uint8_t uart_reads(int8_t unit, char *buff, uint8_t crlf, uint32_t timeout) {
                     return 1;
                 } else {
                     if (c != '\r') {
-                    	n++;
-                        *buff++ = c;
+                        if ((size_t)(buff - start) < maxlen - 1) {
+                            n++;
+                            *buff++ = c;
+                        }
                     }
                 }
             }
@@ -715,7 +718,7 @@ static uint8_t _uart_wait_response(int8_t unit, char *command, uint8_t echo, cha
 
     // Test if we receive an echo of the command sended
     if ((command != NULL) && (echo)) {
-        if (uart_reads(unit,buffer, 1, timeout)) {
+        if (uart_reads(unit, buffer, sizeof(buffer), 1, timeout)) {
             ok = (strcmp(buffer, command) == 0);
         } else {
             ok = 0;
@@ -727,7 +730,7 @@ static uint8_t _uart_wait_response(int8_t unit, char *command, uint8_t echo, cha
 
         // Read until we received expected response
         while (!ok) {
-            if (uart_reads(unit,buffer, 1, timeout)) {
+            if (uart_reads(unit, buffer, sizeof(buffer), 1, timeout)) {
                 args = pargs;
 
                 int i;

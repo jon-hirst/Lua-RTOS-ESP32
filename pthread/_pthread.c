@@ -308,6 +308,7 @@ int _pthread_detach(pthread_t id) {
     }
 
     if (thread->attr.detachstate == PTHREAD_CREATE_DETACHED) {
+        _pthread_unlock();
         return EINVAL;
     }
 
@@ -417,7 +418,7 @@ sig_t _pthread_signal(int s, sig_t h) {
     struct pthread *thread; // Current thread
     sig_t prev_h;           // Previous handler
 
-    if (s > PTHREAD_NSIG) {
+    if (s >= PTHREAD_NSIG) {
         return NULL;
     }
 
@@ -433,7 +434,7 @@ sig_t _pthread_signal(int s, sig_t h) {
 }
 
 void _pthread_exec_signal(int dst, int s) {
-    if (s > PTHREAD_NSIG) {
+    if (s >= PTHREAD_NSIG) {
         return;
     }
 
@@ -454,7 +455,7 @@ void _pthread_exec_signal(int dst, int s) {
 }
 
 int _pthread_has_signal(int dst, int s) {
-    if (s > PTHREAD_NSIG) {
+    if (s >= PTHREAD_NSIG) {
         return 0;
     }
 
@@ -733,13 +734,14 @@ int pthread_getname_np(pthread_t id, char *name, size_t len) {
     // Get the TCB task for this thread
     tskTCB_t *task = (tskTCB_t *) (thread->task);
 
-    // Sanity checks
-    if (strlen(task->pcTaskName) < len - 1) {
+    // Return ERANGE if caller's buffer is too small to hold name + NUL
+    if (strlen(task->pcTaskName) >= len) {
         return ERANGE;
     }
 
-    // Copy the name from the TCB
-    strncpy(name, task->pcTaskName, configMAX_TASK_NAME_LEN - 1);
+    // Copy the name using the caller's buffer size
+    strncpy(name, task->pcTaskName, len - 1);
+    name[len - 1] = '\0';
 
     return 0;
 }

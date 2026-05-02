@@ -81,7 +81,7 @@ static void gps(void *args) {
 	char sentence[MAX_NMA_SIZE];
 
 	for(;;) {
-		uart_reads(uart, sentence, 1, portMAX_DELAY);
+		uart_reads(uart, sentence, sizeof(sentence), 1, portMAX_DELAY);
 		nmea_parse(sentence);
 	}
 }
@@ -90,7 +90,10 @@ static void gps(void *args) {
  * Operation functions
  */
 driver_error_t *gps_setup(sensor_instance_t *unit) {
-	xTaskCreatePinnedToCore(gps, "gps", configMINIMAL_STACK_SIZE, (void *)((int)unit->setup[0].uart.id), 21, NULL, 0);
+	BaseType_t ret = xTaskCreatePinnedToCore(gps, "gps", configMINIMAL_STACK_SIZE, (void *)((int)unit->setup[0].uart.id), 21, NULL, 0);
+	if (ret != pdPASS) {
+		return driver_error(SENSOR_DRIVER, SENSOR_ERR_NOT_ENOUGH_MEMORY, "gps task");
+	}
 
 	return NULL;
 }

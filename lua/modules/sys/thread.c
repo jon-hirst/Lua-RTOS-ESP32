@@ -136,6 +136,7 @@ void *lthread_start_task(void *arg) {
 	// Create and populate cleanup info
 	lcleanup_info_t *info = malloc(sizeof(lcleanup_info_t));
 	if (!info) {
+		free(thread);
 		lua_writestringerror("%s\n", "not enough memory");
 		pthread_exit(NULL);
 	}
@@ -304,6 +305,7 @@ static int lthread_stop_pthreads(lua_State *L, int thid) {
 				luaL_unref(L, LUA_REGISTRYINDEX, cinfo->lthread->thread_ref);
 
 				_pthread_free(cinfo->thid, 1);
+				free(cinfo->lthread);
 
 				stopped++;
 				break;
@@ -314,6 +316,7 @@ static int lthread_stop_pthreads(lua_State *L, int thid) {
 				luaL_unref(L, LUA_REGISTRYINDEX, cinfo->lthread->thread_ref);
 
 				_pthread_free(cinfo->thid, 1);
+				free(cinfo->lthread);
 
 				stopped++;
 			}

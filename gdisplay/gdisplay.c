@@ -583,6 +583,9 @@ void gdisplay_begin() {
 }
 
 void gdisplay_end() {
+	if (nested == 0) {
+		return;
+	}
 	nested--;
 	if (nested == 0) {
 		gdisplay_update();
@@ -619,7 +622,7 @@ driver_error_t *gdisplay_set_orientation(uint16_t orient) {
 		return driver_error(GDISPLAY_DRIVER, GDISPLAY_ERR_IS_NOT_SETUP, "init display first");
 	}
 
-	if ((rotation != PORTRAIT) && (rotation != PORTRAIT_FLIP) && (rotation != LANDSCAPE) && (rotation != LANDSCAPE_FLIP)) {
+	if ((orient != PORTRAIT) && (orient != PORTRAIT_FLIP) && (orient != LANDSCAPE) && (orient != LANDSCAPE_FLIP)) {
 		return driver_error(GDISPLAY_DRIVER, GDISPLAY_ERR_INVALID_ORIENTATION, NULL);
 	}
 

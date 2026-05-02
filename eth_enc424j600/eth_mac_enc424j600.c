@@ -581,6 +581,7 @@ static void emac_enc424j600_task(void *arg) {
                     buffer = heap_caps_malloc(length, MALLOC_CAP_DMA);
                     if (!buffer) {
                         ESP_LOGE(TAG, "no mem for receive buffer");
+                        break;
                     } else if (emac->parent.receive(&emac->parent, buffer, &length) == ESP_OK) {
                         /* pass the buffer to stack (e.g. TCP/IP layer) */
                         if (length) {
@@ -725,6 +726,9 @@ static esp_err_t emac_enc424j600_receive(esp_eth_mac_t *mac, uint8_t *buf, uint3
     }
 
     // Get the packet length
+    if (statusVector.bits.ByteCount < 4) {
+        goto exit;
+    }
     len = statusVector.bits.ByteCount - 4;
 
     // If we don't receive nothing, exit
@@ -859,6 +863,7 @@ esp_eth_mac_t *esp_eth_mac_new_enc424j600(const eth_mac_config_t *mac_config) {
     {
         syslog(LOG_ERR, "enc424j600 cannot open spi%d", CONFIG_SPI_ETHERNET_SPI);
         free(error);
+        free(emac);
         return NULL;
     }
 
@@ -886,6 +891,7 @@ esp_eth_mac_t *esp_eth_mac_new_enc424j600(const eth_mac_config_t *mac_config) {
 
     // Create lock
     emac->lock = xSemaphoreCreateMutex();
+    MAC_CHECK(emac->lock, "create enc424j600 lock failed", err, NULL);
 
     /* create enc424j600 task */
     BaseType_t core_num = tskNO_AFFINITY;
@@ -903,6 +909,9 @@ err:
     if (emac) {
         if (emac->rx_task_hdl) {
             vTaskDelete(emac->rx_task_hdl);
+        }
+        if (emac->lock) {
+            vSemaphoreDelete(emac->lock);
         }
         free(emac);
     }

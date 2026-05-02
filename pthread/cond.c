@@ -104,6 +104,9 @@ int pthread_cond_destroy(pthread_cond_t *cond) {
 	}
 
 	mtx_destroy(&scond->mutex);
+	vEventGroupDelete(scond->ev);
+	free(scond);
+	*cond = PTHREAD_COND_INITIALIZER;
 
 	return 0;
 }

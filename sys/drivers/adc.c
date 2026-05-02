@@ -166,18 +166,17 @@ driver_error_t *adc_setup(int8_t unit, int8_t channel, int16_t devid, int16_t vr
 
 	// Test if channel is setup
 	int index = 0;
+	int is_new = 0;
 	adc_chann_t *chan = get_channel(unit, channel, &index);
-	if (chan) {
-		// Channel is setup, reuse the handle and reconfigure the adc
-	}
-	else {
+	if (!chan) {
 		// Create space for the channel
 		chan = calloc(1, sizeof(adc_chann_t));
 		if (!chan) {
 			return driver_error(ADC_DRIVER, ADC_ERR_NOT_ENOUGH_MEMORY, NULL);
 		}
+		is_new = 1;
 	}
-	
+
 	// Store channel configuration
 	chan->unit = unit;
 	chan->channel = channel;
@@ -188,14 +187,14 @@ driver_error_t *adc_setup(int8_t unit, int8_t channel, int16_t devid, int16_t vr
 
 	// Setup channel
 	if ((error = adc_devs[unit - CPU_FIRST_ADC].setup(chan))) {
-		free(chan);
+		if (is_new) free(chan);
 		return error;
 	}
 
 	chan->max_val = ~(0xffff << chan->resolution);
 
 	// At this point the channel is configured without errors
-	if (!index) {
+	if (is_new) {
 		// Store channel in channel list
 		if (lstadd(&channels, chan, &index)) {
 			free(chan);

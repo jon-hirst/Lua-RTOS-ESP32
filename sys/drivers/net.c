@@ -323,18 +323,19 @@ retry:
 
     if ((rc = getaddrinfo(name, NULL, &hints, &result)) == 0) {
         struct addrinfo *res = result;
+        struct addrinfo *found = NULL;
         while (res) {
             if (res->ai_family == AF_INET) {
-                result = res;
+                found = res;
                 break;
             }
             res = res->ai_next;
         }
 
-        if (result->ai_family == AF_INET) {
+        if (found) {
             address->sin_port = htons(port);
             address->sin_family = family = AF_INET;
-            address->sin_addr = ((struct sockaddr_in*)(result->ai_addr))->sin_addr;
+            address->sin_addr = ((struct sockaddr_in*)(found->ai_addr))->sin_addr;
         }
 
         freeaddrinfo(result);
