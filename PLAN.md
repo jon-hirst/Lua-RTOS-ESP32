@@ -815,7 +815,27 @@ DONE: Review all project code for mutexes not released on every exit path — fu
 - F4 (mount.c:764-768): umount() count!=1 path returned -1 without mtx_unlock(&mtx). Added mtx_unlock before the return.
 - F5 (mount.c:779-783): umount() root-with-others path returned -1 without mtx_unlock(&mtx) and without free(npath). Added both free(npath) and mtx_unlock before the return.
 
-TODO: Review all project code for race conditions between ISRs and task code — shared variables read/written from both interrupt context and task context without atomic access or critical sections.
+DONE: Review all project code for race conditions between ISRs and task code — shared variables read/written from both interrupt context and task context without atomic access or critical sections.
+
+- F1 (uart.c:155): console_raw changed from uint8_t to volatile uint8_t. uart_rx_intr_handler (ISR)
+  reads it in queue_byte to decide whether Ctrl+C/Ctrl+D should be forwarded; uart_ll_set_raw (task
+  context) writes it. Without volatile the compiler can keep a stale copy in a register across ISR
+  re-entry.
+- F2 (gpio_debouncing.c): Added static portMUX_TYPE debouncing_mux spinlock. Changed
+  gpio_debouncing_unregister from portDISABLE_INTERRUPTS/portENABLE_INTERRUPTS to
+  portENTER_CRITICAL/portEXIT_CRITICAL so the clear of callback[pin]/arg[pin] is SMP-safe on
+  dual-core ESP32-S3 (portDISABLE_INTERRUPTS only disables interrupts on the local core; the timer
+  ISR can still execute on the other core). Changed debouncing_isr (both internal and EXTERNAL_GPIO
+  paths) to snapshot callback[i]/arg[i] into locals under portENTER_CRITICAL_ISR/portEXIT_CRITICAL_ISR
+  before invoking the callback, so the call can never use a pointer that unregister has concurrently
+  zeroed.
+- F3 (hall_flow_sensor.c): flow_isr wrote three double (64-bit) values directly into sensor->data[]
+  while sensor_read (task context) read them under only unit->mtx, which does not block ISRs. On
+  32-bit Xtensa a double write is two separate 32-bit stores — a concurrent task read produces a torn
+  value. Added portMUX_TYPE mux and staging fields q/l/freq to hall_flow_t; flow_isr now writes only
+  to staging under portENTER_CRITICAL_ISR. Added hall_flow_acquire() that atomically copies staging
+  to unit->data[] under portENTER_CRITICAL; registered .acquire = hall_flow_acquire in sensor_t so
+  sensor_acquire calls it before sensor_read returns data to Lua.
 
 TODO: Review all project code for ISR-unsafe function calls — heap allocation (malloc/calloc/free), blocking calls, or non-reentrant functions called from interrupt handlers.
 

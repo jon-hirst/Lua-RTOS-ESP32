@@ -51,6 +51,8 @@
 
 #include <string.h>
 
+#include "freertos/FreeRTOS.h"
+
 #include <sys/mutex.h>
 #include <sys/time.h>
 
@@ -59,10 +61,15 @@
 typedef struct {
     uint32_t count;
     uint32_t last;
+    double q;
+    double l;
+    double freq;
+    portMUX_TYPE mux;
 } hall_flow_t;
 
 driver_error_t *hall_flow_setup(sensor_instance_t *unit);
 driver_error_t *hall_flow_unsetup(sensor_instance_t *unit);
+driver_error_t *hall_flow_acquire(sensor_instance_t *unit, sensor_value_t *values);
 
 // Sensor specification and registration
 static const sensor_t __attribute__((used,unused,section(".sensors"))) hall_flow_sensor = {
@@ -80,6 +87,7 @@ static const sensor_t __attribute__((used,unused,section(".sensors"))) hall_flow
     },
     .setup = hall_flow_setup,
 	.unsetup = hall_flow_unsetup,
+    .acquire = hall_flow_acquire,
 };
 
 /*
@@ -100,7 +108,6 @@ static void flow_isr(void* arg) {
     // If first pulse, exit
     if (data->last == 0) {
         data->last = now;
-        sensor->data[0].doubled.value = 0;
         return;
     }
 
@@ -117,16 +124,15 @@ static void flow_isr(void* arg) {
         double micros = ((double)(cycles)) / ((double)cpu_speed_hz() / (double)1000000);
 
         // Get frequency
-        double freq = ((double)data->count * (double)1000000) / (double)micros;
+        double computed_freq = ((double)data->count * (double)1000000) / (double)micros;
 
-        // Q
-        sensor->data[0].doubled.value = freq / (double)sensor->properties[0].doubled.value;
+        double computed_q = computed_freq / (double)sensor->properties[0].doubled.value;
 
-        // L
-        sensor->data[1].doubled.value += (sensor->data[0].doubled.value * micros) / (double)60000000;
-
-        // Frequency
-        sensor->data[2].doubled.value = freq;
+        portENTER_CRITICAL_ISR(&data->mux);
+        data->q = computed_q;
+        data->l += (computed_q * micros) / (double)60000000;
+        data->freq = computed_freq;
+        portEXIT_CRITICAL_ISR(&data->mux);
 
         data->count = 0;
         data->last = now;
@@ -147,12 +153,23 @@ driver_error_t *hall_flow_setup(sensor_instance_t *unit) {
         return driver_error(SENSOR_DRIVER, SENSOR_ERR_NOT_ENOUGH_MEMORY, NULL);
     }
 
+    portMUX_INITIALIZE(&sensor->mux);
     unit->args = sensor;
 
     if ((error = gpio_isr_attach(unit->setup[0].gpio.gpio, flow_isr, GPIO_INTR_POSEDGE, (void *)unit))) {
         return error;
     }
 
+    return NULL;
+}
+
+driver_error_t *hall_flow_acquire(sensor_instance_t *unit, sensor_value_t *values) {
+    hall_flow_t *data = unit->args;
+    portENTER_CRITICAL(&data->mux);
+    unit->data[0].doubled.value = data->q;
+    unit->data[1].doubled.value = data->l;
+    unit->data[2].doubled.value = data->freq;
+    portEXIT_CRITICAL(&data->mux);
     return NULL;
 }
 

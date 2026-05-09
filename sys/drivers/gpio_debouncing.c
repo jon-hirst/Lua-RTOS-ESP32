@@ -62,6 +62,9 @@ static debouncing_t *debouncing = NULL;
 // Max threshold data
 static uint32_t max_threshold = 0;
 
+// SMP-safe spinlock protecting callback/arg fields accessed from both ISR and task
+static portMUX_TYPE debouncing_mux = portMUX_INITIALIZER_UNLOCKED;
+
 void gpio_isr(void *args) {
     uint8_t pin = ((uint32_t)args);
 
@@ -122,8 +125,14 @@ void debouncing_isr(void *args) {
             if ((debouncing->latch & mask) != (current & mask)) {
                 // GPIO has changed
                 if (!((debouncing->time[i] <= debouncing->threshold[i]))) {
-                    if (debouncing->callback[i]) {
-                        debouncing->callback[i](debouncing->arg[i], (current & mask) != 0);
+                    gpio_debouncing_callback_t cb;
+                    void *cb_arg;
+                    portENTER_CRITICAL_ISR(&debouncing_mux);
+                    cb = debouncing->callback[i];
+                    cb_arg = debouncing->arg[i];
+                    portEXIT_CRITICAL_ISR(&debouncing_mux);
+                    if (cb) {
+                        cb(cb_arg, (current & mask) != 0);
                     }
 
                     // Set new value
@@ -156,8 +165,14 @@ void debouncing_isr(void *args) {
             if ((debouncing->latch_ext & mask) != (current_ext & mask)) {
                 // GPIO has changed
                 if (!((debouncing->time[i] <= debouncing->threshold[i]))) {
-                    if (debouncing->callback[i]) {
-                        debouncing->callback[i](debouncing->arg[i], (current_ext & mask) != 0);
+                    gpio_debouncing_callback_t cb;
+                    void *cb_arg;
+                    portENTER_CRITICAL_ISR(&debouncing_mux);
+                    cb = debouncing->callback[i];
+                    cb_arg = debouncing->arg[i];
+                    portEXIT_CRITICAL_ISR(&debouncing_mux);
+                    if (cb) {
+                        cb(cb_arg, (current_ext & mask) != 0);
                     }
 
                     // Set new value
@@ -280,12 +295,12 @@ driver_error_t *gpio_debouncing_register(uint8_t pin, uint16_t threshold, gpio_d
 
 driver_error_t *gpio_debouncing_unregister(uint8_t pin) {
     if (debouncing) {
-        portDISABLE_INTERRUPTS();
+        portENTER_CRITICAL(&debouncing_mux);
         debouncing->arg[pin] = NULL;
         debouncing->callback[pin] = NULL;
         debouncing->threshold[pin] = 0;
         debouncing->time[pin] = 0;
-        portENABLE_INTERRUPTS();
+        portEXIT_CRITICAL(&debouncing_mux);
     }
 
     return NULL;
