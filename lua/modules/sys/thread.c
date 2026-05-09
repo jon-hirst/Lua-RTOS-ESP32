@@ -603,6 +603,9 @@ static int new_thread(lua_State* L, int run) {
 			goto retry;
 		}
 
+		luaL_unref(L, LUA_REGISTRYINDEX, thread->function_ref);
+		luaL_unref(L, LUA_REGISTRYINDEX, thread->thread_ref);
+		free(thread);
 		return luaL_exception_extended(L, LUA_THREAD_ERR_CANNOT_START, strerror(res));
 	}
 

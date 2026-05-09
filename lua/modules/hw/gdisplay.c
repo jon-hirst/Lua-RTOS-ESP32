@@ -1071,7 +1071,7 @@ static int lgdisplay_qrcode( lua_State* L ) {
 	}
 	uint8_t *tempBuffer = NULL;
 	tempBuffer = malloc(qrcodegen_BUFFER_LEN_MAX);
-	if (!qrcodegen_BUFFER_LEN_MAX) {
+	if (!tempBuffer) {
 		free(qrcode);
 		luaL_exception_extended(L, GDISPLAY_ERR_NOT_ENOUGH_MEMORY, "error allocating qrcode temp buffer");
 	}

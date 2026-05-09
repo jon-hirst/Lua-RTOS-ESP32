@@ -767,7 +767,17 @@ not the deliberate stack-overflow test at lines 632-663.
 Fix: Reverted LUAI_GCMUL from 400 back to 200 (Lua default) in lua/src/lgc.h.
 With GCMUL=200, locals.lua completes the entire 1,281-call load() loop without crashing.
 
-DOING: Review all project code for memory leaks on error paths — malloc/calloc/realloc succeeds but an early return or goto skips the matching free.
+DONE: Review all project code for memory leaks on error paths — malloc/calloc/realloc succeeds but an early return or goto skips the matching free.
+
+- F1 (gdisplay.c:1074): tempBuffer malloc failure not detected — condition checked the macro constant
+  qrcodegen_BUFFER_LEN_MAX (always nonzero) instead of the pointer tempBuffer. A failed allocation
+  silently continued with NULL tempBuffer and left qrcode leaked. Fixed: changed !qrcodegen_BUFFER_LEN_MAX
+  to !tempBuffer; the existing free(qrcode) inside the block was already correct.
+- F2 (thread.c:606): pthread_create failure path leaked thread struct and two Lua registry references.
+  When pthread_create fails after retries, function_ref (line 558) and thread_ref (line 563) had already
+  been registered in the Lua registry, and thread had been allocated (line 551). luaL_exception_extended
+  longjmps out without freeing any of them. Fixed: added luaL_unref for both refs and free(thread)
+  immediately before the luaL_exception_extended call.
 
 TODO: Review all project code for file descriptor and socket leaks — open/socket/accept calls where not every error path calls close.
 
