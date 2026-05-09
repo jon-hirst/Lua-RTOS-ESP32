@@ -155,7 +155,7 @@ driver_error_t *adc_setup(int8_t unit, int8_t channel, int16_t devid, int16_t vr
 			}
 		}
 	} else {
-		if ((unit < CPU_FIRST_ADC) || (unit > CPU_LAST_ADC + 1)) {
+		if ((size_t)(unit - CPU_FIRST_ADC) >= sizeof(adc_devs) / sizeof(adc_devs[0])) {
 			return driver_error(ADC_DRIVER, ADC_ERR_INVALID_UNIT, NULL);
 		}
 

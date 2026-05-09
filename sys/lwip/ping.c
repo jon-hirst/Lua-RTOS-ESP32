@@ -211,10 +211,10 @@ static void ping_recv(int s) {
                 received++;
 
                 // Get elapsed time in milliseconds
-                micros_begin = begin.tv_sec * 1000000;
+                micros_begin = (uint64_t)begin.tv_sec * 1000000;
                 micros_begin += begin.tv_usec;
 
-                micros_end = end.tv_sec * 1000000;
+                micros_end = (uint64_t)end.tv_sec * 1000000;
                 micros_end += end.tv_usec;
 
                 elapsed = (float) (micros_end - micros_begin) / (float) 1000.0;

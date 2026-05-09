@@ -79,8 +79,6 @@ static void on_received(int port, char *payload) {
 
         luaS_callback_call(callback, 2);
     }
-
-    free(payload);
 }
 
 // Pads a hex number string representation at a specified length

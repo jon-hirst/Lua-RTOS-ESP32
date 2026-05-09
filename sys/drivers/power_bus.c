@@ -138,7 +138,7 @@ uint64_t pwbus_uptime() {
 
 	clock_gettime(CLOCK_MONOTONIC, &now);
 
-	return ((now.tv_sec * 1000 + (now.tv_nsec / 1000000)) - (uptime.tv_sec * 1000 + (uptime.tv_nsec / 1000000)));
+	return (((uint64_t)now.tv_sec * 1000 + (now.tv_nsec / 1000000)) - ((uint64_t)uptime.tv_sec * 1000 + (uptime.tv_nsec / 1000000)));
 }
 
 #endif

@@ -842,17 +842,42 @@ DONE: Review all project code for ISR-unsafe function calls — heap allocation 
 - F1 (gateway.c:dio_intr_handler): ISR called spi_ll_select()→spi_lock()→xSemaphoreTakeRecursive(portMAX_DELAY) — a blocking semaphore call from interrupt context. Fixed by adding a lora_dio_deferred_handler task and lora_dio_q queue; the ISR now only calls xQueueSendFromISR, and all SPI I/O happens in the deferred task. Added lora_dio_q and lora_dio_task teardown to lora_gw_unsetup().
 - F2 (uart.c:597): uart_rx_intr_handler registered with ESP_INTR_FLAG_IRAM but the handler and all callees (queue_byte, status_get, _pthread_has_signal, lstget, mtx_lock) are not marked IRAM_ATTR. Calling non-IRAM code from an IRAM ISR crashes when SPI flash cache is disabled during flash operations. Fixed: changed flag from ESP_INTR_FLAG_IRAM to 0. The UART console ISR is not required to run during flash operations.
 
-TODO: Review all project code for use-after-free when ownership transfers across threads — pointers passed to queues, callbacks, or other tasks that are freed by the sender before the receiver is done with them.
+DONE: Review all project code for use-after-free when ownership transfers across threads — pointers passed to queues, callbacks, or other tasks that are freed by the sender before the receiver is done with them.
 
-TODO: Review all project code for off-by-one errors in array index bounds — guards using > instead of >= or < instead of <= when comparing against array size or count limits.
+- F1 (lora.c:83): Double-free — on_received callback called free(payload) but lora_lmic.c (the allocator)
+  also called free(payload) after the callback returned (added in the F4 fix). The callback should treat
+  the pointer as borrowed; lora_lmic.c owns and frees the buffer. Removed free(payload) from on_received.
 
-TODO: Review all project code for integer overflow — signed multiplication or addition that can exceed INT_MAX before being cast to a wider type, especially in size or delay calculations.
+DONE: Review all project code for off-by-one errors in array index bounds — guards using > instead of >= or < instead of <= when comparing against array size or count limits.
 
-TODO: Review all project code for unsigned integer underflow — subtraction on uint8_t/uint16_t/uint32_t values that can go negative and wrap to a large positive value.
+- F1 (adc.c:158): `unit > CPU_LAST_ADC + 1` (== `unit > 2`) in the external ADC path allowed only unit=2,
+  rejecting all other configured external ADC units (3, 4, 5). The check was also redundant (`unit < CPU_FIRST_ADC`
+  is always false in the else branch). Replaced with a proper array-size bound:
+  `(size_t)(unit - CPU_FIRST_ADC) >= sizeof(adc_devs)/sizeof(adc_devs[0])`.
+  The existing NULL-sentinel name check still catches the sentinel entry at index N-1.
 
-TODO: Review all project code for shift-count undefined behaviour — left or right shifts where the shift amount can equal or exceed the width of the integer type.
+DONE: Review all project code for integer overflow — signed multiplication or addition that can exceed INT_MAX before being cast to a wider type, especially in size or delay calculations.
 
-TODO: Review all project code for uninitialized variables used on error paths — variables declared but not set before use when execution takes a branch that skips the initializing assignment.
+- F1 (sensor.c:855,874): `now.tv_sec * 1000000` computed as int32*int32 before assigning to uint64_t t1/t0.
+  Current Unix timestamp (~1.748e9 s) * 1000000 = 1.748e15, overflowing int32 and producing wrong debounce
+  timing comparisons. Fixed by casting to uint64_t first: `(uint64_t)now.tv_sec * 1000000`.
+- F2 (rmt.c:394): `idle_threshold * 1000000` computed as int32*int32 in MSEC range path. For any threshold
+  > 2147 ms (~2.1 s) the product overflows int32 (UB). Max threshold 65535 ms → 65,535,000,000 ns also
+  exceeds uint32_t max (~4.295e9). Fixed with uint64_t intermediate and clamp to UINT32_MAX.
+- F3 (ping.c:214,217): `begin.tv_sec * 1000000` computed as int32*int32 before assigning to uint64_t
+  micros_begin/micros_end. Same overflow as F1. Fixed by casting to uint64_t first.
+
+DONE: Review all project code for unsigned integer underflow — subtraction on uint8_t/uint16_t/uint32_t values that can go negative and wrap to a large positive value.
+
+No genuine unsigned underflow bugs found. The captivedns.c `p->len - 1` is guarded by the prior `p->len < sizeof(DNSHeader)` check; gateway.c `strlen(buff_pos) - 1` cannot be zero since sprintf always writes; ds1820.c `owsensor - 1` requires the caller to pass 0, which violates the 1-based convention enforced by the default.
+
+Two additional integer overflow bugs were found and fixed during this review:
+- F4 (power_bus.c:141): `now.tv_sec * 1000` in pwbus_uptime() uses CLOCK_MONOTONIC but computes as
+  int32*int32; overflows after 24.8 days of uptime. Cast to uint64_t before multiply.
+- F5 (gateway.c:467,553): `now.tv_sec * 1000` in ttn_up_task/ttn_down_task uses gettimeofday (absolute
+  Unix time ~1.748e9 s); `1748000000 * 1000` overflows int32 on every call. Cast to uint64_t first.
+
+DOING: Review all project code for uninitialized variables used on error paths — variables declared but not set before use when execution takes a branch that skips the initializing assignment.
 
 TODO: Review all project code for dangling pointers after free — callers that retain a copy of a pointer after freeing it, or structs whose members point to freed memory.
 
@@ -871,3 +896,6 @@ TODO: Review all project code for conditions that test the wrong variable — va
 TODO: Review all project code for inverted bounds checks — conditions where the comparison operator is backwards, passing invalid input and rejecting valid input.
 
 TODO: Review all project code for realloc result stored directly into the source pointer — if realloc returns NULL the original allocation is lost, causing a memory leak before the null-pointer crash.
+
+TODO: Review all project code for shift-count undefined behaviour — left or right shifts where the shift amount can equal or exceed the width of the integer type.
+

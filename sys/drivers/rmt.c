@@ -391,7 +391,8 @@ driver_error_t *rmt_setup_rx(int pin, rmt_pulse_range_t range, rmt_filter_ticks_
         speed = 1000;
         devices[channel].rx.scale = 1;
         devices[channel].rx.signal_range_min_ns = filter_ticks;
-        devices[channel].rx.signal_range_max_ns = idle_threshold * 1000000;
+        uint64_t _ns = (uint64_t)idle_threshold * 1000000;
+        devices[channel].rx.signal_range_max_ns = (_ns > UINT32_MAX) ? UINT32_MAX : (uint32_t)_ns;
     }
 
     // Create new RX channel

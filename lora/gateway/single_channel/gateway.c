@@ -464,7 +464,7 @@ static void ttn_up_task(void *arg) {
         // Send stats every 30 seconds +/- 1 sec
         struct timeval now;
         gettimeofday(&now, NULL);
-        uint64_t now_ms = (now.tv_sec * 1000 + now.tv_usec / 1000);
+        uint64_t now_ms = ((uint64_t)now.tv_sec * 1000 + now.tv_usec / 1000);
 
         if ((now_ms - last_stat) > 30000) {
             last_stat = now_ms;
@@ -550,7 +550,7 @@ static void ttn_down_task(void *arg) {
         // Compute elapsed time since last alive message
         struct timeval now;
         gettimeofday(&now, NULL);
-        uint64_t now_ms = (now.tv_sec * 1000 + now.tv_usec / 1000);
+        uint64_t now_ms = ((uint64_t)now.tv_sec * 1000 + now.tv_usec / 1000);
 
         if ((now_ms - last_alive) > 30000) {
             // Send an alive message

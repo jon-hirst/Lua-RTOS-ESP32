@@ -852,7 +852,7 @@ void sensor_update_data(sensor_instance_t *unit, uint8_t from, uint8_t to, senso
         gettimeofday(&now, NULL);
 
         // Convert current time to usecs
-        t1 = now.tv_sec * 1000000 + now.tv_usec;
+        t1 = (uint64_t)now.tv_sec * 1000000 + now.tv_usec;
     }
 
     for(i = from; i <= to;i++) {
@@ -871,7 +871,7 @@ void sensor_update_data(sensor_instance_t *unit, uint8_t from, uint8_t to, senso
             } else {
                 if (!ignore || (ignore && (unit->data[i].raw.value != ignore_val))) {
                     // Get last latch time in usecs
-                    t0 = unit->latch[i].t.tv_sec * 1000000 + unit->latch[i].t.tv_usec;
+                    t0 = (uint64_t)unit->latch[i].t.tv_sec * 1000000 + unit->latch[i].t.tv_usec;
 
                     unit->latch[i].timeout = ((t1 - t0) >= delay);
                     unit->latch[i].repeat = ((t1 - t0) >= rate);
