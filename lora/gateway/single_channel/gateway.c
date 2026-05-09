@@ -129,10 +129,12 @@ typedef struct {
     uint8_t payload[256]; // Payload
 } lora_data_t;
 
-static int spi_device;                         // SPI device where phy is attached
+static int spi_device;                          // SPI device where phy is attached
 static QueueHandle_t lora_rx_q = NULL;          // LoRa WAN data queue
-static TaskHandle_t lora_ttn_up_task = NULL;   // TTN upload task
-static TaskHandle_t lora_ttn_down_task = NULL; // TTN download task
+static QueueHandle_t lora_dio_q = NULL;         // DIO interrupt deferred-handler queue
+static TaskHandle_t lora_ttn_up_task = NULL;    // TTN upload task
+static TaskHandle_t lora_ttn_down_task = NULL;  // TTN download task
+static TaskHandle_t lora_dio_task = NULL;       // DIO deferred-handler task
 
 // Upstream / downstream socket
 static int up_socket = -1;
@@ -325,48 +327,47 @@ static void rx_mode() {
 }
 
 /*
- * DIO ISR
+ * DIO deferred handler — runs as a task so SPI calls are safe.
+ * The ISR sends a byte to lora_dio_q; this task wakes and does all SPI I/O.
  */
-static void dio_intr_handler(void* arg) {
-    BaseType_t high_priority_task_awoken = 0;
+static void lora_dio_deferred_handler(void *arg) {
+    uint8_t dio;
+    for (;;) {
+        if (xQueueReceive(lora_dio_q, &dio, portMAX_DELAY) != pdTRUE)
+            continue;
 
-    // Get IRQ flags to decide what to do
-    uint8_t flags = get_irq_flags();
+        uint8_t flags = get_irq_flags();
+        if (!flags)
+            continue;
 
-    // If no flags, exit
-    if (!flags) return;
-
-    if (mode == LoraGWModeRX) {
-        if (flags & (IRQ_LORA_RXDONE_MASK)) {
-            // Update statistics
-            rxnb++;
-
-            // Check for CRC
-            if (!(flags & IRQ_LORA_CRCERR_MASK)) {
-                // Update statistics
-                rxok++;
-
-                // Packet received, and valid, read it!
-                lora_data_t data;
-
-                data.freq_idx = freq_idx;
-                data.sf_idx = sf_idx;
-                data.snr = get_snr();
-                data.rssi = get_rssi();
-                data.size = get_payload(&data.payload[0]);
-
-                // Clear all interrupts
-                clear_irq_flags(0xff);
-
-                // Send received packet data to RX queue for later processing
-                xQueueSendFromISR(lora_rx_q, &data, &high_priority_task_awoken);
-            } else {
-                // Clear all interrupts
-                clear_irq_flags(0xff);
+        if (mode == LoraGWModeRX) {
+            if (flags & IRQ_LORA_RXDONE_MASK) {
+                rxnb++;
+                if (!(flags & IRQ_LORA_CRCERR_MASK)) {
+                    rxok++;
+                    lora_data_t data;
+                    data.freq_idx = freq_idx;
+                    data.sf_idx = sf_idx;
+                    data.snr = get_snr();
+                    data.rssi = get_rssi();
+                    data.size = get_payload(&data.payload[0]);
+                    clear_irq_flags(0xff);
+                    xQueueSend(lora_rx_q, &data, 0);
+                } else {
+                    clear_irq_flags(0xff);
+                }
             }
         }
     }
+}
 
+/*
+ * DIO ISR — just signals the deferred handler; no SPI calls permitted here.
+ */
+static void dio_intr_handler(void* arg) {
+    BaseType_t high_priority_task_awoken = 0;
+    uint8_t dio = (uint8_t)(uintptr_t)arg;
+    xQueueSendFromISR(lora_dio_q, &dio, &high_priority_task_awoken);
     if (high_priority_task_awoken == pdTRUE) {
         portYIELD_FROM_ISR();
     }
@@ -754,6 +755,25 @@ driver_error_t *lora_gw_setup(int band, const char *host, int port, int frequenc
         }
     }
 
+    if (!lora_dio_q) {
+        lora_dio_q = xQueueCreate(10, sizeof(uint8_t));
+        if (!lora_dio_q) {
+            lora_gw_unsetup();
+            return driver_error(LORA_DRIVER, LORA_ERR_NO_MEM, NULL);
+        }
+    }
+
+    if (!lora_dio_task) {
+        BaseType_t xReturn = xTaskCreatePinnedToCore(lora_dio_deferred_handler, "loradio",
+            CONFIG_LUA_RTOS_LUA_THREAD_STACK_SIZE, NULL,
+            CONFIG_LUA_RTOS_LUA_THREAD_PRIORITY + 1,
+            &lora_dio_task, xPortGetCoreID());
+        if (xReturn != pdPASS) {
+            lora_gw_unsetup();
+            return driver_error(LORA_DRIVER, LORA_ERR_NO_MEM, NULL);
+        }
+    }
+
     // Attach DIO interrupt handlers
     #if CONFIG_LUA_RTOS_LORA_DIO0 >= 0
     if ((error = gpio_isr_attach(CONFIG_LUA_RTOS_LORA_DIO0, dio_intr_handler, GPIO_INTR_POSEDGE, (void*)0))) {
@@ -915,9 +935,19 @@ void lora_gw_unsetup() {
         lora_ttn_down_task = NULL;
     }
 
+    if (lora_dio_task) {
+        vTaskDelete(lora_dio_task);
+        lora_dio_task = NULL;
+    }
+
     if (lora_rx_q) {
         vQueueDelete(lora_rx_q);
         lora_rx_q = NULL;
+    }
+
+    if (lora_dio_q) {
+        vQueueDelete(lora_dio_q);
+        lora_dio_q = NULL;
     }
 
     if (up_socket >= 0) {

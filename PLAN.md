@@ -837,7 +837,10 @@ DONE: Review all project code for race conditions between ISRs and task code —
   to unit->data[] under portENTER_CRITICAL; registered .acquire = hall_flow_acquire in sensor_t so
   sensor_acquire calls it before sensor_read returns data to Lua.
 
-TODO: Review all project code for ISR-unsafe function calls — heap allocation (malloc/calloc/free), blocking calls, or non-reentrant functions called from interrupt handlers.
+DONE: Review all project code for ISR-unsafe function calls — heap allocation (malloc/calloc/free), blocking calls, or non-reentrant functions called from interrupt handlers.
+
+- F1 (gateway.c:dio_intr_handler): ISR called spi_ll_select()→spi_lock()→xSemaphoreTakeRecursive(portMAX_DELAY) — a blocking semaphore call from interrupt context. Fixed by adding a lora_dio_deferred_handler task and lora_dio_q queue; the ISR now only calls xQueueSendFromISR, and all SPI I/O happens in the deferred task. Added lora_dio_q and lora_dio_task teardown to lora_gw_unsetup().
+- F2 (uart.c:597): uart_rx_intr_handler registered with ESP_INTR_FLAG_IRAM but the handler and all callees (queue_byte, status_get, _pthread_has_signal, lstget, mtx_lock) are not marked IRAM_ATTR. Calling non-IRAM code from an IRAM ISR crashes when SPI flash cache is disabled during flash operations. Fixed: changed flag from ESP_INTR_FLAG_IRAM to 0. The UART console ISR is not required to run during flash operations.
 
 TODO: Review all project code for use-after-free when ownership transfers across threads — pointers passed to queues, callbacks, or other tasks that are freed by the sender before the receiver is done with them.
 

@@ -594,7 +594,7 @@ driver_error_t *uart_setup_interrupts(int8_t unit) {
     uint32_t reg_val = 0;
 	uint32_t mask = UART_RXFIFO_TOUT_INT_ENA_M | UART_FRM_ERR_INT_ENA_M | UART_RXFIFO_FULL_INT_ENA_M;
 
-	esp_intr_alloc(UART_INTR_SOURCE(unit), ESP_INTR_FLAG_IRAM, uart_rx_intr_handler, (void *)((uint32_t)unit), NULL);
+	esp_intr_alloc(UART_INTR_SOURCE(unit), 0, uart_rx_intr_handler, (void *)((uint32_t)unit), NULL);
 
 	WRITE_PERI_REG(UART_INT_CLR_REG(unit), 0x1ff);
 
