@@ -823,6 +823,9 @@ static void list_dir(http_request_handle *request, char *pathbuf, struct stat *s
 
 	filepath_merge(pathbuf, CONFIG_LUA_RTOS_HTTP_SERVER_DOCUMENT_ROOT, request->path, NULL); //restore folder pathbuf
 	dir = opendir(pathbuf);
+	if (!dir) {
+		return;
+	}
 	while ((de = readdir(dir)) != NULL) {
 		filepath_merge(pathbuf, CONFIG_LUA_RTOS_HTTP_SERVER_DOCUMENT_ROOT, request->path, de->d_name);
 		stat(pathbuf, statbuf);
@@ -1295,6 +1298,8 @@ static void *http_thread(void *arg) {
 				ssl = SSL_new(ctx);
 				if (!ssl) {
 					syslog(LOG_ERR, "http: couldn't create SSL session\n");
+					close(client);
+					client = -1;
 					break; //exit the loop to shutdown the server
 				}
 

@@ -135,8 +135,8 @@ static TaskHandle_t lora_ttn_up_task = NULL;   // TTN upload task
 static TaskHandle_t lora_ttn_down_task = NULL; // TTN download task
 
 // Upstream / downstream socket
-static int up_socket;
-static int down_socket;
+static int up_socket = -1;
+static int down_socket = -1;
 
 // Server address
 static struct sockaddr_in sever_addr;
@@ -918,6 +918,16 @@ void lora_gw_unsetup() {
     if (lora_rx_q) {
         vQueueDelete(lora_rx_q);
         lora_rx_q = NULL;
+    }
+
+    if (up_socket >= 0) {
+        close(up_socket);
+        up_socket = -1;
+    }
+
+    if (down_socket >= 0) {
+        close(down_socket);
+        down_socket = -1;
     }
 }
 

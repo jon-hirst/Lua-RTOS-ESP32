@@ -779,7 +779,33 @@ DONE: Review all project code for memory leaks on error paths — malloc/calloc/
   longjmps out without freeing any of them. Fixed: added luaL_unref for both refs and free(thread)
   immediately before the luaL_exception_extended call.
 
-TODO: Review all project code for file descriptor and socket leaks — open/socket/accept calls where not every error path calls close.
+DONE: Review all project code for file descriptor and socket leaks — open/socket/accept calls where not every error path calls close.
+
+Four leaks found and fixed: SSL_new failure in httpsrv.c left accepted socket open; pthread_create
+failures in can.c left client socket open; lora_gw_unsetup() never closed up_socket/down_socket;
+opendir() in httpsrv.c was not NULL-checked before readdir().
+
+DONE: Fix fault in http/httpsrv.c:1298 — accepted client socket not closed when SSL_new() fails
+
+- httpsrv.c:1297: close(client) and client = -1 added before break so the accepted socket
+  is not leaked when SSL_new() fails and the server loop exits.
+
+DONE: Fix fault in sys/drivers/can.c:319,325 — accepted client socket not closed when pthread_create() fails
+
+- can.c:319: close(gw_config->client) added before return NULL on thread_up creation failure.
+- can.c:325: close(gw_config->client) added before return NULL on thread_down creation failure.
+
+DONE: Fix fault in lora/gateway/single_channel/gateway.c — lora_gw_unsetup() never closes up_socket or down_socket
+
+- gateway.c:138-139: up_socket and down_socket initialised to -1 so the guard in unsetup
+  is safe before any socket is created.
+- gateway.c:lora_gw_unsetup: added close(up_socket)/close(down_socket) with -1 guards so
+  all error paths that call lora_gw_unsetup() after socket creation properly close the sockets.
+
+DONE: Fix fault in http/httpsrv.c:826 — opendir() return value not checked before readdir()
+
+- httpsrv.c:826: added NULL check on opendir() result; returns early if the directory
+  cannot be opened, preventing readdir(NULL) undefined behaviour and closedir(NULL) crash.
 
 TODO: Review all project code for mutexes not released on every exit path — functions that lock a mutex but have early returns or error paths that skip the unlock.
 
