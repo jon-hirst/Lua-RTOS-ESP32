@@ -766,3 +766,43 @@ not the deliberate stack-overflow test at lines 632-663.
 
 Fix: Reverted LUAI_GCMUL from 400 back to 200 (Lua default) in lua/src/lgc.h.
 With GCMUL=200, locals.lua completes the entire 1,281-call load() loop without crashing.
+
+DOING: Review all project code for memory leaks on error paths — malloc/calloc/realloc succeeds but an early return or goto skips the matching free.
+
+TODO: Review all project code for file descriptor and socket leaks — open/socket/accept calls where not every error path calls close.
+
+TODO: Review all project code for mutexes not released on every exit path — functions that lock a mutex but have early returns or error paths that skip the unlock.
+
+TODO: Review all project code for race conditions between ISRs and task code — shared variables read/written from both interrupt context and task context without atomic access or critical sections.
+
+TODO: Review all project code for ISR-unsafe function calls — heap allocation (malloc/calloc/free), blocking calls, or non-reentrant functions called from interrupt handlers.
+
+TODO: Review all project code for use-after-free when ownership transfers across threads — pointers passed to queues, callbacks, or other tasks that are freed by the sender before the receiver is done with them.
+
+TODO: Review all project code for off-by-one errors in array index bounds — guards using > instead of >= or < instead of <= when comparing against array size or count limits.
+
+TODO: Review all project code for integer overflow — signed multiplication or addition that can exceed INT_MAX before being cast to a wider type, especially in size or delay calculations.
+
+TODO: Review all project code for unsigned integer underflow — subtraction on uint8_t/uint16_t/uint32_t values that can go negative and wrap to a large positive value.
+
+TODO: Review all project code for shift-count undefined behaviour — left or right shifts where the shift amount can equal or exceed the width of the integer type.
+
+TODO: Review all project code for uninitialized variables used on error paths — variables declared but not set before use when execution takes a branch that skips the initializing assignment.
+
+TODO: Review all project code for dangling pointers after free — callers that retain a copy of a pointer after freeing it, or structs whose members point to freed memory.
+
+TODO: Review all project code for use-after-free via realloc — realloc result stored back into the same pointer variable, leaving the old pointer invalid even on failure.
+
+TODO: Review all project code for wrong flag constants — passing a constant from one API (e.g. getaddrinfo flags) to a different API that uses different flag values with overlapping names.
+
+TODO: Review all project code for wrong printf/syslog format specifiers — %s used for int, %d used for pointer, or other type mismatches between format string and argument.
+
+TODO: Review all project code for sizeof(pointer) used instead of buffer size — sizeof applied to a pointer variable rather than the buffer it points to, producing 4 or 8 instead of the allocation size.
+
+TODO: Review all project code for sizeof(array) used instead of element count — sizeof(arr) used as a loop bound or guard instead of sizeof(arr)/sizeof(arr[0]).
+
+TODO: Review all project code for conditions that test the wrong variable — validation or guard expressions that read a stored/old value instead of the incoming function argument.
+
+TODO: Review all project code for inverted bounds checks — conditions where the comparison operator is backwards, passing invalid input and rejecting valid input.
+
+TODO: Review all project code for realloc result stored directly into the source pointer — if realloc returns NULL the original allocation is lost, causing a memory leak before the null-pointer crash.
