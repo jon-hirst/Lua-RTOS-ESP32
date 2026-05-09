@@ -664,6 +664,7 @@ int mount(const char *target, const char *fs) {
 
     if (count != 1) {
         free(npath);
+        mtx_unlock(&mtx);
         errno = ENOTDIR;
         return -1;
     }
@@ -703,6 +704,7 @@ int mount(const char *target, const char *fs) {
     		if (	((strcmp(fs,"spiffs") == 0) && mount_is_mounted("lfs")) ||
     			((strcmp(fs,"lfs") == 0) && mount_is_mounted("spiffs"))) {
         		free(npath);
+        		mtx_unlock(&mtx);
         		errno = EPERM;
     			return -1;
     		}
@@ -763,6 +765,7 @@ int umount(const char *target) {
 
     if (count != 1) {
         free(npath);
+        mtx_unlock(&mtx);
         errno = ENOTDIR;
         return -1;
     }
@@ -778,6 +781,8 @@ int umount(const char *target) {
 
     if ((strcmp(npath, "/") == 0) && (mount_num() > 1)) {
 		// If path is the root folder, check that no other file systems are mounted
+		free(npath);
+		mtx_unlock(&mtx);
 		errno = EPERM;
 		return -1;
     }

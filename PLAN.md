@@ -807,7 +807,13 @@ DONE: Fix fault in http/httpsrv.c:826 — opendir() return value not checked bef
 - httpsrv.c:826: added NULL check on opendir() result; returns early if the directory
   cannot be opened, preventing readdir(NULL) undefined behaviour and closedir(NULL) crash.
 
-TODO: Review all project code for mutexes not released on every exit path — functions that lock a mutex but have early returns or error paths that skip the unlock.
+DONE: Review all project code for mutexes not released on every exit path — functions that lock a mutex but have early returns or error paths that skip the unlock.
+
+- F1 (list.c:128-129): LIST_NOT_INDEXED calloc failure in lstadd() returned ENOMEM without mtx_unlock(&list->mutex). Added mtx_unlock before the return.
+- F2 (mount.c:665-668): mount() count!=1 path returned -1 without mtx_unlock(&mtx). Added mtx_unlock before the return.
+- F3 (mount.c:701-708): mount() spiffs/lfs conflict path returned -1 without mtx_unlock(&mtx). Added mtx_unlock before the return.
+- F4 (mount.c:764-768): umount() count!=1 path returned -1 without mtx_unlock(&mtx). Added mtx_unlock before the return.
+- F5 (mount.c:779-783): umount() root-with-others path returned -1 without mtx_unlock(&mtx) and without free(npath). Added both free(npath) and mtx_unlock before the return.
 
 TODO: Review all project code for race conditions between ISRs and task code — shared variables read/written from both interrupt context and task context without atomic access or critical sections.
 

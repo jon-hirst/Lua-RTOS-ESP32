@@ -126,6 +126,7 @@ int lstadd(struct list *list, void *item, int *item_index) {
             // Create a new element
             index = (struct lstindex *)calloc(1, sizeof(struct lstindex));
             if (!index) {
+                mtx_unlock(&list->mutex);
                 return ENOMEM;
             }
 
