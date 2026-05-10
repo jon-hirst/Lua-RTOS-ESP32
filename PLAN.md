@@ -1165,7 +1165,9 @@ DONE: Review all project code for wrong variable updated — assignments where a
   Fixed: restored {.id = "address", .type = SENSOR_DATA_INT} to the property table so indices
   match the code that uses them.
 
-TODO: Review all project code for reversed calloc arguments — calloc(size, count) instead of calloc(count, size), giving correct total bytes by accident but wrong API usage.
+DONE: Review all project code for reversed calloc arguments — calloc(size, count) instead of calloc(count, size), giving correct total bytes by accident but wrong API usage.
+
+No faults found. All calloc calls in the project (components, drivers, Lua modules, FreeRTOS additions, telnet, http, sound, pthread, etc.) use the correct argument order. Every multi-element allocation has the count first and sizeof(type) second. No call places sizeof() in the first argument position. The calloc(n, 1) and calloc(1, n) patterns are both semantically correct. The dgdisplay.c buffer allocation calloc(size, caps.bytes_per_pixel) is correct because size is a pixel count (not bytes), making it count-first as required.
 
 TODO: Review all project code for wrong NaN comparisons — floating-point NaN tested with == or != instead of isnan(), which always evaluates false/true respectively, causing silent logic errors.
 
