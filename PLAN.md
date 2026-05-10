@@ -957,7 +957,15 @@ All other sizeof comparisons against array names in loop bounds and guards were 
 - gateway.c:704,712 sizeof(freq)/sizeof(freq[0]) — already correct (fixed in prior session).
 - adc.c:158 sizeof(adc_devs)/sizeof(adc_devs[0]) — already correct.
 
-TODO: Review all project code for conditions that test the wrong variable — validation or guard expressions that read a stored/old value instead of the incoming function argument.
+DONE: Review all project code for conditions that test the wrong variable — validation or guard expressions that read a stored/old value instead of the incoming function argument.
+
+No new bugs found. The gdisplay.c:622 case (rotation checked instead of orient) was already
+fixed in a prior session. All other validation guards reviewed across sys/drivers/*.c,
+sys/sensors/*.c, sys/vfs/*.c, lua/modules/**/*.c, lora/**, http/*.c, mqtt/*.c, FabGL/src/**,
+gdisplay/**, sdisplay/**, eth_enc424j600/**, sound/**, motion/**, rc-switch/**, captivedns/**
+correctly test the incoming function argument. One dead-code instance found at
+lua/modules/hw/gdisplay.c:553 (inside #if 0) where luaL_checkinteger(L,3) was used for both
+`w` and `h` — not fixed since the block is disabled.
 
 TODO: Review all project code for inverted bounds checks — conditions where the comparison operator is backwards, passing invalid input and rejecting valid input.
 
