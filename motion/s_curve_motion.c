@@ -265,7 +265,7 @@ void s_curve_prepare(motion_t *pmotion) {
         } else if ((s_part <= half_s) && (s_full > half_s)) {
             v_ = solve_second_order_pos(1, (a*a)/j, ((a*a*v0)/j) - v0*v0 - s * a); // (7.19)
 
-            if ((v_ == NAN) || (v_ <= 0.0) || (v_ > v)) {
+            if (isnan(v_) || (v_ <= 0.0) || (v_ > v)) {
                 v_ = v0 + ((a*a)/j); // (7.21)
             }
 

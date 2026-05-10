@@ -1169,7 +1169,10 @@ DONE: Review all project code for reversed calloc arguments — calloc(size, cou
 
 No faults found. All calloc calls in the project (components, drivers, Lua modules, FreeRTOS additions, telnet, http, sound, pthread, etc.) use the correct argument order. Every multi-element allocation has the count first and sizeof(type) second. No call places sizeof() in the first argument position. The calloc(n, 1) and calloc(1, n) patterns are both semantically correct. The dgdisplay.c buffer allocation calloc(size, caps.bytes_per_pixel) is correct because size is a pixel count (not bytes), making it count-first as required.
 
-TODO: Review all project code for wrong NaN comparisons — floating-point NaN tested with == or != instead of isnan(), which always evaluates false/true respectively, causing silent logic errors.
+DONE: Review all project code for wrong NaN comparisons — floating-point NaN tested with == or != instead of isnan(), which always evaluates false/true respectively, causing silent logic errors.
+
+One fault found and fixed:
+- F1 (motion/s_curve_motion.c:268): `v_ == NAN` replaced with `isnan(v_)` — the equality test is always false under IEEE 754 because NaN is unordered with every value including itself. The file already uses isnan() correctly at lines 197, 234, and 237; this was an inconsistency. The enclosing condition guards fallback to a simpler velocity formula, so a stuck false meant the fallback was silently skipped whenever solve_second_order_pos() returned NaN.
 
 TODO: Review all project code for inverted logical operators — conditions using && where || is required (or vice versa) in guard expressions and input validation checks.
 
