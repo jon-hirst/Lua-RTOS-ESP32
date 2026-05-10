@@ -112,6 +112,10 @@ static char *hex_str_pad(lua_State* L, const char  *str, int len) {
 
         *c = 0x00;
     } else {
+        if (strlen(str) > (size_t)len) {
+            free(tmp);
+            luaL_error(L, "hex string is too long");
+        }
         strcpy(tmp, str);
     }
 

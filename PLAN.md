@@ -998,7 +998,20 @@ Three null-pointer dereferences found, all in http/httpsrv.c, all caused by strt
 - F2 (httpsrv.c:963): strtok_r result for Host header value not checked before while(*host==' ') dereference. Added NULL guard with continue to skip to next header.
 - F3 (httpsrv.c:1022): strtok_r result for Content-Length header value not checked before while(*contentlen==' ') dereference. Wrapped the while/atoi block in if (contentlen) guard.
 
-TODO: Review all project code for buffer overflows and underflows — fixed-size buffers written to with unchecked lengths, including strcpy/strcat/sprintf/memcpy/read with caller-controlled sizes.
+DONE: Review all project code for buffer overflows and underflows — fixed-size buffers written to with unchecked lengths, including strcpy/strcat/sprintf/memcpy/read with caller-controlled sizes.
+
+- F1 (httpsrv.c:472-473): strcpy(ppath, path) into char ppath[PATH_MAX+1] before the length check at line 475.
+  If path (a Lua string) is >= PATH_MAX chars the strcpy overflowed before the guard ran.
+  Fixed: changed strcpy to strncpy(ppath, path, PATH_MAX) + ppath[PATH_MAX]='\0'; the existing
+  else-branch at line 632 ("Path too long") still triggers when strlen(ppath)==PATH_MAX.
+- F2 (edit.c:287): strcpy(fn, filename) fallback when realpath() fails. fn is char fn[FILENAME_MAX];
+  a filename longer than FILENAME_MAX-1 overflows the buffer.
+  Fixed: replaced strcpy with strncpy(fn, filename, FILENAME_MAX-1) + fn[FILENAME_MAX-1]='\0'.
+- F3 (lora.c:115): hex_str_pad — tmp is malloc'd as len+1 bytes. When strlen(str) >= len the else
+  branch ran strcpy(tmp, str). For strlen(str) > len this writes more than len+1 bytes into tmp.
+  Fixed: added explicit check (strlen(str) > len) before strcpy; raises a Lua error "hex string is
+  too long" so the caller (llora_set_devAddr/devEui/appEui/nwkSKey/appSKey/appKey) rejects keys
+  of the wrong length rather than silently overflowing.
 
 TODO: Review all project code for stack overflows from unbounded recursion — recursive functions with no depth limit or guard against deeply nested input.
 

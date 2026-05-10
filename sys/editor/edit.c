@@ -284,7 +284,7 @@ struct editor *find_editor(struct env *env, char *filename) {
   struct editor *ed = env->current;
   struct editor *start = ed;
   
-  if (!realpath(filename, fn)) strcpy(fn, filename);
+  if (!realpath(filename, fn)) { strncpy(fn, filename, FILENAME_MAX - 1); fn[FILENAME_MAX - 1] = '\0'; }
 
   do {
     if (strcmp(fn, ed->filename) == 0) return ed;

@@ -470,7 +470,8 @@ static int http_execute_lua (lua_State *L) {
 		stat(path, &statbuf);
 
 		char ppath[PATH_MAX + 1];
-		strcpy(ppath, path);
+		strncpy(ppath, path, PATH_MAX);
+		ppath[PATH_MAX] = '\0';
 
 		if (strlen(ppath) < PATH_MAX) {
 			strcat(ppath, "p");
