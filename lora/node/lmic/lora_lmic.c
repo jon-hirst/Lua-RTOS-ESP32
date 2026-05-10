@@ -314,6 +314,11 @@ driver_error_t *lora_setup(int band) {
 		if (!(error = os_init())) {
 	        // Create event group for sync driver with LMIC events
 			loraEvent = xEventGroupCreate();
+			if (!loraEvent) {
+				setup = 0;
+				mtx_unlock(&lora_mtx);
+				return driver_error(LORA_DRIVER, LORA_ERR_NO_MEM, NULL);
+			}
 
 			// Set first callback, for init lora stack
 			os_setCallback(&initjob, lora_init);

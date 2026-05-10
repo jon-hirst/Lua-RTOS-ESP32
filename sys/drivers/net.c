@@ -290,6 +290,9 @@ static esp_err_t event_handler(void *ctx, system_event_t *event) {
 driver_error_t *net_init() {
     if (!status_get(STATUS_TCPIP_INITED)) {
         netEvent = xEventGroupCreate();
+        if (!netEvent) {
+            return driver_error(NET_DRIVER, NET_ERR_NOT_ENOUGH_MEMORY, NULL);
+        }
 
         esp_netif_init();
         esp_event_loop_create_default();

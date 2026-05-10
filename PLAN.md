@@ -1145,7 +1145,11 @@ DONE: Review all project code for partial initialisation on failure — structs 
 - F7 (bluetooth.c:198-215): xEventGroupCreate() result not checked; if NULL, all subsequent xEventGroupWaitBits calls crash. Queue not deleted when task creation fails. Added NULL check on bt_event with early return; added vQueueDelete/queue=NULL and vEventGroupDelete/bt_event=NULL on queue creation failure and task creation failure.
 - F8 (bma423.c:455-466): irq_queue created with no NULL check; irq_task created with no error check. If queue creation fails the ISR (registered later) will xQueueSendFromISR to NULL. Added NULL check on irq_queue with early return; added error check on xTaskCreate with vQueueDelete cleanup. Added BMA423_ERR_NOT_ENOUGH_MEMORY to bma423.h and registered it in bma423.c.
 
-TODO: Review all project code for semaphore, event group, and task handle leaks — xSemaphoreCreateMutex/Binary/Counting and xEventGroupCreate results not deleted on every error path; xTaskCreate handles not stored for later vTaskDelete.
+DONE: Review all project code for semaphore, event group, and task handle leaks — xSemaphoreCreateMutex/Binary/Counting and xEventGroupCreate results not deleted on every error path; xTaskCreate handles not stored for later vTaskDelete.
+
+- F1 (net.c:292): xEventGroupCreate() result not checked; if NULL, the WiFi event handler's xEventGroupSetBits(netEvent,...) would crash. Added NULL check with driver_error(NET_DRIVER, NET_ERR_NOT_ENOUGH_MEMORY).
+- F2 (lora_lmic.c:316): xEventGroupCreate() result not checked; the immediately following xEventGroupWaitBits(loraEvent,...) would crash on NULL. Added NULL check with setup=0, mtx_unlock, driver_error(LORA_DRIVER, LORA_ERR_NO_MEM).
+- Reviewed: eth_enc424j600/eth_mac_enc424j600.c, mqtt/Thread.c, pthread/_pthread.c, pthread/cond.c, pthread/mutex.c, sys/sys/mutex.c, sys/drivers/stepper.c — all correct (NULL checks present or static allocation used).
 
 TODO: Review all project code for wrong variable updated — assignments where a similarly-named variable is written instead of the intended one, leaving the intended target unchanged.
 
