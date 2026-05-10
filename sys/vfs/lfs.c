@@ -172,10 +172,10 @@ static int vfs_lfs_open(const char *path, int flags, int mode) {
     // Translate flags to lfs flags
     int lfs_flags = 0;
 
-    if (flags == O_APPEND)
+    if (flags & O_APPEND)
         lfs_flags |= LFS_O_APPEND;
 
-    if (flags == O_RDONLY)
+    if ((flags & O_ACCMODE) == O_RDONLY)
         lfs_flags |= LFS_O_RDONLY;
 
     if (flags & O_WRONLY)

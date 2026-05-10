@@ -60,7 +60,7 @@ getnameinfo(const struct sockaddr *sa, socklen_t salen,
 		    char *host, socklen_t hostlen,
 			char *serv, socklen_t servlen, int flags)
 {
-	 if (flags & ~(AI_NUMERICHOST | AI_NUMERICSERV)) {
+	 if (flags & ~(NI_NUMERICHOST | NI_NUMERICSERV)) {
 		return EAI_BADFLAGS;
 	}
 
@@ -68,13 +68,13 @@ getnameinfo(const struct sockaddr *sa, socklen_t salen,
 
 	switch (sa->sa_family) {
 	case AF_INET:
-		if (flags & AI_NUMERICHOST) {
+		if (flags & NI_NUMERICHOST) {
 			if (inet_ntop (AF_INET, &sinp->sin_addr, host, hostlen) == NULL) {
 				return EAI_FAIL;
 			}
 		}
 
-		if (flags & AI_NUMERICSERV) {
+		if (flags & NI_NUMERICSERV) {
 			if (snprintf(serv, servlen, "%d", ntohs (sinp->sin_port)) < 0) {
 				return EAI_FAIL;
 			}

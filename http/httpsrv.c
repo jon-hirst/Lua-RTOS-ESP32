@@ -546,7 +546,7 @@ static int http_execute_lua (lua_State *L) {
 					// -> now convert the address to human-readable form
 					char *buffer = (char *)malloc(INET6_ADDRSTRLEN+1);
 					if (buffer) {
-						int err=getnameinfo((struct sockaddr*)request->client,request->client_len,buffer,INET6_ADDRSTRLEN,0,0,AI_NUMERICHOST);
+						int err=getnameinfo((struct sockaddr*)request->client,request->client_len,buffer,INET6_ADDRSTRLEN,0,0,NI_NUMERICHOST);
 						if (err!=0) {
 								snprintf(buffer,INET6_ADDRSTRLEN,"invalid address");
 						}

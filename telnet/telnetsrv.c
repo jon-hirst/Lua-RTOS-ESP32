@@ -157,7 +157,7 @@ static int process(telnet_request_handle *request) {
     syslog(LOG_ERR, "error allocating memory\n");
     return 0;
   }
-	int err=getnameinfo((struct sockaddr*)&request->client,request->client_len,buffer,INET6_ADDRSTRLEN,0,0,AI_NUMERICHOST);
+	int err=getnameinfo((struct sockaddr*)&request->client,request->client_len,buffer,INET6_ADDRSTRLEN,0,0,NI_NUMERICHOST);
 	if (err!=0) {
 			snprintf(buffer,INET6_ADDRSTRLEN,"invalid address");
 	}

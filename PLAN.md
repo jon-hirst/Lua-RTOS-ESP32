@@ -908,7 +908,20 @@ DONE: Review all project code for use-after-free via realloc — realloc result 
 - F7 (FabGL/src/fabui.cpp:3112): `m_text = realloc(m_text, ...)` in uiTextEdit::checkAllocatedSpace — on OOM, old text leaked. Fixed with temp pointer; on failure old text retained.
 - F8 (FabGL/src/fabutils.cpp:120-128): realloc32() always called heap_caps_free(ptr) and moveItems(NULL, ptr, ...) even when heap_caps_malloc returned NULL — crashes on OOM and always frees old data. Fixed: guard the copy+free with `if (newBuffer && ptr)` so the old allocation is preserved when malloc fails.
 
-TODO: Review all project code for wrong flag constants — passing a constant from one API (e.g. getaddrinfo flags) to a different API that uses different flag values with overlapping names.
+DONE: Review all project code for wrong flag constants — passing a constant from one API (e.g. getaddrinfo flags) to a different API that uses different flag values with overlapping names.
+
+- F1 (compat/getnameinfo.c:63,71,77): AI_NUMERICHOST and AI_NUMERICSERV (getaddrinfo flags) used in
+  getnameinfo() implementation where NI_NUMERICHOST and NI_NUMERICSERV are required. NI_NUMERICHOST was
+  undefined in the project. Added #define NI_NUMERICHOST 0x00000004 to
+  idf-replacements/newlib/platform_include/net/if.h (same numeric value as AI_NUMERICHOST so the compat
+  implementation's runtime behaviour is unchanged); changed compat/getnameinfo.c to check NI_NUMERICHOST
+  and NI_NUMERICSERV.
+- F2 (telnetsrv.c:160): AI_NUMERICHOST passed to getnameinfo() — changed to NI_NUMERICHOST.
+- F3 (httpsrv.c:549): AI_NUMERICHOST passed to getnameinfo() — changed to NI_NUMERICHOST.
+- F4 (sys/vfs/lfs.c:175): flags == O_APPEND (equality) silently ignored when caller passes O_WRONLY|O_APPEND.
+  Changed to flags & O_APPEND.
+- F5 (sys/vfs/lfs.c:178): flags == O_RDONLY (equality) fails when combined with O_CREAT or other flags.
+  Changed to (flags & O_ACCMODE) == O_RDONLY.
 
 TODO: Review all project code for wrong printf/syslog format specifiers — %s used for int, %d used for pointer, or other type mismatches between format string and argument.
 

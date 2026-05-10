@@ -23,6 +23,7 @@ extern "C" {
 
 #define	NI_MAXHOST  1025
 #define	NI_MAXSERV  32
+#define	NI_NUMERICHOST  0x00000004
 #define	NI_NUMERICSERV  0x00000008
 #define	NI_DGRAM        0x00000010
 
