@@ -1037,7 +1037,21 @@ lua/modules, lora, http, mqtt, FabGL, pthread, eth_enc424j600) were inspected an
 each free() call is on a mutually exclusive early-return error path, so no path executes more than
 one free() for the same allocation.
 
-TODO: Review all project code for sign extension bugs — narrower signed values cast to wider signed types where the sign bit propagates unexpectedly, especially from int8_t/int16_t to int32_t/int64_t comparisons.
+DONE: Review all project code for sign extension bugs — narrower signed values cast to wider signed types where the sign bit propagates unexpectedly, especially from int8_t/int16_t to int32_t/int64_t comparisons.
+
+- F1 (aes.c:263): `while ((signed char)len > 0)` where `len` is `u2_t` (uint16_t). Casting
+  uint16_t to `signed char` only examines the low 8 bits as a signed value. For any len in
+  128..255 (which covers most LoRa payloads above 127 bytes), `(signed char)len` is -128..-1
+  — the loop never executes, silently skipping all AES-CTR encryption and AES-MIC authentication.
+  Fix: changed `(signed char)len` to `(int16_t)len`. The uint16_t-underflow sentinel still works:
+  after processing the last partial block, `len -= 16` wraps to 65521..65535 as uint16_t, which
+  is -15..-1 as int16_t, causing the loop to exit correctly.
+
+No other sign extension bugs found. The bma423.c `(int8_t)raw` for hardware temperature and
+the loragw_reg.c `bufs[2] = bufs[1] >> (8 - r.leng)` arithmetic-right-shift are both intentional.
+The rmt.c `int8_t channel` using -1 as a sentinel and the encoder.c `int8_t dir` with values
+-1/0/1 are all correct. The qrcodegen int8_t tables with -1 sentinel at index 0 are safe since
+version=0 is never used. The Lua source casts to (unsigned char) before table lookups.
 
 TODO: Review all project code for truncation on assignment — values from wider types (int32_t, int64_t, size_t) silently narrowed when assigned to uint8_t/uint16_t/int16_t variables, especially in size or length calculations.
 

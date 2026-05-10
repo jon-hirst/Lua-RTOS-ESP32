@@ -260,7 +260,7 @@ u4_t os_aes (u1_t mode, xref2u1_t buf, u2_t len) {
             AESAUX[3] = swapmsbf(AESAUX[3]);
         }
 
-        while( (signed char)len > 0 ) {
+        while( (int16_t)len > 0 ) {
             u4_t a0, a1, a2, a3;
             u4_t t0, t1, t2, t3;
             u4_t *ki, *ke;
