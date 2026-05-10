@@ -79,7 +79,7 @@ const sensor_t __attribute__((used,unused,section(".sensors"))) bme280_sensor = 
 	.properties = {
 		{.id = "mode", .type = SENSOR_DATA_INT},
 		{.id = "standbytime", .type = SENSOR_DATA_INT},
-//		{.id = "address", .type = SENSOR_DATA_INT},
+		{.id = "address", .type = SENSOR_DATA_INT},
 		{.id = "smode", .type = SENSOR_DATA_STRING},
 	},
 	.presetup = bme280_presetup,

@@ -128,7 +128,7 @@ driver_error_t *ML8511_acquire(sensor_instance_t *unit, sensor_value_t *values) 
 
 	// Convert, 2 decimal places
 	values[0].floatd.value = roundf(100 * (((volts - 2.2) / 0.129) + 10)) / 100;
-	values[0].floatd.value += unit->properties[2].floatd.value;
+	values[0].floatd.value += unit->properties[0].floatd.value;
 
 	return NULL;
 }

@@ -1151,7 +1151,19 @@ DONE: Review all project code for semaphore, event group, and task handle leaks 
 - F2 (lora_lmic.c:316): xEventGroupCreate() result not checked; the immediately following xEventGroupWaitBits(loraEvent,...) would crash on NULL. Added NULL check with setup=0, mtx_unlock, driver_error(LORA_DRIVER, LORA_ERR_NO_MEM).
 - Reviewed: eth_enc424j600/eth_mac_enc424j600.c, mqtt/Thread.c, pthread/_pthread.c, pthread/cond.c, pthread/mutex.c, sys/sys/mutex.c, sys/drivers/stepper.c — all correct (NULL checks present or static allocation used).
 
-TODO: Review all project code for wrong variable updated — assignments where a similarly-named variable is written instead of the intended one, leaving the intended target unchanged.
+DONE: Review all project code for wrong variable updated — assignments where a similarly-named variable is written instead of the intended one, leaving the intended target unchanged.
+
+- F1 (ML8511.c:131): `unit->properties[2].floatd.value` used for calibration adjustment, but the
+  "calibration" property is at index [0] (not [2]). The value at [2] is undefined/uninitialized,
+  so the calibration set via sensor:set("calibration", ...) is silently ignored.
+  Fixed: changed `properties[2]` to `properties[0]` in the acquire function.
+- F2 (bme280.c:82): The "address" property was commented out of the sensor property table, shifting
+  "smode" from index [3] to [2]. But all code — presetup, get, set — still uses old indices
+  (properties[2] for address as INT, properties[3] for smode as STRING). sensor_get("smode") passes
+  &properties[2] to bme280_get, which reads properties[2].stringd.value; but the smode string is
+  stored at properties[3].stringd.value — wrong variable read.
+  Fixed: restored {.id = "address", .type = SENSOR_DATA_INT} to the property table so indices
+  match the code that uses them.
 
 TODO: Review all project code for reversed calloc arguments — calloc(size, count) instead of calloc(count, size), giving correct total bytes by accident but wrong API usage.
 
