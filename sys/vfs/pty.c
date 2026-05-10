@@ -189,7 +189,7 @@ static int vfs_ptm_open(const char *path, int flags, int mode) {
     }
 
     if (vfs_pty->masters > 0) {
-        errno = ENOENT;
+        errno = EBUSY;
         return -1;
     }
 
@@ -288,7 +288,7 @@ static int vfs_pts_open(const char *path, int flags, int mode) {
     }
 
     if (vfs_pty->slaves > 0) {
-        errno = ENOENT;
+        errno = EBUSY;
         return -1;
     }
 

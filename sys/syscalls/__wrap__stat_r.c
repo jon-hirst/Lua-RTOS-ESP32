@@ -67,7 +67,7 @@ int __wrap__stat_r(struct _reent *r, const char *path, struct stat *buf) {
     }
 
     if (!*path) {
-        errno = ENOENT;
+        errno = EINVAL;
         return -1;
     }
 

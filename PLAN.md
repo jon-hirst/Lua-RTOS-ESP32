@@ -1117,11 +1117,22 @@ All apparent check-then-lock-then-check sequences in mount.c, sensor.c, rmt.c, l
 lora_pkt_fwd.c were false positives caused by matching across function boundaries (the two checks
 refer to unrelated variables).
 
-TODO: Review all project code for unchecked return values — calls to system functions (open, read, write, ioctl, send, recv, connect, bind, listen) where the return value is ignored and execution continues as if the call succeeded.
+DONE: Review all project code for wrong error codes returned — functions that return a plausible-sounding but incorrect error constant (e.g. from the wrong driver, or semantically wrong such as ENOENT instead of EINVAL).
 
-TODO: Review all project code for silently discarded error codes — driver_error_t or esp_err_t return values assigned to a local variable but never tested, or cast to void without justification.
+16 faults found and fixed across 12 files:
 
-TODO: Review all project code for wrong error codes returned — functions that return a plausible-sounding but incorrect error constant (e.g. from the wrong driver, or semantically wrong such as ENOENT instead of EINVAL).
+- F1–F4 (sys/sys/mount.c:574,615,642,740): four empty-string argument checks (`!*path`, `!*fs`, `!*target` ×2) set errno=ENOENT; changed to EINVAL — empty string is invalid argument, not a missing filesystem entry.
+- F5 (sys/syscalls/__wrap__access.c:67): `!*path` set errno=ENOENT; changed to EINVAL.
+- F6 (sys/syscalls/__wrap_mkdir.c:69): `!*name` set errno=ENOENT; changed to EINVAL.
+- F7 (sys/syscalls/__wrap_opendir.c:71): `!*name` set errno=ENOENT; changed to EINVAL.
+- F8 (sys/syscalls/__wrap__stat_r.c:70): `!*path` set errno=ENOENT; changed to EINVAL.
+- F9 (sys/syscalls/__wrap__open_r.c:69): `!*path` set errno=ENOENT; changed to EINVAL.
+- F10–F11 (sys/syscalls/__wrap__rename_r.c:70,80): `!*src` and `!*dst` set errno=ENOENT; changed to EINVAL.
+- F12 (sys/syscalls/__wrap__unlink_r.c:69): `!*path` set errno=ENOENT; changed to EINVAL.
+- F13 (sys/syscalls/__wrap_rmdir.c:69): `!*path` set errno=ENOENT; changed to EINVAL.
+- F14 (sys/syscalls/chdir.c:68): `!*path` set errno=ENOENT; changed to EINVAL.
+- F15 (sys/vfs/pty.c:192): `masters > 0` set errno=ENOENT; changed to EBUSY — PTY master already open is a resource-busy condition, not file-not-found.
+- F16 (sys/vfs/pty.c:291): `slaves > 0` set errno=ENOENT; changed to EBUSY — same reasoning for slave side.
 
 TODO: Review all project code for partial initialisation on failure — structs or objects that are half-constructed when an error occurs mid-setup, leaving the caller with a pointer to an inconsistent state.
 
@@ -1134,6 +1145,10 @@ TODO: Review all project code for reversed calloc arguments — calloc(size, cou
 TODO: Review all project code for wrong NaN comparisons — floating-point NaN tested with == or != instead of isnan(), which always evaluates false/true respectively, causing silent logic errors.
 
 TODO: Review all project code for inverted logical operators — conditions using && where || is required (or vice versa) in guard expressions and input validation checks.
+
+TODO: Review all project code for unchecked return values — calls to system functions (open, read, write, ioctl, send, recv, connect, bind, listen) where the return value is ignored and execution continues as if the call succeeded.
+
+TODO: Review all project code for silently discarded error codes — driver_error_t or esp_err_t return values assigned to a local variable but never tested, or cast to void without justification.
 
 TODO: Review all project code for security vulnerabilities — path traversal in file open calls using user-supplied strings, command injection if any exec/system calls consume user data, and reflected user input in HTTP responses without escaping (XSS).
 

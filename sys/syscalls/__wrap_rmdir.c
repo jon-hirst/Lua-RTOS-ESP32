@@ -66,7 +66,7 @@ int __wrap_rmdir(const char* path) {
     }
 
     if (!*path) {
-        errno = ENOENT;
+        errno = EINVAL;
         return -1;
     }
 

@@ -66,7 +66,7 @@ int __wrap__open_r(struct _reent *r, const char *path, int flags, int mode) {
     }
 
     if (!*path) {
-        errno = ENOENT;
+        errno = EINVAL;
         return -1;
     }
 

@@ -68,7 +68,7 @@ DIR* __wrap_opendir(const char* name) {
     }
 
     if (!*name) {
-        errno = ENOENT;
+        errno = EINVAL;
         return (DIR*)NULL;
     }
 

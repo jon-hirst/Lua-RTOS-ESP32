@@ -571,7 +571,7 @@ struct mount_pt *mount_get_mount_point_for_path(const char *path) {
     if (!*path) {
 		mtx_unlock(&mtx);
 
-		errno = ENOENT;
+		errno = EINVAL;
         return NULL;
     }
 
@@ -612,7 +612,7 @@ struct mount_pt *mount_get_mount_point_for_fs(const char *fs) {
 
     if (!*fs) {
 		mtx_unlock(&mtx);
-        errno = ENOENT;
+        errno = EINVAL;
         return NULL;
     }
 
@@ -639,7 +639,7 @@ int mount(const char *target, const char *fs) {
     }
 
     if (!*target) {
-        errno = ENOENT;
+        errno = EINVAL;
         return -1;
     }
 
@@ -737,7 +737,7 @@ int umount(const char *target) {
     }
 
     if (!*target) {
-        errno = ENOENT;
+        errno = EINVAL;
         return -1;
     }
 

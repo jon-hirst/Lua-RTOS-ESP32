@@ -66,7 +66,7 @@ int __wrap_mkdir(const char* name, mode_t mode) {
     }
 
     if (!*name) {
-        errno = ENOENT;
+        errno = EINVAL;
         return -1;
     }
 

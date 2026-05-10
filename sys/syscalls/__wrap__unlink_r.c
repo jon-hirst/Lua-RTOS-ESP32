@@ -66,7 +66,7 @@ int __wrap__unlink_r(struct _reent *r, const char *path) {
     }
 
     if (!*path) {
-        errno = ENOENT;
+        errno = EINVAL;
         return -1;
     }
 

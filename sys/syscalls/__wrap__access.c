@@ -64,7 +64,7 @@ int __wrap_access(const char *path, int amode) {
     }
 
     if (!*path) {
-        errno = ENOENT;
+        errno = EINVAL;
         return -1;
     }
 

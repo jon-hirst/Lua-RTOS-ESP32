@@ -67,7 +67,7 @@ int __wrap__rename_r(struct _reent *r, const char *src, const char *dst) {
     }
 
     if (!*src) {
-        errno = ENOENT;
+        errno = EINVAL;
         return -1;
     }
 
@@ -77,7 +77,7 @@ int __wrap__rename_r(struct _reent *r, const char *src, const char *dst) {
     }
 
     if (!*dst) {
-        errno = ENOENT;
+        errno = EINVAL;
         return -1;
     }
 
