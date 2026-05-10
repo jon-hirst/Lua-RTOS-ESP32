@@ -3109,7 +3109,8 @@ void uiTextEdit::checkAllocatedSpace(int requiredLength)
       while (m_textSpace < requiredLength)
         m_textSpace *= 2;
     }
-    m_text = (char*) realloc(m_text, m_textSpace);
+    char *newTextBuf = (char*) realloc(m_text, m_textSpace);
+    if (newTextBuf) m_text = newTextBuf;
   }
 }
 

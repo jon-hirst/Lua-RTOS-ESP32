@@ -897,7 +897,16 @@ DONE: Review all project code for dangling pointers after free — callers that 
   spi->buff (freed heap pointer, spi->len==0 so buff==freed_ptr) is dereferenced on line 284, writing
   to freed heap memory. Fix: added spi->buff = NULL after free(spi->buff) in lspi_deselect().
 
-TODO: Review all project code for use-after-free via realloc — realloc result stored back into the same pointer variable, leaving the old pointer invalid even on failure.
+DONE: Review all project code for use-after-free via realloc — realloc result stored back into the same pointer variable, leaving the old pointer invalid even on failure.
+
+- F1 (mqtt/SocketBuffer.c:202): `queue->buf = realloc(queue->buf, bytes)` — on OOM, original buffer leaked and buflen inconsistently updated. Fixed with temp pointer and early return NULL.
+- F2 (sys/editor/edit.c:763): `env->linebuf = realloc(env->linebuf, ...)` in get_term_size — on OOM, old linebuf leaked. Fixed with temp pointer; on failure the old (possibly undersized) linebuf is retained.
+- F3 (sys/editor/edit.c:1671): `ed->env->clipboard = realloc(ed->env->clipboard, ...)` in copy_selection — NULL check was present but the old allocation was leaked. Fixed: temp pointer checked before assignment.
+- F4 (FabGL/src/terminal.cpp:4921): `m_text = realloc(m_text, ...)` in LineEditor::setLength — on OOM, original leaked and the next line immediately dereferences the NULL (memset crash). Fixed with temp pointer and early return.
+- F5 (FabGL/src/dispdrivers/vgabasecontroller.cpp:209): `m_DMABuffers = heap_caps_realloc(m_DMABuffers, ...)` — on OOM, original DMA buffer leaked. Fixed with temp pointer and early return false before assignment.
+- F6 (FabGL/src/dispdrivers/vgabasecontroller.cpp:211): `m_DMABuffersVisible = heap_caps_realloc(m_DMABuffersVisible, ...)` — same issue. Fixed with temp pointer and early return false before assignment.
+- F7 (FabGL/src/fabui.cpp:3112): `m_text = realloc(m_text, ...)` in uiTextEdit::checkAllocatedSpace — on OOM, old text leaked. Fixed with temp pointer; on failure old text retained.
+- F8 (FabGL/src/fabutils.cpp:120-128): realloc32() always called heap_caps_free(ptr) and moveItems(NULL, ptr, ...) even when heap_caps_malloc returned NULL — crashes on OOM and always frees old data. Fixed: guard the copy+free with `if (newBuffer && ptr)` so the old allocation is preserved when malloc fails.
 
 TODO: Review all project code for wrong flag constants — passing a constant from one API (e.g. getaddrinfo flags) to a different API that uses different flag values with overlapping names.
 

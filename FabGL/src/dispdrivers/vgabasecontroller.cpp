@@ -206,13 +206,16 @@ bool VGABaseController::setDMABuffersCount(int buffersCount)
     }
 
     // (re)allocate and initialize DMA descs
-    m_DMABuffers = (lldesc_t*) heap_caps_realloc((void*)m_DMABuffers, buffersCount * sizeof(lldesc_t), MALLOC_CAP_DMA);
-    if (m_doubleBufferOverDMA && isDoubleBuffered())
-      m_DMABuffersVisible = (lldesc_t*) heap_caps_realloc((void*)m_DMABuffersVisible, buffersCount * sizeof(lldesc_t), MALLOC_CAP_DMA);
-    else
+    lldesc_t *newDMABuffers = (lldesc_t*) heap_caps_realloc((void*)m_DMABuffers, buffersCount * sizeof(lldesc_t), MALLOC_CAP_DMA);
+    if (!newDMABuffers) return false;
+    m_DMABuffers = newDMABuffers;
+    if (m_doubleBufferOverDMA && isDoubleBuffered()) {
+      lldesc_t *newDMABuffersVisible = (lldesc_t*) heap_caps_realloc((void*)m_DMABuffersVisible, buffersCount * sizeof(lldesc_t), MALLOC_CAP_DMA);
+      if (!newDMABuffersVisible) return false;
+      m_DMABuffersVisible = newDMABuffersVisible;
+    } else {
       m_DMABuffersVisible = m_DMABuffers;
-    if (!m_DMABuffers || !m_DMABuffersVisible)
-      return false;
+    }
 
     auto buffersHead = m_DMABuffersHead ? m_DMABuffersHead : &m_DMABuffers[0];
 

@@ -760,7 +760,8 @@ void get_console_size(struct env *env) {
   env->cols = cols;
   env->lines = rows - 1;
 
-  env->linebuf = realloc(env->linebuf, env->cols + LINEBUF_EXTRA);
+  unsigned char *newLinebuf = realloc(env->linebuf, env->cols + LINEBUF_EXTRA);
+  if (newLinebuf) env->linebuf = newLinebuf;
 }
 
 void outch(char c) {
@@ -1668,8 +1669,9 @@ void copy_selection(struct editor *ed) {
 
   if (!get_selection(ed, &selstart, &selend)) return;
   ed->env->clipsize = selend - selstart;
-  ed->env->clipboard = (unsigned char *) realloc(ed->env->clipboard, ed->env->clipsize);
-  if (!ed->env->clipboard) return;
+  unsigned char *newclip = (unsigned char *) realloc(ed->env->clipboard, ed->env->clipsize);
+  if (!newclip) return;
+  ed->env->clipboard = newclip;
   copy(ed, ed->env->clipboard, selstart, ed->env->clipsize);
 }
 

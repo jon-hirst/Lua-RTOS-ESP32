@@ -120,7 +120,7 @@ bool calcParity(uint8_t v)
 void * realloc32(void * ptr, size_t size)
 {
   uint32_t * newBuffer = (uint32_t*) heap_caps_malloc(size, MALLOC_CAP_32BIT);
-  if (ptr) {
+  if (newBuffer && ptr) {
     moveItems(newBuffer, (uint32_t*)ptr, size / sizeof(uint32_t));
     heap_caps_free(ptr);
   }
