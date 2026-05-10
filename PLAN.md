@@ -1013,7 +1013,15 @@ DONE: Review all project code for buffer overflows and underflows — fixed-size
   too long" so the caller (llora_set_devAddr/devEui/appEui/nwkSKey/appSKey/appKey) rejects keys
   of the wrong length rather than silently overflowing.
 
-TODO: Review all project code for stack overflows from unbounded recursion — recursive functions with no depth limit or guard against deeply nested input.
+DONE: Review all project code for stack overflows from unbounded recursion — recursive functions with no depth limit or guard against deeply nested input.
+
+- F1 (lua_cjson.c:75-76): DEFAULT_ENCODE_MAX_DEPTH and DEFAULT_DECODE_MAX_DEPTH were 1000, which allows
+  ~220 bytes of C stack per nesting level (two frames: json_append_data/json_process_value alternating with
+  json_append_object/json_parse_object_context). At depth 1000 that needs ~220 KB, far exceeding the 40 KB
+  Lua task stack. Changed both limits from 1000 to 20. Real embedded JSON never needs more than 10 levels;
+  depth 20 uses ~4.4 KB of stack at maximum and matches the parson.c MAX_NESTING=19 limit.
+- parson.c json_serialize_to_buffer_r() has no depth guard but is safe: all objects it serializes were
+  created by parse_value() which enforces MAX_NESTING=19, so the serializer cannot recurse deeper than 19.
 
 TODO: Review all project code for double-free bugs — pointers freed more than once in single-threaded code, or freed via two separate ownership paths.
 
