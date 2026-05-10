@@ -241,6 +241,7 @@ driver_error_t *encoder_setup(int8_t a, int8_t b, int8_t sw, encoder_h_t **h) {
 #if CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
 	driver_unit_lock_error_t *lock_error = NULL;
 #endif
+	driver_error_t *error;
 
 	// Sanity checks
 	if ((a < 0) || (b < 0)) {
@@ -288,14 +289,14 @@ driver_error_t *encoder_setup(int8_t a, int8_t b, int8_t sw, encoder_h_t **h) {
     encoder->SW = sw;
     encoder->state = R_START;
 
-    gpio_pin_input(a);
-    gpio_pin_input(b);
+    if ((error = gpio_pin_input(a))) { free(encoder); return error; }
+    if ((error = gpio_pin_input(b))) { free(encoder); return error; }
 
     gpio_isr_attach(a, encoder_isr, GPIO_INTR_ANYEDGE, (void *)encoder);
     gpio_isr_attach(b, encoder_isr, GPIO_INTR_ANYEDGE, (void *)encoder);
 
     if (sw >= 0) {
-        gpio_pin_input(sw);
+        if ((error = gpio_pin_input(sw))) { free(encoder); return error; }
         gpio_isr_attach(sw, encoder_isr, GPIO_INTR_ANYEDGE, (void *)encoder);
     }
 

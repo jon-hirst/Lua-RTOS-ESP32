@@ -118,11 +118,11 @@ static void st7789_reset(void) {
 	gdisplay_ll_command(ST7789_SWRESET);
 	vTaskDelay(130 / portTICK_PERIOD_MS);
 #else
-	gpio_pin_set(CONFIG_LUA_RTOS_GDISPLAY_RESET);
+	(void)gpio_pin_set(CONFIG_LUA_RTOS_GDISPLAY_RESET);
 	vTaskDelay(10 / portTICK_PERIOD_MS);
-	gpio_pin_clr(CONFIG_LUA_RTOS_GDISPLAY_RESET);
+	(void)gpio_pin_clr(CONFIG_LUA_RTOS_GDISPLAY_RESET);
 	vTaskDelay(50 / portTICK_PERIOD_MS);
-	gpio_pin_set(CONFIG_LUA_RTOS_GDISPLAY_RESET);
+	(void)gpio_pin_set(CONFIG_LUA_RTOS_GDISPLAY_RESET);
 	vTaskDelay(130 / portTICK_PERIOD_MS);
 #endif
 }
@@ -168,7 +168,7 @@ driver_error_t *st7789_init(uint8_t chip, uint8_t orientation, uint8_t address) 
 #endif
 
 	// setup command pin
-	gpio_pin_output(CONFIG_LUA_RTOS_GDISPLAY_CMD);
+	if ((error = gpio_pin_output(CONFIG_LUA_RTOS_GDISPLAY_CMD))) return error;
 
 #if CONFIG_LUA_RTOS_GDISPLAY_RESET != -1
 #if CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
@@ -178,7 +178,7 @@ driver_error_t *st7789_init(uint8_t chip, uint8_t orientation, uint8_t address) 
 #endif
 
 	// setup reset pin
-	gpio_pin_output(CONFIG_LUA_RTOS_GDISPLAY_RESET);
+	if ((error = gpio_pin_output(CONFIG_LUA_RTOS_GDISPLAY_RESET))) return error;
 	gpio_ll_pin_clr(CONFIG_LUA_RTOS_GDISPLAY_RESET);
 #endif
 

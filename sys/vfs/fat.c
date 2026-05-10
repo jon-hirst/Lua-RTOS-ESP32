@@ -130,9 +130,9 @@ int vfs_fat_mount(const char *target) {
 	}
 	#endif // CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
 
-    gpio_pin_pullup(2);
-    gpio_pin_pullup(14);
-    gpio_pin_pullup(15);
+    (void)gpio_pin_pullup(2);
+    (void)gpio_pin_pullup(14);
+    (void)gpio_pin_pullup(15);
 
 	#if CONFIG_LUA_RTOS_MCC_1_LINE
     host.flags = SDMMC_HOST_FLAG_1BIT;
@@ -143,9 +143,9 @@ int vfs_fat_mount(const char *target) {
     host.flags = SDMMC_HOST_FLAG_4BIT;
 	slot_config.width = 4;
 
-    gpio_pin_pullup(4);
-    gpio_pin_pullup(12);
-    gpio_pin_pullup(13);
+    (void)gpio_pin_pullup(4);
+    (void)gpio_pin_pullup(12);
+    (void)gpio_pin_pullup(13);
 
 	#if CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
     if (driver_lock(SYSTEM_DRIVER, 0, GPIO_DRIVER, 4, DRIVER_ALL_FLAGS, "SD Card - DAT1")) {
@@ -330,9 +330,9 @@ int vfs_fat_format(const char *target) {
 	}
 	#endif // CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
 
-    gpio_pin_pullup(2);
-    gpio_pin_pullup(14);
-    gpio_pin_pullup(15);
+    (void)gpio_pin_pullup(2);
+    (void)gpio_pin_pullup(14);
+    (void)gpio_pin_pullup(15);
 
 	#if CONFIG_LUA_RTOS_MCC_1_LINE
     host.flags = SDMMC_HOST_FLAG_1BIT;
@@ -343,9 +343,9 @@ int vfs_fat_format(const char *target) {
     host.flags = SDMMC_HOST_FLAG_4BIT;
 	slot_config.width = 4;
 
-    gpio_pin_pullup(4);
-    gpio_pin_pullup(12);
-    gpio_pin_pullup(13);
+    (void)gpio_pin_pullup(4);
+    (void)gpio_pin_pullup(12);
+    (void)gpio_pin_pullup(13);
 
 	#if CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
     if (driver_lock(SYSTEM_DRIVER, 0, GPIO_DRIVER, 4, DRIVER_ALL_FLAGS, "SD Card - DAT1")) {

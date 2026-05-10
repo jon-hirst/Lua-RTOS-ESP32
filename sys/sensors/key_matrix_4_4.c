@@ -167,6 +167,7 @@ driver_error_t *key_matrix_4_4_setup(sensor_instance_t *unit) {
 #if CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
     driver_unit_lock_error_t *lock_error = NULL;
 #endif
+    driver_error_t *error;
     int i;
 
 #if CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
@@ -181,13 +182,13 @@ driver_error_t *key_matrix_4_4_setup(sensor_instance_t *unit) {
 
     // Configure column pins as output
     for(i=0;i < 4;i++) {
-        gpio_pin_output(unit->setup[i].gpio.gpio);
+        if ((error = gpio_pin_output(unit->setup[i].gpio.gpio))) return error;
     }
 
     // Configure row pins as input / pulled up
     for(i=4;i < 8;i++) {
-        gpio_pin_input(unit->setup[i].gpio.gpio);
-        gpio_pin_pullup(unit->setup[i].gpio.gpio);
+        if ((error = gpio_pin_input(unit->setup[i].gpio.gpio))) return error;
+        if ((error = gpio_pin_pullup(unit->setup[i].gpio.gpio))) return error;
     }
 
     // Set repeat feature by default

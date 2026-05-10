@@ -1194,7 +1194,11 @@ DONE: Review all project code for unchecked return values — calls to system fu
 - F7 (thread.c:502,506,514): fcntl() on stdin for non-blocking key poll; added (void) casts.
 - F8 (usocket.c:365,374): fcntl() in socket_setblocking/setnonblocking; standard LuaSocket pattern, added (void) casts.
 
-TODO: Review all project code for silently discarded error codes — driver_error_t or esp_err_t return values assigned to a local variable but never tested, or cast to void without justification.
+DONE: Review all project code for silently discarded error codes — driver_error_t or esp_err_t return values assigned to a local variable but never tested, or cast to void without justification.
+
+87 unchecked gpio_pin_* return values fixed across 17 files. In functions returning driver_error_t*: errors are now propagated with if ((error = gpio_pin_*())) return error; In void or int-returning functions (one-wire timing, display reset, ISR-disabled sections, SD card pullups): (void) casts added. For spi_ll_setup (int return): free + return -1. For encoder_setup: free(encoder) then return error. For power_bus.c pwbus_on/off: mtx_unlock before returning error.
+
+Files changed: sys/sensors/us015.c, sys/sensors/ping28015.c, sys/sensors/dhtxx.c, sys/sensors/key_matrix_4_4.c, sys/drivers/spi.c, sys/drivers/st7735.c, sys/drivers/st7789.c, sys/drivers/ili9341.c, sys/drivers/pcd8544.c, sys/drivers/tm1637.c, sys/drivers/MCP23S17.c, sys/drivers/pca9xxx.c, sys/drivers/encoder.c, sys/drivers/owire.c, sys/drivers/pwm.c, sys/drivers/power_bus.c, sys/vfs/fat.c
 
 TODO: Review all project code for security vulnerabilities — path traversal in file open calls using user-supplied strings, command injection if any exec/system calls consume user data, and reflected user input in HTTP responses without escaping (XSS).
 

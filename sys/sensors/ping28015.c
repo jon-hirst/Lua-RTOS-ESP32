@@ -144,8 +144,8 @@ driver_error_t *ping28015_setup(sensor_instance_t *unit) {
 #endif
 
     // The initial status of the signal line must be low
-    gpio_pin_output(unit->setup[0].gpio.gpio);
-    gpio_pin_clr(unit->setup[0].gpio.gpio);
+    if ((error = gpio_pin_output(unit->setup[0].gpio.gpio))) return error;
+    if ((error = gpio_pin_clr(unit->setup[0].gpio.gpio))) return error;
 
     // Ignore some measures
     sensor_value_t tmp[2];
@@ -209,18 +209,18 @@ driver_error_t *ping28015_acquire(sensor_instance_t *unit, sensor_value_t *value
         // Use bit bang
 
         // Configure pin as output
-        gpio_pin_output(unit->setup[0].gpio.gpio);
-        gpio_pin_clr(unit->setup[0].gpio.gpio);
+        (void)gpio_pin_output(unit->setup[0].gpio.gpio);
+        (void)gpio_pin_clr(unit->setup[0].gpio.gpio);
 
         // Trigger pulse
         portDISABLE_INTERRUPTS();
 
-        gpio_pin_set(unit->setup[0].gpio.gpio);
+        (void)gpio_pin_set(unit->setup[0].gpio.gpio);
         udelay(5);
-        gpio_pin_clr(unit->setup[0].gpio.gpio);
+        (void)gpio_pin_clr(unit->setup[0].gpio.gpio);
 
         // Configure pin as input
-        gpio_pin_input(unit->setup[0].gpio.gpio);
+        (void)gpio_pin_input(unit->setup[0].gpio.gpio);
 
         // Get echo pulse width in usecs
         t = gpio_get_pulse_time(unit->setup[0].gpio.gpio, 1, 26000);

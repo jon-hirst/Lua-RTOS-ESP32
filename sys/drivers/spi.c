@@ -598,7 +598,8 @@ int spi_ll_setup(uint8_t unit, uint8_t master, int8_t cs, uint8_t mode, uint32_t
 
     // Setup CS
     if (!(flags & SPI_FLAG_CS_AUTO)) {
-        gpio_pin_output(cs);
+        driver_error_t *cs_error = gpio_pin_output(cs);
+        if (cs_error) { free(cs_error); spi_unlock(unit); return -1; }
         gpio_ll_pin_set(cs);
     }
 

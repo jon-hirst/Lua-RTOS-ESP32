@@ -117,10 +117,10 @@ driver_error_t *pcd8544_init(uint8_t chipset, uint8_t orient, uint8_t address) {
 #endif
 
 	// setup command pin
-	gpio_pin_output(CONFIG_LUA_RTOS_GDISPLAY_CMD);
+	if ((error = gpio_pin_output(CONFIG_LUA_RTOS_GDISPLAY_CMD))) return error;
 
 	// setup reset pin
-	gpio_pin_output(CONFIG_LUA_RTOS_GDISPLAY_RESET);
+	if ((error = gpio_pin_output(CONFIG_LUA_RTOS_GDISPLAY_RESET))) return error;
 	gpio_ll_pin_set(CONFIG_LUA_RTOS_GDISPLAY_RESET);
 
 	// Reset

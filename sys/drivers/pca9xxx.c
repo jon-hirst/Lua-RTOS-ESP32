@@ -308,7 +308,7 @@ driver_error_t *pca9xxx_setup() {
 			return driver_error(GPIO_DRIVER, GPIO_ERR_NOT_ENOUGH_MEMORY, NULL);
 		}
 
-		gpio_pin_input(CONFIG_PCA9xxx_INT);
+		if ((error = gpio_pin_input(CONFIG_PCA9xxx_INT))) {pca9xxx_unsetup(true);return error;}
 		gpio_isr_attach(CONFIG_PCA9xxx_INT, pca9xxx_isr, GPIO_INTR_NEGEDGE, NULL);
 
 		// Mask interrupt registers, all enabled

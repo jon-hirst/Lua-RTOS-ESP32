@@ -308,8 +308,8 @@ driver_error_t *MCP23S17_setup() {
         	// Pin value is compared against the previous pin value
         	MCP23S17_write8(MCP23S17_INTCONA, 0x00);
 
-        	gpio_pin_input(CONFIG_MCP23S17_INTA);
-        	gpio_pin_pullup(CONFIG_MCP23S17_INTA);
+        	if ((error = gpio_pin_input(CONFIG_MCP23S17_INTA))) return error;
+        	if ((error = gpio_pin_pullup(CONFIG_MCP23S17_INTA))) return error;
             gpio_isr_attach(CONFIG_MCP23S17_INTA, MCP23S17_isr, GPIO_INTR_NEGEDGE, NULL);
         }
 
@@ -320,8 +320,8 @@ driver_error_t *MCP23S17_setup() {
         	// Pin value is compared against the previous pin value
         	MCP23S17_write8(MCP23S17_INTCONB, 0x00);
 
-        	gpio_pin_input(CONFIG_MCP23S17_INTB);
-        	gpio_pin_pullup(CONFIG_MCP23S17_INTB);
+        	if ((error = gpio_pin_input(CONFIG_MCP23S17_INTB))) return error;
+        	if ((error = gpio_pin_pullup(CONFIG_MCP23S17_INTB))) return error;
             gpio_isr_attach(CONFIG_MCP23S17_INTB, MCP23S17_isr, GPIO_INTR_NEGEDGE, NULL);
         }
 

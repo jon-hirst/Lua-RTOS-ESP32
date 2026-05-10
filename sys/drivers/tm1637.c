@@ -151,25 +151,25 @@ static int tm1637_write_byte(sdisplay_device_t *device, uint8_t wr_data) {
 
 	//sent 8bit data
 	for(i=0;i<8;i++) {
-		gpio_pin_clr(device->config.wire.clk);
+		(void)gpio_pin_clr(device->config.wire.clk);
 		//LSB first
 		if (wr_data & 0x01)
-			gpio_pin_set(device->config.wire.dio);
+			(void)gpio_pin_set(device->config.wire.dio);
 		else
-			gpio_pin_clr(device->config.wire.dio);
+			(void)gpio_pin_clr(device->config.wire.dio);
 		wr_data >>= 1;
-		gpio_pin_set(device->config.wire.clk);
+		(void)gpio_pin_set(device->config.wire.clk);
 		udelay(1);
 	}
 
 	//wait for the ACK
-	gpio_pin_clr(device->config.wire.clk);
-	gpio_pin_set(device->config.wire.dio);
+	(void)gpio_pin_clr(device->config.wire.clk);
+	(void)gpio_pin_set(device->config.wire.dio);
 	udelay(1);
-	gpio_pin_set(device->config.wire.clk);
-	gpio_pin_input(device->config.wire.dio);
+	(void)gpio_pin_set(device->config.wire.clk);
+	(void)gpio_pin_input(device->config.wire.dio);
 
-	gpio_pin_get(device->config.wire.dio, &val);
+	(void)gpio_pin_get(device->config.wire.dio, &val);
 	while (val) {
 		count1 +=1;
 		count2 +=1;
@@ -179,18 +179,18 @@ static int tm1637_write_byte(sdisplay_device_t *device, uint8_t wr_data) {
 
 			if (count2 == 200) {
 				tm1637_stop(device);
-				gpio_pin_output(device->config.wire.dio);
+				(void)gpio_pin_output(device->config.wire.dio);
 				return -1; // Timeout
 			}
-			gpio_pin_output(device->config.wire.dio);
-			gpio_pin_clr(device->config.wire.dio);
+			(void)gpio_pin_output(device->config.wire.dio);
+			(void)gpio_pin_clr(device->config.wire.dio);
 			count1 =0;
 		}
-		gpio_pin_input(device->config.wire.dio);
-		gpio_pin_get(device->config.wire.dio, &val);
+		(void)gpio_pin_input(device->config.wire.dio);
+		(void)gpio_pin_get(device->config.wire.dio, &val);
 	}
 
-	gpio_pin_output(device->config.wire.dio);
+	(void)gpio_pin_output(device->config.wire.dio);
 
 	return 0;
 }
@@ -199,21 +199,21 @@ static int tm1637_write_byte(sdisplay_device_t *device, uint8_t wr_data) {
 static void tm1637_start(sdisplay_device_t *device) {
 	portDISABLE_INTERRUPTS();
 
-	gpio_pin_set(device->config.wire.clk);
-	gpio_pin_set(device->config.wire.dio);
+	(void)gpio_pin_set(device->config.wire.clk);
+	(void)gpio_pin_set(device->config.wire.dio);
 	udelay(1);
-	gpio_pin_clr(device->config.wire.dio);
-	gpio_pin_clr(device->config.wire.clk);
+	(void)gpio_pin_clr(device->config.wire.dio);
+	(void)gpio_pin_clr(device->config.wire.clk);
 	udelay(1);
 }
 
 //End of transmission
 static void tm1637_stop(sdisplay_device_t *device) {
-	gpio_pin_clr(device->config.wire.clk);
-	gpio_pin_clr(device->config.wire.dio);
+	(void)gpio_pin_clr(device->config.wire.clk);
+	(void)gpio_pin_clr(device->config.wire.dio);
 	udelay(1);
-	gpio_pin_set(device->config.wire.clk);
-	gpio_pin_set(device->config.wire.dio);
+	(void)gpio_pin_set(device->config.wire.clk);
+	(void)gpio_pin_set(device->config.wire.dio);
 	udelay(1);
 
 	portENABLE_INTERRUPTS();
@@ -269,6 +269,7 @@ driver_error_t *tm1637_setup(struct sdisplay *device) {
 #if CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
 	driver_unit_lock_error_t *lock_error = NULL;
 #endif
+	driver_error_t *error;
 
 	int clk = device->config.wire.clk;
 	int dio = device->config.wire.dio;
@@ -287,8 +288,8 @@ driver_error_t *tm1637_setup(struct sdisplay *device) {
     }
 #endif
 
-    gpio_pin_output(clk);
-	gpio_pin_output(dio);
+    if ((error = gpio_pin_output(clk))) return error;
+	if ((error = gpio_pin_output(dio))) return error;
 
 	device->brightness = 7;
 

@@ -87,6 +87,8 @@ static const sensor_t __attribute__((used,unused,section(".sensors"))) us015_sen
  * Operation functions
  */
 driver_error_t *us015_setup(sensor_instance_t *unit) {
+	driver_error_t *error;
+
 	// Set default calibration value
 	unit->properties[0].doubled.value = 0;
 
@@ -94,13 +96,13 @@ driver_error_t *us015_setup(sensor_instance_t *unit) {
 	unit->properties[1].doubled.value = 20;
 
 	// Configure TRIG pin as output
-	gpio_pin_output(unit->setup[0].gpio.gpio);
+	if ((error = gpio_pin_output(unit->setup[0].gpio.gpio))) return error;
 
-	gpio_pin_clr(unit->setup[0].gpio.gpio);
+	if ((error = gpio_pin_clr(unit->setup[0].gpio.gpio))) return error;
 	udelay(200);
 
 	// Configure ECHO pin as input
-	gpio_pin_input(unit->setup[1].gpio.gpio);
+	if ((error = gpio_pin_input(unit->setup[1].gpio.gpio))) return error;
 
 	// Ignore some measures
 	sensor_value_t tmp[2];
@@ -125,10 +127,12 @@ driver_error_t *us015_set(sensor_instance_t *unit, const char *id, sensor_value_
 }
 
 driver_error_t *us015_acquire(sensor_instance_t *unit, sensor_value_t *values) {
+	driver_error_t *error;
+
 	// Trigger pulse
-	gpio_pin_set(unit->setup[0].gpio.gpio);
+	if ((error = gpio_pin_set(unit->setup[0].gpio.gpio))) return error;
 	udelay(10);
-	gpio_pin_clr(unit->setup[0].gpio.gpio);
+	if ((error = gpio_pin_clr(unit->setup[0].gpio.gpio))) return error;
 
 	// Get echo pulse width in usecs
 	double time = gpio_get_pulse_time(unit->setup[1].gpio.gpio, 1, 18500);

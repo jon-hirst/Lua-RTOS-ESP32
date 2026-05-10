@@ -81,11 +81,11 @@ static int dhtxx_bus_monitor(uint8_t pin, uint8_t level, int16_t timeout) {
     // Get start time
     start = xthal_get_ccount();
 
-    gpio_pin_get(pin, &val);
+    (void)gpio_pin_get(pin, &val);
 
     if (timeout > 0) {
         while (val == level) {
-            gpio_pin_get(pin, &val);
+            (void)gpio_pin_get(pin, &val);
             end = xthal_get_ccount();
             elapsed = (int)((end - start) / (CPU_HZ / (1000000 * (CPU_HZ / CORE_TIMER_HZ))));
             if (elapsed >= timeout) {
@@ -94,7 +94,7 @@ static int dhtxx_bus_monitor(uint8_t pin, uint8_t level, int16_t timeout) {
         }
     } else {
         while (val == level) {
-            gpio_pin_get(pin, &val);
+            (void)gpio_pin_get(pin, &val);
         }
     }
 
@@ -162,8 +162,9 @@ driver_error_t *dhtxx_setup(sensor_instance_t *unit) {
 
     if (unit->args == (void *)0xffffffff) {
 		// Release data bus
-		gpio_pin_input(pin);
-		gpio_pin_pullup(pin);
+		driver_error_t *error;
+		if ((error = gpio_pin_input(pin))) return error;
+		if ((error = gpio_pin_pullup(pin))) return error;
     }
 
     return NULL;
@@ -249,13 +250,13 @@ retry:
         portDISABLE_INTERRUPTS();
 
         // Inform the sensor that we want to acquire data
-        gpio_pin_output(pin);
-        gpio_pin_clr(pin);
+        (void)gpio_pin_output(pin);
+        (void)gpio_pin_clr(pin);
         delay(rdelay);
 
         // Receive data
-        gpio_pin_input(pin);
-        gpio_pin_pullup(pin);
+        (void)gpio_pin_input(pin);
+        (void)gpio_pin_pullup(pin);
 
         // Wait response from sensor 1 -> 0 -> 1 -> 0
         t1 = dhtxx_bus_monitor(pin, 1, 100);if (t1 == -1) goto timeout;

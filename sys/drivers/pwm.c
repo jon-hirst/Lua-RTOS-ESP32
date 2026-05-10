@@ -302,7 +302,7 @@ driver_error_t *pwm_setup(int8_t unit, int8_t channel, int8_t pin, int32_t freq,
      gpio_set_direction(pwm[unit][channel].pin, GPIO_MODE_OUTPUT);
      gpio_matrix_out(pwm[unit][channel].pin, 0x100, 0, 0);
 
- 	 gpio_pin_clr(pwm[unit][channel].pin);
+ 	 if ((error = gpio_pin_clr(pwm[unit][channel].pin))) return error;
 
      return NULL;
 }
@@ -342,7 +342,7 @@ driver_error_t *pwm_stop(int8_t unit, int8_t channel) {
     gpio_set_direction(pwm[unit][channel].pin, GPIO_MODE_OUTPUT);
     gpio_matrix_out(pwm[unit][channel].pin, 0x100, 0, 0);
 
-	gpio_pin_clr(pwm[unit][channel].pin);
+	if ((error = gpio_pin_clr(pwm[unit][channel].pin))) return error;
 
 	pwm[unit][channel].started = 0;
 
