@@ -1174,7 +1174,14 @@ DONE: Review all project code for wrong NaN comparisons — floating-point NaN t
 One fault found and fixed:
 - F1 (motion/s_curve_motion.c:268): `v_ == NAN` replaced with `isnan(v_)` — the equality test is always false under IEEE 754 because NaN is unordered with every value including itself. The file already uses isnan() correctly at lines 197, 234, and 237; this was an inconsistency. The enclosing condition guards fallback to a simpler velocity formula, so a stuck false meant the fallback was silently skipped whenever solve_second_order_pos() returned NaN.
 
-TODO: Review all project code for inverted logical operators — conditions using && where || is required (or vice versa) in guard expressions and input validation checks.
+DONE: Review all project code for inverted logical operators — conditions using && where || is required (or vice versa) in guard expressions and input validation checks.
+
+No faults found. Reviewed all C/C++ source files under sys/drivers, sys/vfs, sys/sensors, lua/modules, http, telnet, captivedns, mqtt, lora, spiffs, lfs, openssl, FabGL, motion, sound, eth_enc424j600, pthread, and supporting libraries. Every &&/|| combination examined is correct for its context:
+- Range checks (unit < FIRST || unit > LAST) use || correctly.
+- NULL+validity guards (ptr != NULL && field > 0) use && correctly.
+- Exclusion checks (method != "GET" && method != "POST") use && correctly.
+- Inclusion checks (err == IO_DONE || err == IO_CLOSED) use || correctly.
+- The spiffs_check.c pattern res <= _SPIFFS_ERR_CHECK_FIRST && res > _SPIFFS_ERR_CHECK_LAST is correct because FIRST=-10051 > LAST=-10054 numerically, so the && tests the open interval (LAST, FIRST].
 
 TODO: Review all project code for unchecked return values — calls to system functions (open, read, write, ioctl, send, recv, connect, bind, listen) where the return value is ignored and execution continues as if the call succeeded.
 
