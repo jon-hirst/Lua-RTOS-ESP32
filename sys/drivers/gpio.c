@@ -84,7 +84,7 @@ DRIVER_REGISTER_END(GPIO,gpio,CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS * (CPU_LAST_GPI
 
 driver_error_t * gpio_ll_pin_set(uint8_t pin) {
     if (pin < 32) {
-        GPIO.out_w1ts = (1 << pin);
+        GPIO.out_w1ts = (1u << pin);
     } else if (pin < GPIO_PER_PORT) {
         GPIO.out1_w1ts.data = (1 << (pin - 32));
     }
@@ -99,7 +99,7 @@ driver_error_t * gpio_ll_pin_set(uint8_t pin) {
 
 driver_error_t *  gpio_ll_pin_clr(uint8_t pin) {
     if (pin < 32) {
-        GPIO.out_w1tc = (1 << pin);
+        GPIO.out_w1tc = (1u << pin);
     } else if (pin < GPIO_PER_PORT) {
         GPIO.out1_w1tc.data = (1 << (pin - 32));
     }
@@ -114,7 +114,7 @@ driver_error_t *  gpio_ll_pin_clr(uint8_t pin) {
 
 driver_error_t *  gpio_ll_pin_inv(int8_t pin) {
     if (pin < 32) {
-        if (GPIO.out & (1 << pin)) {
+        if (GPIO.out & (1u << pin)) {
             return gpio_ll_pin_clr(pin);
         } else {
             return gpio_ll_pin_set(pin);

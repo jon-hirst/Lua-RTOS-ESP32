@@ -105,7 +105,7 @@ gpio_pin_mask_t cpu_port_io_pin_mask(unsigned int port) {
 
 unsigned int cpu_has_gpio(unsigned int port, unsigned int bit) {
 	if (port == 1) {
-		return (cpu_port_io_pin_mask(port) & (1 << bit));
+		return (cpu_port_io_pin_mask(port) & (GPIO_BIT_MASK << bit));
 	} else {
 		if (bit < 8) {
 			return 1;

@@ -989,5 +989,15 @@ DONE: Review all project code for realloc result stored directly into the source
   with temp pointers and early return with m_allocated reverted to oldAllocated on either failure, keeping
   the struct consistent at its prior capacity.
 
-TODO: Review all project code for shift-count undefined behaviour — left or right shifts where the shift amount can equal or exceed the width of the integer type.
+DONE: Review all project code for shift-count undefined behaviour — left or right shifts where the shift amount can equal or exceed the width of the integer type.
+
+- F1 (cpu.c:108): `(1 << bit)` in cpu_has_gpio() where `bit` is a GPIO pin number (0-48 on
+  ESP32-S3). For bit >= 32 this is undefined behaviour — shifting a 32-bit signed int by 32+
+  positions. Fixed: `(GPIO_BIT_MASK << bit)` uses `uint64_t` (1ULL) so the shift is always
+  within the 64-bit type width and the result matches the gpio_pin_mask_t return type of
+  cpu_port_io_pin_mask().
+- F2 (gpio.c:87,102,117): `(1 << pin)` in gpio_ll_pin_set, gpio_ll_pin_clr, and gpio_ll_pin_inv
+  where `pin < 32`. When pin == 31, `1 << 31` produces 2^31 which is not representable in a
+  signed 32-bit int — undefined behaviour per C11 §6.5.7. Fixed: `(1u << pin)` so the shift is
+  on an unsigned 32-bit type, making the result well-defined for all pin values 0-31.
 
