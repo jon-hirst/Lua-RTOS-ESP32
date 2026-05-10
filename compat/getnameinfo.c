@@ -54,6 +54,7 @@
 
 #include <netdb.h>
 #include "lwip/ip_addr.h"
+#include "net/if.h"
 
 int
 getnameinfo(const struct sockaddr *sa, socklen_t salen,

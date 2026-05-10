@@ -25,6 +25,8 @@
 
 #include "mbedtls/net_sockets.h"
 
+#include "net/if.h"
+
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
