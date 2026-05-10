@@ -538,6 +538,8 @@ driver_error_t *stepper_setup(uint8_t step_pin, uint8_t dir_pin, float min_spd, 
 		int task_core_id = (esp_cpu_get_core_id() + 1) % 2;				
 
         if (xTaskCreatePinnedToCore(acceleration_profile_task, "stepper_accel", 1024, NULL, configMAX_PRIORITIES - 1, &acceleration_profile_task_h, task_core_id) != pdTRUE) {
+            free(stepper[*unit].rmt_data);
+            stepper[*unit].rmt_data = NULL;
             mtx_unlock(&stepper_mutex);
             return driver_error(STEPPER_DRIVER, STEPPER_ERR_NOT_ENOUGH_MEMORY, NULL);
         }

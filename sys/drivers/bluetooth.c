@@ -196,14 +196,23 @@ driver_error_t *bt_setup(bt_mode_t mode) {
 
 	// Create an event group sync some driver functions with the event handler
 	bt_event = xEventGroupCreate();
+	if (!bt_event) {
+		return driver_error(BT_DRIVER, BT_ERR_NOT_ENOUGH_MEMORY, NULL);
+	}
 
 	queue = xQueueCreate(10, sizeof(bt_adv_frame_t));
 	if (!queue) {
+		vEventGroupDelete(bt_event);
+		bt_event = NULL;
 		return driver_error(BT_DRIVER, BT_ERR_NOT_ENOUGH_MEMORY, NULL);
 	}
 
 	BaseType_t xReturn = xTaskCreatePinnedToCore(bt_task, "bt", CONFIG_LUA_RTOS_LUA_THREAD_STACK_SIZE, NULL, CONFIG_LUA_RTOS_LUA_THREAD_PRIORITY, &task, xPortGetCoreID());
 	if (xReturn != pdPASS) {
+		vQueueDelete(queue);
+		queue = NULL;
+		vEventGroupDelete(bt_event);
+		bt_event = NULL;
 		return driver_error(BT_DRIVER, BT_ERR_NOT_ENOUGH_MEMORY, NULL);
 	}
 

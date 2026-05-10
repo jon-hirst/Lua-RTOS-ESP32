@@ -391,6 +391,8 @@ driver_error_t *encoder_register_callback(encoder_h_t *h, encoder_callback_t cal
 
 			xReturn = xTaskCreatePinnedToCore(encoder_task, "encoder", CONFIG_LUA_RTOS_LUA_THREAD_STACK_SIZE, NULL, CONFIG_LUA_RTOS_LUA_THREAD_PRIORITY, &task, xPortGetCoreID());
 			if (xReturn != pdPASS) {
+				vQueueDelete(queue);
+				queue = NULL;
 				portENABLE_INTERRUPTS();
 				return driver_error(ENCODER_DRIVER, ENCODER_ERR_NOT_ENOUGH_MEMORY, NULL);
 			}

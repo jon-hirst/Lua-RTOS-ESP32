@@ -97,11 +97,12 @@
 /* ------------------------------------------------------------------ */
 
 DRIVER_REGISTER_BEGIN(BMA423, bma423, 0, NULL, NULL);
-    DRIVER_REGISTER_ERROR(BMA423, bma423, CantInit,   "can't initialize",       BMA423_ERR_CANT_INIT);
-    DRIVER_REGISTER_ERROR(BMA423, bma423, NotSetup,   "not setup",              BMA423_ERR_NOT_SETUP);
-    DRIVER_REGISTER_ERROR(BMA423, bma423, InvalidArg, "invalid argument",        BMA423_ERR_INVALID_ARG);
-    DRIVER_REGISTER_ERROR(BMA423, bma423, NoConfig,   "bma423conf.bin not found",BMA423_ERR_NO_CONFIG);
-    DRIVER_REGISTER_ERROR(BMA423, bma423, ConfigFail, "features init timeout",   BMA423_ERR_CONFIG_FAIL);
+    DRIVER_REGISTER_ERROR(BMA423, bma423, CantInit,        "can't initialize",       BMA423_ERR_CANT_INIT);
+    DRIVER_REGISTER_ERROR(BMA423, bma423, NotSetup,        "not setup",              BMA423_ERR_NOT_SETUP);
+    DRIVER_REGISTER_ERROR(BMA423, bma423, InvalidArg,      "invalid argument",        BMA423_ERR_INVALID_ARG);
+    DRIVER_REGISTER_ERROR(BMA423, bma423, NoConfig,        "bma423conf.bin not found",BMA423_ERR_NO_CONFIG);
+    DRIVER_REGISTER_ERROR(BMA423, bma423, ConfigFail,      "features init timeout",   BMA423_ERR_CONFIG_FAIL);
+    DRIVER_REGISTER_ERROR(BMA423, bma423, NotEnoughMemory, "not enough memory",       BMA423_ERR_NOT_ENOUGH_MEMORY);
 DRIVER_REGISTER_END(BMA423, bma423, 0, NULL, NULL);
 
 /* ------------------------------------------------------------------ */
@@ -453,10 +454,17 @@ driver_error_t *bma423_enable_interrupt(bma423_callback_t cb) {
     /* Create the deferred-interrupt queue and task if not already running */
     if (irq_queue == NULL) {
         irq_queue = xQueueCreate(4, sizeof(uint8_t));
+        if (!irq_queue) {
+            return driver_error(BMA423_DRIVER, BMA423_ERR_NOT_ENOUGH_MEMORY, NULL);
+        }
     }
     if (irq_task == NULL) {
-        xTaskCreate(bma423_irq_task, "bma423_irq", 2048, NULL,
-                    configMAX_PRIORITIES - 1, &irq_task);
+        if (xTaskCreate(bma423_irq_task, "bma423_irq", 2048, NULL,
+                        configMAX_PRIORITIES - 1, &irq_task) != pdPASS) {
+            vQueueDelete(irq_queue);
+            irq_queue = NULL;
+            return driver_error(BMA423_DRIVER, BMA423_ERR_NOT_ENOUGH_MEMORY, NULL);
+        }
     }
 
     /* Latch mode: interrupts stay asserted until status is read */

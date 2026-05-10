@@ -1134,7 +1134,16 @@ DONE: Review all project code for wrong error codes returned — functions that 
 - F15 (sys/vfs/pty.c:192): `masters > 0` set errno=ENOENT; changed to EBUSY — PTY master already open is a resource-busy condition, not file-not-found.
 - F16 (sys/vfs/pty.c:291): `slaves > 0` set errno=ENOENT; changed to EBUSY — same reasoning for slave side.
 
-TODO: Review all project code for partial initialisation on failure — structs or objects that are half-constructed when an error occurs mid-setup, leaving the caller with a pointer to an inconsistent state.
+DONE: Review all project code for partial initialisation on failure — structs or objects that are half-constructed when an error occurs mid-setup, leaving the caller with a pointer to an inconsistent state.
+
+- F1 (encoder.c:394): queue created but not deleted when xTaskCreatePinnedToCore fails in encoder_register_callback. Added vQueueDelete(queue)/queue=NULL before the error return.
+- F2 (timer.c:189): same pattern in tmr_ll_setup — queue not deleted on task creation failure. Added vQueueDelete(tmr->queue)/tmr->queue=NULL before the error return.
+- F3 (sensor.c:776): same pattern in sensor_register_callback — queue not deleted on task creation failure. Added vQueueDelete(queue)/queue=NULL before the error return.
+- F4 (stepper.c:541-542): rmt_data circular buffer allocated but not freed when acceleration_profile_task creation fails in stepper_setup. Added free/NULL before the error return.
+- F5 (MCP23S17.c:233-237): xSemaphoreCreateRecursiveMutex() result not checked for NULL; if it returns NULL, MCP23S17_lock() dereferences it immediately. Added NULL check: free(MCP23S17)/MCP23S17=NULL and return error on failure.
+- F6 (MCP23S17.c:275-278, 286-289, 298-301): three error paths (INTA lock failure, INTB lock failure, task creation failure) each called MCP23S17_unlock() but left the mutex and struct allocated, leaving the global MCP23S17 pointer pointing at a half-initialised struct. Added vSemaphoreDelete(MCP23S17->mtx)/free(MCP23S17)/MCP23S17=NULL to all three paths.
+- F7 (bluetooth.c:198-215): xEventGroupCreate() result not checked; if NULL, all subsequent xEventGroupWaitBits calls crash. Queue not deleted when task creation fails. Added NULL check on bt_event with early return; added vQueueDelete/queue=NULL and vEventGroupDelete/bt_event=NULL on queue creation failure and task creation failure.
+- F8 (bma423.c:455-466): irq_queue created with no NULL check; irq_task created with no error check. If queue creation fails the ISR (registered later) will xQueueSendFromISR to NULL. Added NULL check on irq_queue with early return; added error check on xTaskCreate with vQueueDelete cleanup. Added BMA423_ERR_NOT_ENOUGH_MEMORY to bma423.h and registered it in bma423.c.
 
 TODO: Review all project code for semaphore, event group, and task handle leaks — xSemaphoreCreateMutex/Binary/Counting and xEventGroupCreate results not deleted on every error path; xTaskCreate handles not stored for later vTaskDelete.
 

@@ -186,6 +186,8 @@ int tmr_ll_setup(uint8_t unit, uint32_t micros, void(*callback)(void *), uint8_t
 
 			xReturn = xTaskCreatePinnedToCore(alarm_task, "tmral", CONFIG_LUA_RTOS_LUA_THREAD_STACK_SIZE, NULL, CONFIG_LUA_RTOS_LUA_THREAD_PRIORITY, &tmr->task, xPortGetCoreID());
 			if (xReturn != pdPASS) {
+				vQueueDelete(tmr->queue);
+				tmr->queue = NULL;
 				tmr_unlock();
 				return -1;
 			}

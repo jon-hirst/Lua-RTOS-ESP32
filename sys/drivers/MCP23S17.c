@@ -227,6 +227,11 @@ driver_error_t *MCP23S17_setup() {
 
         // Init mutex
         MCP23S17->mtx = xSemaphoreCreateRecursiveMutex();
+        if (!MCP23S17->mtx) {
+            free(MCP23S17);
+            MCP23S17 = NULL;
+            return driver_error(GPIO_DRIVER, GPIO_ERR_NOT_ENOUGH_MEMORY, NULL);
+        }
 
         syslog(
 			LOG_INFO,
@@ -267,7 +272,9 @@ driver_error_t *MCP23S17_setup() {
         if (CONFIG_MCP23S17_INTA >= 0) {
             if ((lock_error = driver_lock(GPIO_DRIVER, 0, GPIO_DRIVER, CONFIG_MCP23S17_INTA, 0, NULL))) {
                 MCP23S17_unlock();
-
+                vSemaphoreDelete(MCP23S17->mtx);
+                free(MCP23S17);
+                MCP23S17 = NULL;
                 // Revoked lock on pin
                 return driver_lock_error(GPIO_DRIVER, lock_error);
             }
@@ -276,7 +283,9 @@ driver_error_t *MCP23S17_setup() {
         if (CONFIG_MCP23S17_INTB >= 0) {
             if ((lock_error = driver_lock(GPIO_DRIVER, 0, GPIO_DRIVER, CONFIG_MCP23S17_INTB, 0, NULL))) {
                 MCP23S17_unlock();
-
+                vSemaphoreDelete(MCP23S17->mtx);
+                free(MCP23S17);
+                MCP23S17 = NULL;
                 // Revoked lock on pin
                 return driver_lock_error(GPIO_DRIVER, lock_error);
             }
@@ -286,7 +295,9 @@ driver_error_t *MCP23S17_setup() {
         BaseType_t xReturn = xTaskCreatePinnedToCore(MCP23S17_task, "MCP23S17", CONFIG_LUA_RTOS_LUA_THREAD_STACK_SIZE, NULL, CONFIG_LUA_RTOS_LUA_THREAD_PRIORITY, &MCP23S17->task, xPortGetCoreID());
         if (xReturn != pdPASS) {
             MCP23S17_unlock();
-
+            vSemaphoreDelete(MCP23S17->mtx);
+            free(MCP23S17);
+            MCP23S17 = NULL;
             return driver_error(GPIO_DRIVER, GPIO_ERR_NOT_ENOUGH_MEMORY, NULL);
         }
 

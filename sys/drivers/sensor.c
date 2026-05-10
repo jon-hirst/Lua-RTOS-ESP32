@@ -773,6 +773,8 @@ driver_error_t *sensor_register_callback(sensor_instance_t *unit, sensor_callbac
 
         xReturn = xTaskCreatePinnedToCore(sensor_task, "sensor", CONFIG_LUA_RTOS_LUA_THREAD_STACK_SIZE, NULL, CONFIG_LUA_RTOS_LUA_THREAD_PRIORITY, &task, xPortGetCoreID());
         if (xReturn != pdPASS) {
+            vQueueDelete(queue);
+            queue = NULL;
             portENABLE_INTERRUPTS();
             return driver_error(SENSOR_DRIVER, SENSOR_ERR_NOT_ENOUGH_MEMORY, NULL);
         }
