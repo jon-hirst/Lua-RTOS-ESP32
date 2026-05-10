@@ -1062,7 +1062,9 @@ DONE: Review all project code for truncation on assignment — values from wider
 
 bluetooth.c:183 `uint16_t datalen = strlen(adv_data) / 2` was reviewed and is safe: an immediate `if (datalen > 30)` guard throws before the value is used.
 
-TODO: Review all project code for wrong loop counter type — signed int used as a loop counter over size_t or unsigned ranges, or uint8_t/uint16_t used where the count can exceed the type maximum.
+DONE: Review all project code for wrong loop counter type — signed int used as a loop counter over size_t or unsigned ranges, or uint8_t/uint16_t used where the count can exceed the type maximum.
+
+No genuine bugs found. All uint8_t/uint16_t loop counters iterate over values well within their type range (CAN_NUM_FILTERS=10, MAX_ONEWIRE_SENSORS=8, MAX_CHANNELS=16, etc.). The only signed/unsigned comparison is int i vs size_t in rmt.c (lines 631, 653, 686, 774), but RMT pulse counts are hardware-bounded (< 64 on ESP32). Decrement loops on uint8_t use `> 0` (not `>= 0`), so none are infinite loops. All u1_t (uint8_t) counters in lmic.c/radio.c iterate over small fixed values ≤ 64.
 
 TODO: Review all project code for deadlock from lock ordering violations — code that acquires multiple mutexes in inconsistent order across different call paths, risking classic ABBA deadlock.
 
