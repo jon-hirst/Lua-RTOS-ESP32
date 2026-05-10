@@ -991,6 +991,54 @@ DONE: Review all project code for realloc result stored directly into the source
 
 DONE: Review all project code for shift-count undefined behaviour — left or right shifts where the shift amount can equal or exceed the width of the integer type.
 
+TODO: Review all project code for null pointer dereferences — pointer results from malloc/calloc/realloc, getenv, strtok, and similar functions used without NULL checks before dereferencing.
+
+TODO: Review all project code for buffer overflows and underflows — fixed-size buffers written to with unchecked lengths, including strcpy/strcat/sprintf/memcpy/read with caller-controlled sizes.
+
+TODO: Review all project code for stack overflows from unbounded recursion — recursive functions with no depth limit or guard against deeply nested input.
+
+TODO: Review all project code for double-free bugs — pointers freed more than once in single-threaded code, or freed via two separate ownership paths.
+
+TODO: Review all project code for sign extension bugs — narrower signed values cast to wider signed types where the sign bit propagates unexpectedly, especially from int8_t/int16_t to int32_t/int64_t comparisons.
+
+TODO: Review all project code for truncation on assignment — values from wider types (int32_t, int64_t, size_t) silently narrowed when assigned to uint8_t/uint16_t/int16_t variables, especially in size or length calculations.
+
+TODO: Review all project code for wrong loop counter type — signed int used as a loop counter over size_t or unsigned ranges, or uint8_t/uint16_t used where the count can exceed the type maximum.
+
+TODO: Review all project code for deadlock from lock ordering violations — code that acquires multiple mutexes in inconsistent order across different call paths, risking classic ABBA deadlock.
+
+TODO: Review all project code for double-checked locking without memory barriers — patterns where a shared flag or pointer is read outside a lock to avoid locking cost, then re-checked inside, without appropriate volatile or atomic semantics.
+
+TODO: Review all project code for unchecked return values — calls to system functions (open, read, write, ioctl, send, recv, connect, bind, listen) where the return value is ignored and execution continues as if the call succeeded.
+
+TODO: Review all project code for silently discarded error codes — driver_error_t or esp_err_t return values assigned to a local variable but never tested, or cast to void without justification.
+
+TODO: Review all project code for wrong error codes returned — functions that return a plausible-sounding but incorrect error constant (e.g. from the wrong driver, or semantically wrong such as ENOENT instead of EINVAL).
+
+TODO: Review all project code for partial initialisation on failure — structs or objects that are half-constructed when an error occurs mid-setup, leaving the caller with a pointer to an inconsistent state.
+
+TODO: Review all project code for semaphore, event group, and task handle leaks — xSemaphoreCreateMutex/Binary/Counting and xEventGroupCreate results not deleted on every error path; xTaskCreate handles not stored for later vTaskDelete.
+
+TODO: Review all project code for wrong variable updated — assignments where a similarly-named variable is written instead of the intended one, leaving the intended target unchanged.
+
+TODO: Review all project code for reversed calloc arguments — calloc(size, count) instead of calloc(count, size), giving correct total bytes by accident but wrong API usage.
+
+TODO: Review all project code for wrong NaN comparisons — floating-point NaN tested with == or != instead of isnan(), which always evaluates false/true respectively, causing silent logic errors.
+
+TODO: Review all project code for inverted logical operators — conditions using && where || is required (or vice versa) in guard expressions and input validation checks.
+
+TODO: Review all project code for security vulnerabilities — path traversal in file open calls using user-supplied strings, command injection if any exec/system calls consume user data, and reflected user input in HTTP responses without escaping (XSS).
+
+TODO: Review all project code for unchecked user-supplied lengths — Content-Length, packet length fields, or any length arriving from the network or Lua caller used directly in malloc, memcpy, or read without validation against a maximum.
+
+TODO: Review all project code for information leakage — error messages or HTTP responses that include internal file paths, stack addresses, heap addresses, or other implementation details useful to an attacker.
+
+TODO: Review all project code for strict aliasing violations — type-punning through incompatible pointer casts (e.g. uint8_t* cast to uint32_t* to read multi-byte values) that the compiler may optimise incorrectly under strict-aliasing rules.
+
+TODO: Review all project code for unsequenced modifications — expressions where the same variable is both read and modified without a sequence point, such as a[i] = i++, producing undefined behaviour.
+
+TODO: Review all project code for dead and unreachable code — statements after unconditional return/break/continue/goto, conditions that are always true or always false due to type constraints or prior assignments, and branches that can never execute.
+
 - F1 (cpu.c:108): `(1 << bit)` in cpu_has_gpio() where `bit` is a GPIO pin number (0-48 on
   ESP32-S3). For bit >= 32 this is undefined behaviour — shifting a 32-bit signed int by 32+
   positions. Fixed: `(GPIO_BIT_MASK << bit)` uses `uint64_t` (1ULL) so the shift is always
