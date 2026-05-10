@@ -1023,7 +1023,19 @@ DONE: Review all project code for stack overflows from unbounded recursion — r
 - parson.c json_serialize_to_buffer_r() has no depth guard but is safe: all objects it serializes were
   created by parse_value() which enforces MAX_NESTING=19, so the serializer cannot recurse deeper than 19.
 
-TODO: Review all project code for double-free bugs — pointers freed more than once in single-threaded code, or freed via two separate ownership paths.
+DONE: Review all project code for double-free bugs — pointers freed more than once in single-threaded code, or freed via two separate ownership paths.
+
+- F1 (nvs.c:67-82): nvs_error() switch had no default: case. For any ESP-IDF error code not listed
+  (e.g. ESP_ERR_NVS_NOT_INITIALIZED, ESP_ERR_NVS_READ_ONLY, ESP_ERR_NVS_NOT_ENOUGH_SPACE, etc.),
+  the function returned silently instead of throwing. In l_nvs_write this caused a double-free:
+  nvs_open failure → free(val_val) + nvs_error() returns → nvs_set_blob runs with freed val_val
+  → nvs_set_blob fails → free(val_val) again. Fixed: added default: luaL_error(L, "%d:nvs error", code)
+  so nvs_error always throws for any error code.
+
+All other apparent multiple-free patterns across the codebase (sys/drivers, sys/vfs, sys/sensors,
+lua/modules, lora, http, mqtt, FabGL, pthread, eth_enc424j600) were inspected and confirmed safe:
+each free() call is on a mutually exclusive early-return error path, so no path executes more than
+one free() for the same allocation.
 
 TODO: Review all project code for sign extension bugs — narrower signed values cast to wider signed types where the sign bit propagates unexpectedly, especially from int8_t/int16_t to int32_t/int64_t comparisons.
 

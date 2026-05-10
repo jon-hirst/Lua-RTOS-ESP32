@@ -78,6 +78,8 @@ static void nvs_error(lua_State* L, int code) {
             luaL_error(L, "%d:invalid size", ESP_ERR_INVALID_SIZE);break;
         case ESP_ERR_NVS_NOT_FOUND:
             luaL_error(L, "%d:key not found", ESP_ERR_NOT_FOUND);break;
+        default:
+            luaL_error(L, "%d:nvs error", code);break;
     }
 }
 
