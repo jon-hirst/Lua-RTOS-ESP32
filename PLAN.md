@@ -1200,7 +1200,15 @@ DONE: Review all project code for silently discarded error codes — driver_erro
 
 Files changed: sys/sensors/us015.c, sys/sensors/ping28015.c, sys/sensors/dhtxx.c, sys/sensors/key_matrix_4_4.c, sys/drivers/spi.c, sys/drivers/st7735.c, sys/drivers/st7789.c, sys/drivers/ili9341.c, sys/drivers/pcd8544.c, sys/drivers/tm1637.c, sys/drivers/MCP23S17.c, sys/drivers/pca9xxx.c, sys/drivers/encoder.c, sys/drivers/owire.c, sys/drivers/pwm.c, sys/drivers/power_bus.c, sys/vfs/fat.c
 
-TODO: Review all project code for security vulnerabilities — path traversal in file open calls using user-supplied strings, command injection if any exec/system calls consume user data, and reflected user input in HTTP responses without escaping (XSS).
+DONE: Review all project code for security vulnerabilities — path traversal in file open calls using user-supplied strings, command injection if any exec/system calls consume user data, and reflected user input in HTTP responses without escaping (XSS).
+
+- PATH TRAVERSAL: No fixable vulnerabilities. `filepath_merge()` (httpsrv.c:709) already normalises ".." sequences before any filesystem operation. `io.open`, `os.remove`, `os.rename` in the Lua standard library are by design — Lua is trusted scripting code on the device.
+- COMMAND INJECTION: No fixable vulnerabilities. `os.system` and `io.popen` in the Lua standard library are by design. ESP-IDF has no shell, so `system()` is a stub.
+- XSS — FIXED (http/httpsrv.c):
+  - F1 (httpsrv.c:376): Added `html_escape(dst, dst_size, src)` helper that encodes `<`, `>`, `&`, `"` to their HTML entity equivalents, stopping before the buffer fills.
+  - F2 (httpsrv.c:833-838): `list_dir()` — `request->path` (from raw HTTP request) was embedded in `<TITLE>` and `<H4>` without escaping. Fixed: malloc an escaped copy via `html_escape` and use it in both `chunk()` calls.
+  - F3 (httpsrv.c:862-864): `list_dir()` — `de->d_name` (filesystem entry) was embedded in `<A HREF>` and link text without escaping. Fixed: `html_escape` into a 1531-byte stack buffer before the two `chunk()` calls.
+  - F4 (httpsrv.c:539-541, 604-606, 679-681): Three `send_error()` call sites where `lua_tostring()` (Lua runtime error, may include user-influenced content such as file paths) was embedded raw in the HTML error body. Fixed: escape into a stack buffer with `html_escape` before `snprintf` into the `error` malloc buffer. Also corrected the `snprintf` size from `LUA_INTERPRETER_ERROR_LENGTH` to `LUA_INTERPRETER_ERROR_LENGTH+1` to use the full buffer correctly.
 
 TODO: Review all project code for unchecked user-supplied lengths — Content-Length, packet length fields, or any length arriving from the network or Lua caller used directly in malloc, memcpy, or read without validation against a maximum.
 

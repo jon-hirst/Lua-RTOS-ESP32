@@ -373,6 +373,24 @@ static void chunk(http_request_handle *request, const char *fmt, ...) {
 	}
 }
 
+static void html_escape(char *dst, size_t dst_size, const char *src) {
+	size_t pos = 0;
+	if (!src || dst_size == 0) {
+		if (dst_size) dst[0] = '\0';
+		return;
+	}
+	for (; *src && pos + 7 < dst_size; src++) {
+		switch (*src) {
+			case '<': memcpy(dst+pos, "&lt;",   4); pos += 4; break;
+			case '>': memcpy(dst+pos, "&gt;",   4); pos += 4; break;
+			case '&': memcpy(dst+pos, "&amp;",  5); pos += 5; break;
+			case '"': memcpy(dst+pos, "&quot;", 6); pos += 6; break;
+			default:  dst[pos++] = *src;            break;
+		}
+	}
+	dst[pos] = '\0';
+}
+
 int http_status(lua_State* L) {
 
 	int code = luaL_optinteger( L, 1, 200 );
@@ -518,8 +536,9 @@ static int http_execute_lua (lua_State *L) {
 				if (LUA_OK != ret) {
 					char* error = (char *)malloc(LUA_INTERPRETER_ERROR_LENGTH+1);
 					if (error) {
-						*error = '\0';
-						snprintf(error, LUA_INTERPRETER_ERROR_LENGTH, "FATAL ERROR: %s", lua_tostring(L, -1));
+						char esc[LUA_INTERPRETER_ERROR_LENGTH * 6 + 1];
+						html_escape(esc, sizeof(esc), lua_tostring(L, -1));
+						snprintf(error, LUA_INTERPRETER_ERROR_LENGTH+1, "FATAL ERROR: %s", esc);
 						send_error(request, 500, "Internal Server Error", NULL, error);
 						free(error);
 					}
@@ -582,10 +601,11 @@ static int http_execute_lua (lua_State *L) {
 						else {
 							char* error = (char *)malloc(LUA_INTERPRETER_ERROR_LENGTH+1);
 							if (error) {
-								*error = '\0';
-								snprintf(error, LUA_INTERPRETER_ERROR_LENGTH, "FATAL ERROR: %s", lua_tostring(L, -1));
+								char esc[LUA_INTERPRETER_ERROR_LENGTH * 6 + 1];
+								html_escape(esc, sizeof(esc), lua_tostring(L, -1));
+								snprintf(error, LUA_INTERPRETER_ERROR_LENGTH+1, "FATAL ERROR: %s", esc);
 								send_error(request, 500, "Internal Server Error", NULL, error);
-								syslog(LOG_ERR, "http: couldn't execute lua script, %s\n", error);
+								syslog(LOG_ERR, "http: couldn't execute lua script, %s\n", lua_tostring(L, -1));
 								free(error);
 							}
 							else {
@@ -656,10 +676,11 @@ void send_file(http_request_handle *request, char *path, struct stat *statbuf) {
 			else {
 				char* error = (char *)malloc(LUA_INTERPRETER_ERROR_LENGTH+1);
 				if (error) {
-					*error = '\0';
-					snprintf(error, LUA_INTERPRETER_ERROR_LENGTH, "FATAL ERROR: %s", lua_tostring(L, -2));
+					char esc[LUA_INTERPRETER_ERROR_LENGTH * 6 + 1];
+					html_escape(esc, sizeof(esc), lua_tostring(L, -2));
+					snprintf(error, LUA_INTERPRETER_ERROR_LENGTH+1, "FATAL ERROR: %s", esc);
 					send_error(request, 500, "Internal Server Error", NULL, error);
-					syslog(LOG_ERR, "http: couldn't execute http_callback, %s\n", error);
+					syslog(LOG_ERR, "http: couldn't execute http_callback, %s\n", lua_tostring(L, -2));
 					free(error);
 				}
 				else {
@@ -806,10 +827,15 @@ int filepath_merge(char *newpath, const char *rootpath, const char *reqpath, con
 static void list_dir(http_request_handle *request, char *pathbuf, struct stat *statbuf, int len) {
 	DIR *dir;
 	struct dirent *de;
+	char ename[1531]; /* 255 d_name chars × max 6 bytes per HTML entity + NUL */
 
 	send_headers(request, 200, "OK", NULL, "text/html", -1);
-	chunk(request, "<HTML><HEAD><TITLE>Index of %s</TITLE></HEAD><BODY>", request->path);
-	chunk(request, "<H4>Index of %s</H4>", request->path);
+	size_t pathesclen = strlen(request->path) * 6 + 1;
+	char *epath = malloc(pathesclen);
+	if (epath) html_escape(epath, pathesclen, request->path);
+	chunk(request, "<HTML><HEAD><TITLE>Index of %s</TITLE></HEAD><BODY>", epath ? epath : "");
+	chunk(request, "<H4>Index of %s</H4>", epath ? epath : "");
+	free(epath);
 
 	chunk(request, "<TABLE>");
 	chunk(request, "<TR>");
@@ -833,8 +859,9 @@ static void list_dir(http_request_handle *request, char *pathbuf, struct stat *s
 
 		chunk(request, "<TR>");
 		chunk(request, "<TD>");
-		chunk(request, "<A HREF=\"%s%s\">", de->d_name, S_ISDIR(statbuf->st_mode) ? "/" : "");
-		chunk(request, "%s%s", de->d_name, S_ISDIR(statbuf->st_mode) ? "/</A>" : "</A> ");
+		html_escape(ename, sizeof(ename), de->d_name);
+		chunk(request, "<A HREF=\"%s%s\">", ename, S_ISDIR(statbuf->st_mode) ? "/" : "");
+		chunk(request, "%s%s", ename, S_ISDIR(statbuf->st_mode) ? "/</A>" : "</A> ");
 		chunk(request, "</TD>");
 		chunk(request, "<TD style=\"text-align: right;\">");
 		if (!S_ISDIR(statbuf->st_mode)) {
