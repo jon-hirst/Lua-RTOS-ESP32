@@ -1131,7 +1131,7 @@ static bit_t decodeFrame (void) {
                             e_.info   = dlen < 4 ? 0 : os_rlsbf4(&d[dlen-4]),
                             e_.info2  = hdr + (dlen<<8)));
       norx:
-        syslog(LOG_DEBUG, "%lu: Invalid downlink, window=%s\n", (u4_t)os_getTime(), window);
+        syslog(LOG_DEBUG, "%lu: Invalid downlink, window=%s\n", (unsigned long)os_getTime(), window);
 
         LMIC.dataLen = 0;
         return 0;
@@ -1414,7 +1414,7 @@ static bit_t decodeFrame (void) {
         LMIC.dataLen = pend-poff;
     }
 
-    syslog(LOG_DEBUG, "%lu: Received downlink, window=%s, port=%d, ack=%d\n", (u4_t)os_getTime(), window, port, ackup);
+    syslog(LOG_DEBUG, "%lu: Received downlink, window=%s, port=%d, ack=%d\n", (unsigned long)os_getTime(), window, port, ackup);
     (void)window;
     return 1;
 }
@@ -1583,7 +1583,7 @@ static bit_t processJoinAccept (void) {
             u4_t freq = convFreq(&LMIC.frame[dlen]);
             if( freq ) {
                 LMIC_setupChannel(chidx, freq, 0, -1);
-                syslog(LOG_DEBUG, "%lu: Setup channel, idx=%d, freq=%lu\n", (u4_t)os_getTime(), chidx, (unsigned long)freq);
+                syslog(LOG_DEBUG, "%lu: Setup channel, idx=%d, freq=%lu\n", (unsigned long)os_getTime(), chidx, (unsigned long)freq);
             }
         }
     }
@@ -2118,7 +2118,7 @@ static void startRxPing (xref2osjob_t osjob) {
 
 // Decide what to do next for the MAC layer of a device
 static void engineUpdate (void) {
-    syslog(LOG_DEBUG, "%lu: engineUpdate, opmode=0x%x (%s)\n", (u4_t)os_getTime(), LMIC.opmode, debug_opmode(LMIC.opmode));
+    syslog(LOG_DEBUG, "%lu: engineUpdate, opmode=0x%x (%s)\n", (unsigned long)os_getTime(), LMIC.opmode, debug_opmode(LMIC.opmode));
 
     // Check for ongoing state: scan or TX/RX transaction
     if( (LMIC.opmode & (OP_SCAN|OP_TXRXPEND|OP_SHUTDOWN)) != 0 )

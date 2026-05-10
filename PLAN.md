@@ -923,7 +923,11 @@ DONE: Review all project code for wrong flag constants — passing a constant fr
 - F5 (sys/vfs/lfs.c:178): flags == O_RDONLY (equality) fails when combined with O_CREAT or other flags.
   Changed to (flags & O_ACCMODE) == O_RDONLY.
 
-TODO: Review all project code for wrong printf/syslog format specifiers — %s used for int, %d used for pointer, or other type mismatches between format string and argument.
+DONE: Review all project code for wrong printf/syslog format specifiers — %s used for int, %d used for pointer, or other type mismatches between format string and argument.
+
+- The previously known lmic_hal.c `%s` for int `line` had already been fixed to `%d`.
+- F1 (lmic.c:1134,1417,1586,2121; radio.c:518,595,600; lmic_hal.c:375): `%lu` used with `(u4_t)os_getTime()` (uint32_t) and `LMIC.freq` (u4_t = uint32_t). `%lu` expects `unsigned long`; on Xtensa 32-bit both are 32-bit so it works in practice, but is undefined behaviour per C11 §7.21.6.1p9. All eight sites changed to `(unsigned long)os_getTime()` and `(unsigned long)LMIC.freq` so the argument type exactly matches the specifier.
+- No other format specifier mismatches found: gpio_name() (uint8_t) with %d is correct (uint8_t promoted to int), strerror(errno) with %s is correct, all other integer/string pairings checked across sys/drivers, sys/vfs, lua/modules, lora, mqtt, gdisplay, FabGL, and eth_enc424j600.
 
 TODO: Review all project code for sizeof(pointer) used instead of buffer size — sizeof applied to a pointer variable rather than the buffer it points to, producing 4 or 8 instead of the allocation size.
 
