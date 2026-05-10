@@ -1066,7 +1066,31 @@ DONE: Review all project code for wrong loop counter type — signed int used as
 
 No genuine bugs found. All uint8_t/uint16_t loop counters iterate over values well within their type range (CAN_NUM_FILTERS=10, MAX_ONEWIRE_SENSORS=8, MAX_CHANNELS=16, etc.). The only signed/unsigned comparison is int i vs size_t in rmt.c (lines 631, 653, 686, 774), but RMT pulse counts are hardware-bounded (< 64 on ESP32). Decrement loops on uint8_t use `> 0` (not `>= 0`), so none are infinite loops. All u1_t (uint8_t) counters in lmic.c/radio.c iterate over small fixed values ≤ 64.
 
-TODO: Review all project code for deadlock from lock ordering violations — code that acquires multiple mutexes in inconsistent order across different call paths, risking classic ABBA deadlock.
+DONE: Review all project code for deadlock from lock ordering violations — code that acquires multiple mutexes in inconsistent order across different call paths, risking classic ABBA deadlock.
+
+No genuine ABBA deadlock bugs found. The lock ordering across all subsystems is consistent:
+
+- driver_mtx (driver.c) vs per-driver mutexes (spi_lock, i2c_lock etc): driver_lock() and
+  driver_unlock() acquire and release driver_mtx atomically within the function — they never
+  hold driver_mtx simultaneously with a caller's per-driver mutex.
+
+- RMT global mtx vs per-channel devices[ch].mtx: setup/unsetup hold global mtx only;
+  rx/tx hold per-channel mtx only. Never both at once.
+
+- LFS ctx->lock vs list->mutex: lstadd/lstget release list->mutex before ctx->lock is
+  taken; lstremove inside ctx->lock is always in the same direction. No reverse ordering
+  exists since list callbacks never call back into VFS.
+
+- thread_mtx vs lua_mutex: _pthread_cleanup_pop() holds thread_mtx while calling the
+  Lua thread cleanup handler which calls lua_lock(). No code path in the Lua module layer
+  simultaneously holds lua_mutex and waits for thread_mtx (pthread_create does not use
+  thread_mtx; _pthread_join releases thread_mtx before blocking; _pthread_stop/_pthread_free
+  do not use thread_mtx). The ordering is therefore always one-directional at runtime.
+
+One design concern noted (not a current bug): cleanup handlers are called under thread_mtx in
+_pthread_cleanup_pop() and _pthread_cleanup(). If any future cleanup handler calls a pthread
+API that acquires thread_mtx (e.g. pthread_cleanup_push), it would self-deadlock. The current
+Lua cleanup handler only acquires lua_mutex (a separate recursive mutex) so this is safe today.
 
 TODO: Review all project code for double-checked locking without memory barriers — patterns where a shared flag or pointer is read outside a lock to avoid locking cost, then re-checked inside, without appropriate volatile or atomic semantics.
 
