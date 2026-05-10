@@ -173,9 +173,10 @@ void strbuf_resize(strbuf_t *s, int len)
     }
 
     s->size = newsize;
-    s->buf = (char *)realloc(s->buf, s->size);
-    if (!s->buf)
+    char *newbuf = (char *)realloc(s->buf, s->size);
+    if (!newbuf)
         die("Out of memory");
+    s->buf = newbuf;
     s->reallocs++;
 }
 

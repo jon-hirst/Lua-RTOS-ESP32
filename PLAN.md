@@ -978,7 +978,16 @@ DONE: Review all project code for inverted bounds checks — conditions where th
   row past the edge. ili9341 inherits this fix (it reuses st7735_addr_window).
 - F3 (st7789.c:208): same `>` → `>=` fix in st7789_addr_window for the same reason.
 
-TODO: Review all project code for realloc result stored directly into the source pointer — if realloc returns NULL the original allocation is lost, causing a memory leak before the null-pointer crash.
+DONE: Review all project code for realloc result stored directly into the source pointer — if realloc returns NULL the original allocation is lost, causing a memory leak before the null-pointer crash.
+
+- F1 (strbuf.c:176): `s->buf = realloc(s->buf, s->size)` — if realloc returns NULL the original buffer
+  is lost before die("Out of memory") terminates. Fixed with temp pointer: char *newbuf = realloc(...);
+  if (!newbuf) die(...); s->buf = newbuf;
+- F2 (fabutils.cpp:465-466): `m_items = realloc32(m_items, ...)` and `m_selMap = realloc32(m_selMap, ...)`
+  — if realloc32 returns NULL, NULL is stored into the member pointer, crashing the next array access in
+  insert()/set(). The old allocation is preserved by realloc32 but becomes inaccessible (leaked). Fixed
+  with temp pointers and early return with m_allocated reverted to oldAllocated on either failure, keeping
+  the struct consistent at its prior capacity.
 
 TODO: Review all project code for shift-count undefined behaviour — left or right shifts where the shift amount can equal or exceed the width of the integer type.
 

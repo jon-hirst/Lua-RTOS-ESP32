@@ -454,6 +454,7 @@ void StringList::copySelectionMapFrom(StringList const & src)
 void StringList::checkAllocatedSpace(int requiredItems)
 {
   if (m_allocated < requiredItems) {
+    int oldAllocated = m_allocated;
     if (m_allocated == 0) {
       // first time allocates exact space
       m_allocated = requiredItems;
@@ -462,8 +463,12 @@ void StringList::checkAllocatedSpace(int requiredItems)
       while (m_allocated < requiredItems)
         m_allocated *= 2;
     }
-    m_items  = (char const**) realloc32(m_items, m_allocated * sizeof(char const *));
-    m_selMap = (uint32_t*) realloc32(m_selMap, (31 + m_allocated) / 32 * sizeof(uint32_t));
+    char const **newItems = (char const**) realloc32(m_items, m_allocated * sizeof(char const *));
+    if (!newItems) { m_allocated = oldAllocated; return; }
+    m_items = newItems;
+    uint32_t *newSelMap = (uint32_t*) realloc32(m_selMap, (31 + m_allocated) / 32 * sizeof(uint32_t));
+    if (!newSelMap) { m_allocated = oldAllocated; return; }
+    m_selMap = newSelMap;
   }
 }
 
