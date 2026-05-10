@@ -18,6 +18,8 @@ When Claude finishes a step it must change DOING: the start of the line into DON
 
 When a step is finished Claude must add a description of the work it carried below the DONE: line.
 
+Claude must never commit anything to git.
+
 The source code for the Lua langage is in the directory ./lua/src.
 The test suite for the Lua language is in the directory ./lua/tests.
 The source code for the FreeRTOS operating system is in the directory /home/jon/esp-idf/components/freertos.
