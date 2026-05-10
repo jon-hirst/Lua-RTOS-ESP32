@@ -499,11 +499,11 @@ static int lthread_list(lua_State *L) {
 		char press;
 
 		int flags = fcntl(fileno(stdin), F_GETFL, 0);
-		fcntl(fileno(stdin), F_SETFL, flags | O_NONBLOCK);
+		(void)fcntl(fileno(stdin), F_SETFL, flags | O_NONBLOCK);
 
 		if (read(fileno(stdin), &press, 1) == 1) {
 			if ((press == 'q') || (press == 'Q')) {
-				fcntl(fileno(stdin), F_SETFL, flags);
+				(void)fcntl(fileno(stdin), F_SETFL, flags);
 				console_show_cursor();
 				printf("\r\n");
 
@@ -511,7 +511,7 @@ static int lthread_list(lua_State *L) {
 			}
 		}
 
-		fcntl(fileno(stdin), F_SETFL, flags);
+		(void)fcntl(fileno(stdin), F_SETFL, flags);
 
 		usleep(500 * 1000);
 		goto monitor_loop;

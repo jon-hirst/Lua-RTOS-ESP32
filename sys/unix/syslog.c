@@ -214,7 +214,7 @@ vsyslog(pri, fmt, ap)
 #if CONFIG_LUA_RTOS_USE_RSYSLOG
 	if (0 != logSock) {
 		LOCK_TCPIP_CORE()
-		sendto(logSock,tbuf,cnt,0,(struct sockaddr *)&logAddr,sizeof(logAddr));
+		(void)sendto(logSock,tbuf,cnt,0,(struct sockaddr *)&logAddr,sizeof(logAddr));
 		UNLOCK_TCPIP_CORE()
 	}
 #endif
@@ -231,7 +231,7 @@ static int syslog_logging_vprintf( const char *str, va_list l ) {
 
 		if (0 != logSock) {
 			LOCK_TCPIP_CORE()
-			sendto(logSock,tbuf,len,0,(struct sockaddr *)&logAddr,sizeof(logAddr));
+			(void)sendto(logSock,tbuf,len,0,(struct sockaddr *)&logAddr,sizeof(logAddr));
 			UNLOCK_TCPIP_CORE()
 		}
 
@@ -286,11 +286,14 @@ static void reconnect_syslog() {
 			if (logAddr.sin6_port != 0) {
 				logSock = socket(AF_INET, SOCK_DGRAM, 0);
 				if (0 != logSock) {
-					fcntl(logSock, F_SETFL, O_NONBLOCK);
-					int reuse = 1;
-					setsockopt(logSock,SOL_SOCKET,SO_REUSEADDR,(void *)&reuse,sizeof(reuse));
-
-					esp_log_set_vprintf(syslog_logging_vprintf);
+					if (fcntl(logSock, F_SETFL, O_NONBLOCK) < 0) {
+						close(logSock);
+						logSock = 0;
+					} else {
+						int reuse = 1;
+						setsockopt(logSock,SOL_SOCKET,SO_REUSEADDR,(void *)&reuse,sizeof(reuse));
+						esp_log_set_vprintf(syslog_logging_vprintf);
+					}
 				}
 			}
 		}

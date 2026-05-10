@@ -1222,10 +1222,10 @@ static void *http_thread(void *arg) {
 			return NULL;
 		}
 
-		listen(*config->server, 5);
-		LWIP_ASSERT("httpd_init: listen failed", *config->server >= 0);
-		if(0 > *config->server) {
+		rc = listen(*config->server, 5);
+		if(0 != rc) {
 			syslog(LOG_ERR, "http: couldn't listen on port %d\n", config->port);
+			close(*config->server);
 			return NULL;
 		}
 

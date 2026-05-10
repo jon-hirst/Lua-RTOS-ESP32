@@ -1183,7 +1183,16 @@ No faults found. Reviewed all C/C++ source files under sys/drivers, sys/vfs, sys
 - Inclusion checks (err == IO_DONE || err == IO_CLOSED) use || correctly.
 - The spiffs_check.c pattern res <= _SPIFFS_ERR_CHECK_FIRST && res > _SPIFFS_ERR_CHECK_LAST is correct because FIRST=-10051 > LAST=-10054 numerically, so the && tests the open interval (LAST, FIRST].
 
-TODO: Review all project code for unchecked return values — calls to system functions (open, read, write, ioctl, send, recv, connect, bind, listen) where the return value is ignored and execution continues as if the call succeeded.
+DONE: Review all project code for unchecked return values — calls to system functions (open, read, write, ioctl, send, recv, connect, bind, listen) where the return value is ignored and execution continues as if the call succeeded.
+
+- F1 (telnetsrv.c:282): listen() return value was not captured; the LWIP_ASSERT and subsequent if checked *config->server (the socket fd, always ≥ 0 at that point) instead of the listen() result, so a listen() failure was invisible. Fixed: rc = listen(...); if (0 != rc) { syslog+close+return NULL }.
+- F2 (httpsrv.c:1225): same incorrect pattern as F1. Fixed identically.
+- F3 (syslog.c:289): fcntl(logSock, F_SETFL, O_NONBLOCK) return ignored; if it failed the UDP syslog socket would remain blocking, potentially stalling the log callback. Fixed: on failure, close(logSock) and set logSock=0 so subsequent sendto calls are skipped.
+- F4 (telnetsrv.c:455): send() with MSG_DONTWAIT used as a statement; intentional fire-and-forget (non-blocking write to telnet client). Added (void) cast to make discard explicit.
+- F5 (syslog.c:217,234): sendto() results ignored for UDP syslog transmission. UDP syslog is best-effort; added (void) casts to make intentional discard explicit.
+- F6 (console.c:91,166): fcntl() on stdin to temporarily set/restore O_NONBLOCK; added (void) casts.
+- F7 (thread.c:502,506,514): fcntl() on stdin for non-blocking key poll; added (void) casts.
+- F8 (usocket.c:365,374): fcntl() in socket_setblocking/setnonblocking; standard LuaSocket pattern, added (void) casts.
 
 TODO: Review all project code for silently discarded error codes — driver_error_t or esp_err_t return values assigned to a local variable but never tested, or cast to void without justification.
 

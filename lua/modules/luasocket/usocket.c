@@ -362,7 +362,7 @@ int socket_read(p_socket ps, char *data, size_t count, size_t *got, p_timeout tm
 void socket_setblocking(p_socket ps) {
     int flags = fcntl(*ps, F_GETFL, 0);
     flags &= (~(O_NONBLOCK));
-    fcntl(*ps, F_SETFL, flags);
+    (void)fcntl(*ps, F_SETFL, flags);
 }
 
 /*-------------------------------------------------------------------------*\
@@ -371,7 +371,7 @@ void socket_setblocking(p_socket ps) {
 void socket_setnonblocking(p_socket ps) {
     int flags = fcntl(*ps, F_GETFL, 0);
     flags |= O_NONBLOCK;
-    fcntl(*ps, F_SETFL, flags);
+    (void)fcntl(*ps, F_SETFL, flags);
 }
 
 /*-------------------------------------------------------------------------*\

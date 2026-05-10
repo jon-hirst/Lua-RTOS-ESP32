@@ -279,10 +279,10 @@ static void *telnet_thread(void *arg) {
       return NULL;
     }
 
-    listen(*config->server, 5);
-    LWIP_ASSERT("telnetd_init: listen failed", *config->server >= 0);
-    if(0 > *config->server) {
+    rc = listen(*config->server, 5);
+    if(0 != rc) {
       syslog(LOG_ERR, "couldn't listen on port %d\n", config->port);
+      close(*config->server);
       return NULL;
     }
 
@@ -452,7 +452,7 @@ int telnet_print(lua_State* L) {
 	for (int i=1; i <= nargs; i++) {
 		if (lua_isstring(L, i)) {
 			snprintf(request->outbuf, TELNET_BUFF_SIZE, "%s", lua_tostring(L, i));
-		  send(request->socket, request->outbuf, strnlen(request->outbuf, TELNET_BUFF_SIZE), MSG_DONTWAIT);
+		  (void)send(request->socket, request->outbuf, strnlen(request->outbuf, TELNET_BUFF_SIZE), MSG_DONTWAIT);
 		}
 		else {
 			/* non-strings handling not reqired */

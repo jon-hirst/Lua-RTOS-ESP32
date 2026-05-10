@@ -88,7 +88,7 @@ void console_size(int *rows, int *cols) {
     printf("\033[u");
 
 	int flags = fcntl(fileno(stdin), F_GETFL, 0);
-	fcntl(fileno(stdin), F_SETFL, flags | O_NONBLOCK);
+	(void)fcntl(fileno(stdin), F_SETFL, flags | O_NONBLOCK);
 
     // Skip scape sequence
     gettimeofday(&start, NULL);
@@ -163,7 +163,7 @@ void console_size(int *rows, int *cols) {
 		}
     }
 
-    fcntl(fileno(stdin), F_SETFL, flags);
+    (void)fcntl(fileno(stdin), F_SETFL, flags);
 
     *cbuf = '\0';
 
