@@ -4,6 +4,7 @@
 \*=========================================================================*/
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "auxiliar.h"
 
@@ -54,7 +55,11 @@ int auxiliar_tostring(lua_State *L) {
     lua_pushstring(L, "class");
     lua_gettable(L, -2);
     if (!lua_isstring(L, -1)) goto error;
-    sprintf(buf, "%p", lua_touserdata(L, 1));
+    /* Hash the pointer so the address is not exposed to scripts. */
+    uintptr_t addr = (uintptr_t)lua_touserdata(L, 1);
+    uint32_t h = (uint32_t)(addr ^ (addr >> 16) ^ (addr >> 32));
+    h ^= h >> 13; h *= 0x45d9f3bu; h ^= h >> 15;
+    sprintf(buf, "%08X", h);
     lua_pushfstring(L, "%s: %s", lua_tostring(L, -1), buf);
     return 1;
 error:

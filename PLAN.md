@@ -1217,7 +1217,12 @@ DONE: Review all project code for unchecked user-supplied lengths — Content-Le
 - F3 (mqtt/MQTTPacket.c): MQTT `remaining_length` can be up to 268 MB (4-byte variable-length encoding). A malicious broker sends a huge remaining_length, `Socket_getdata` calls `malloc(268MB)` which fails on ESP32, leading to the F2 crash path. Fixed: added `#define MQTT_MAX_REMAINING_LENGTH 32768u` and a guard that sets `*error = SOCKET_ERROR` and exits if `remaining_length` exceeds that limit.
 - F4 (sys/drivers/net_http.c:279): `response->size = atoi(content_length)` where `response->size` is `uint32_t`. If `atoi` returns a negative value (invalid Content-Length header), the implicit conversion wraps to a large uint32_t (e.g., UINT32_MAX). Fixed: `int cl = atoi(content_length); response->size = (cl > 0) ? (uint32_t)cl : 0;` to prevent sign-extension wrapping.
 
-TODO: Review all project code for information leakage — error messages or HTTP responses that include internal file paths, stack addresses, heap addresses, or other implementation details useful to an attacker.
+DONE: Review all project code for information leakage — error messages or HTTP responses that include internal file paths, stack addresses, heap addresses, or other implementation details useful to an attacker.
+
+- F1 (httpsrv.c:536-547): `luaL_loadfile` failure sent the raw Lua error string (e.g. `cannot open /spiffs/http/page.luap: No such file or directory`) in the HTTP 500 body, exposing the internal SPIFFS filesystem path. Fixed: log full error to syslog, send generic `"FATAL ERROR occurred"` to client; also removed now-unnecessary malloc/html_escape path.
+- F2 (httpsrv.c:597-614): `lua_pcall` failure sent the Lua runtime error (e.g. `/spiffs/http/page.luap:5: attempt to index nil`) in the HTTP 500 body. The syslog call already existed, so Fixed: drop the malloc/html_escape/send path and always send only the generic message.
+- F3 (httpsrv.c:672-689): Same pattern for the `luaS_callback_call` failure path. Fixed same way as F2.
+- F4 (luasocket/auxiliar.c:57): `auxiliar_tostring` formatted the raw userdata pointer with `%p`, so `tostring(socket)` returned a heap address (e.g. `"TCP socket: 0x3fc9a1b0"`), enabling ASLR bypass. Fixed: replace `%p` with a non-reversible XOR-fold + multiply hash printed as `%08X`.
 
 TODO: Review all project code for strict aliasing violations — type-punning through incompatible pointer casts (e.g. uint8_t* cast to uint32_t* to read multi-byte values) that the compiler may optimise incorrectly under strict-aliasing rules.
 

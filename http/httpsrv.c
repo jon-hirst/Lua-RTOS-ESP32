@@ -534,17 +534,8 @@ static int http_execute_lua (lua_State *L) {
 				lua_unlock(L);
 
 				if (LUA_OK != ret) {
-					char* error = (char *)malloc(LUA_INTERPRETER_ERROR_LENGTH+1);
-					if (error) {
-						char esc[LUA_INTERPRETER_ERROR_LENGTH * 6 + 1];
-						html_escape(esc, sizeof(esc), lua_tostring(L, -1));
-						snprintf(error, LUA_INTERPRETER_ERROR_LENGTH+1, "FATAL ERROR: %s", esc);
-						send_error(request, 500, "Internal Server Error", NULL, error);
-						free(error);
-					}
-					else {
-						send_error(request, 500, "Internal Server Error", NULL, "FATAL ERROR occurred");
-					}
+					syslog(LOG_ERR, "http: lua load error: %s\n", lua_tostring(L, -1));
+					send_error(request, 500, "Internal Server Error", NULL, "FATAL ERROR occurred");
 				}
 				else {
 
@@ -599,19 +590,9 @@ static int http_execute_lua (lua_State *L) {
 							syslog(LOG_ERR, "http: couldn't execute lua script, error %i\n", rc);
 						}
 						else {
-							char* error = (char *)malloc(LUA_INTERPRETER_ERROR_LENGTH+1);
-							if (error) {
-								char esc[LUA_INTERPRETER_ERROR_LENGTH * 6 + 1];
-								html_escape(esc, sizeof(esc), lua_tostring(L, -1));
-								snprintf(error, LUA_INTERPRETER_ERROR_LENGTH+1, "FATAL ERROR: %s", esc);
-								send_error(request, 500, "Internal Server Error", NULL, error);
-								syslog(LOG_ERR, "http: couldn't execute lua script, %s\n", lua_tostring(L, -1));
-								free(error);
-							}
-							else {
-								send_error(request, 500, "Internal Server Error", NULL, "FATAL ERROR occurred");
-							}
+							syslog(LOG_ERR, "http: couldn't execute lua script, %s\n", lua_tostring(L, -1));
 						}
+						send_error(request, 500, "Internal Server Error", NULL, "FATAL ERROR occurred");
 					}
 
 					lua_lock(L);
@@ -674,19 +655,9 @@ void send_file(http_request_handle *request, char *path, struct stat *statbuf) {
 				syslog(LOG_ERR, "http: couldn't execute http_callback, error %i\n", rc);
 			}
 			else {
-				char* error = (char *)malloc(LUA_INTERPRETER_ERROR_LENGTH+1);
-				if (error) {
-					char esc[LUA_INTERPRETER_ERROR_LENGTH * 6 + 1];
-					html_escape(esc, sizeof(esc), lua_tostring(L, -2));
-					snprintf(error, LUA_INTERPRETER_ERROR_LENGTH+1, "FATAL ERROR: %s", esc);
-					send_error(request, 500, "Internal Server Error", NULL, error);
-					syslog(LOG_ERR, "http: couldn't execute http_callback, %s\n", lua_tostring(L, -2));
-					free(error);
-				}
-				else {
-					send_error(request, 500, "Internal Server Error", NULL, "FATAL ERROR occurred");
-				}
+				syslog(LOG_ERR, "http: couldn't execute http_callback, %s\n", lua_tostring(L, -2));
 			}
+			send_error(request, 500, "Internal Server Error", NULL, "FATAL ERROR occurred");
 		}
 		//NOTE: no need to "clean up" the stack here!
 	} else {
