@@ -129,6 +129,13 @@ void* MQTTPacket_Factory(networkHandles* net, int* error)
 	if ((*error = MQTTPacket_decode(net, &remaining_length)) != TCPSOCKET_COMPLETE)
 		goto exit; /* packet not read, *error indicates whether SOCKET_ERROR occurred */
 
+#define MQTT_MAX_REMAINING_LENGTH 32768u /* 32 KB: reject packets that would exhaust embedded heap */
+	if (remaining_length > MQTT_MAX_REMAINING_LENGTH)
+	{
+		*error = SOCKET_ERROR;
+		goto exit;
+	}
+
 	/* now read the rest, the variable header and payload */
 #if defined(OPENSSL)
 	data = (net->ssl) ? SSLSocket_getdata(net->ssl, net->socket, remaining_length, &actual_len) : 

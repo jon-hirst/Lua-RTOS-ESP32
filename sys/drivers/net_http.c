@@ -276,7 +276,8 @@ driver_error_t *net_http_get(net_http_client_t *client, const char *resource, co
                 } else if (strcmp(header,"Content-Length") == 0) {
                     content_length = strtok(NULL, "");
                     content_length++;
-                    response->size = atoi(content_length);
+                    int cl = atoi(content_length);
+                    response->size = (cl > 0) ? (uint32_t)cl : 0;
                 } else if (strcmp(header,"Connection") == 0) {
                 } else if (strcmp(header,"X-Powered-By") == 0) {
                 } else if (strcmp(header,"Content-Description") == 0) {

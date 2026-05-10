@@ -187,14 +187,8 @@ char* SocketBuffer_getQueuedData(int socket, size_t bytes, size_t* actual_len)
 		if (queue->datalen > 0)
 		{
 			void* newmem = malloc(bytes);
-#if __XTENSA__
-      if (newmem) {
-#endif
+			if (!newmem) return NULL;
 			memcpy(newmem, queue->buf, queue->datalen);
-#if __XTENSA__
-      }
-#endif
-
 			free(queue->buf);
 			queue->buf = newmem;
 		}

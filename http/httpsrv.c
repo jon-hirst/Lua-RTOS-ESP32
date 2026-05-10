@@ -1057,8 +1057,8 @@ static int process(http_request_handle *request) {
 						contentlen = strtok_r(NULL, "\r", &save_ptr); //the actual content length
 						if (contentlen) {
 							while(*contentlen==' ') contentlen++; //skip any spaces after the colon
-							contentlength = atoi(contentlen)+1;
-							if (contentlength > HTTP_BUFF_SIZE) contentlength = HTTP_BUFF_SIZE;
+							int clen = atoi(contentlen);
+							contentlength = (clen > 0 && clen < HTTP_BUFF_SIZE) ? clen + 1 : HTTP_BUFF_SIZE;
 						}
 					}
 				}
