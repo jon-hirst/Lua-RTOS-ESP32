@@ -1053,7 +1053,14 @@ The rmt.c `int8_t channel` using -1 as a sentinel and the encoder.c `int8_t dir`
 -1/0/1 are all correct. The qrcodegen int8_t tables with -1 sentinel at index 0 are safe since
 version=0 is never used. The Lua source casts to (unsigned char) before table lookups.
 
-TODO: Review all project code for truncation on assignment — values from wider types (int32_t, int64_t, size_t) silently narrowed when assigned to uint8_t/uint16_t/int16_t variables, especially in size or length calculations.
+DONE: Review all project code for truncation on assignment — values from wider types (int32_t, int64_t, size_t) silently narrowed when assigned to uint8_t/uint16_t/int16_t variables, especially in size or length calculations.
+
+- F1 (lfs.c:944): lfs_mkdir stored strlen(path) (size_t) into entry.d.nlen (uint8_t) with no length guard. A name component > 255 chars silently truncates nlen and corrupts the on-disk directory entry. Added `if (strlen(path) > LFS_NAME_MAX) return LFS_ERR_INVAL;` before the assignment; explicit (uint8_t) cast added.
+- F2 (lfs.c:1323): lfs_file_open same truncation on file creation. Same fix applied.
+- F3 (lfs.c:1973): lfs_rename stored strlen(newpath) (size_t) into newentry.d.nlen (uint8_t) with no guard. Same fix applied.
+- F4 (lora_lmic.c:585): `payload_len = strlen(data) / 2` stored a size_t/2 into uint8_t. For a hex string > 510 chars the division result wraps (e.g. 512-char string → 256 → 0), causing malloc(1) and hex_string_to_val with length 0 — payload sent as 0 bytes silently. Added early return `driver_error(LORA_DRIVER, LORA_ERR_INVALID_ARGUMENT, NULL)` when strlen(data) > 2*255; explicit (uint8_t) cast added.
+
+bluetooth.c:183 `uint16_t datalen = strlen(adv_data) / 2` was reviewed and is safe: an immediate `if (datalen > 30)` guard throws before the value is used.
 
 TODO: Review all project code for wrong loop counter type — signed int used as a loop counter over size_t or unsigned ranges, or uint8_t/uint16_t used where the count can exceed the type maximum.
 

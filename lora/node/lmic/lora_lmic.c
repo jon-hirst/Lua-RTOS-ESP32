@@ -582,9 +582,13 @@ driver_error_t *lora_tx(int cnf, int port, const char *data) {
         }
     }
 
-	payload_len = strlen(data) / 2;
+	if (strlen(data) > 2 * 255) {
+		mtx_unlock(&lora_mtx);
+		return driver_error(LORA_DRIVER, LORA_ERR_INVALID_ARGUMENT, NULL);
+	}
+	payload_len = (uint8_t)(strlen(data) / 2);
 
-	// Allocate buffer por payload	
+	// Allocate buffer por payload
 	payload = (uint8_t *)malloc(payload_len + 1);
 	if (!payload) {
 		mtx_unlock(&lora_mtx);

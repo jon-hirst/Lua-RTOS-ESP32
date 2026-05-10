@@ -938,10 +938,14 @@ int lfs_mkdir(lfs_t *lfs, const char *path) {
         return err;
     }
 
+    if (strlen(path) > LFS_NAME_MAX) {
+        return LFS_ERR_INVAL;
+    }
+
     entry.d.type = LFS_TYPE_DIR;
     entry.d.elen = sizeof(entry.d) - 4;
     entry.d.alen = 0;
-    entry.d.nlen = strlen(path);
+    entry.d.nlen = (uint8_t)strlen(path);
     entry.d.u.dir[0] = dir.pair[0];
     entry.d.u.dir[1] = dir.pair[1];
 
@@ -1317,10 +1321,14 @@ int lfs_file_opencfg(lfs_t *lfs, lfs_file_t *file,
         }
 
         // create entry to remember name
+        if (strlen(path) > LFS_NAME_MAX) {
+            return LFS_ERR_INVAL;
+        }
+
         entry.d.type = LFS_TYPE_REG;
         entry.d.elen = sizeof(entry.d) - 4;
         entry.d.alen = 0;
-        entry.d.nlen = strlen(path);
+        entry.d.nlen = (uint8_t)strlen(path);
         entry.d.u.file.head = 0xffffffff;
         entry.d.u.file.size = 0;
         err = lfs_dir_append(lfs, &cwd, &entry, path);
@@ -1967,10 +1975,14 @@ int lfs_rename(lfs_t *lfs, const char *oldpath, const char *newpath) {
     }
 
     // move to new location
+    if (strlen(newpath) > LFS_NAME_MAX) {
+        return LFS_ERR_INVAL;
+    }
+
     lfs_entry_t newentry = preventry;
     newentry.d = oldentry.d;
     newentry.d.type &= ~0x80;
-    newentry.d.nlen = strlen(newpath);
+    newentry.d.nlen = (uint8_t)strlen(newpath);
 
     if (prevexists) {
         err = lfs_dir_update(lfs, &newcwd, &newentry, newpath);
