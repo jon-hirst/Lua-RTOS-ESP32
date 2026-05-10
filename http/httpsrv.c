@@ -918,6 +918,13 @@ static int process(http_request_handle *request) {
 	request->path = strtok_r(NULL, " ", &save_ptr);
 	protocol = strtok_r(NULL, "\r", &save_ptr);
 
+	if(!request->method) {
+		send_error(request, 400, "Bad Request", NULL, "Could not parse request line.");
+		free(reqbuf);
+		free(pathbuf);
+		return 0;
+	}
+
 	if(!request->path) {
 		len = strlen(request->method)-1;
 		while(len>0 && (request->method[len]=='\r' || request->method[len]=='\n')) {
@@ -960,6 +967,7 @@ static int process(http_request_handle *request) {
 					save_ptr = NULL;
 					host = strtok_r(host, ":", &save_ptr); //Host:
 					host = strtok_r(NULL, "\r", &save_ptr); //the actual host
+					if (!host) continue;
 					while(*host==' ') host++; //skip any spaces after the colon
 
 					if (0 == strcasecmp(CAPTIVE_SERVER_NAME, host) ||
@@ -1019,9 +1027,11 @@ static int process(http_request_handle *request) {
 						save_ptr = NULL;
 						contentlen = strtok_r(contentlen, ":", &save_ptr); //Content-Length:
 						contentlen = strtok_r(NULL, "\r", &save_ptr); //the actual content length
-						while(*contentlen==' ') contentlen++; //skip any spaces after the colon
-						contentlength = atoi(contentlen)+1;
-					if (contentlength > HTTP_BUFF_SIZE) contentlength = HTTP_BUFF_SIZE;
+						if (contentlen) {
+							while(*contentlen==' ') contentlen++; //skip any spaces after the colon
+							contentlength = atoi(contentlen)+1;
+							if (contentlength > HTTP_BUFF_SIZE) contentlength = HTTP_BUFF_SIZE;
+						}
 					}
 				}
 			}

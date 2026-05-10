@@ -991,7 +991,12 @@ DONE: Review all project code for realloc result stored directly into the source
 
 DONE: Review all project code for shift-count undefined behaviour — left or right shifts where the shift amount can equal or exceed the width of the integer type.
 
-TODO: Review all project code for null pointer dereferences — pointer results from malloc/calloc/realloc, getenv, strtok, and similar functions used without NULL checks before dereferencing.
+DONE: Review all project code for null pointer dereferences — pointer results from malloc/calloc/realloc, getenv, strtok, and similar functions used without NULL checks before dereferencing.
+
+Three null-pointer dereferences found, all in http/httpsrv.c, all caused by strtok_r returning NULL on a malformed HTTP request with no NULL check before dereferencing:
+- F1 (httpsrv.c:921): strtok_r result for request->method not checked before strlen(request->method) call when request->path is also NULL. Added NULL guard that sends 400 Bad Request and returns.
+- F2 (httpsrv.c:963): strtok_r result for Host header value not checked before while(*host==' ') dereference. Added NULL guard with continue to skip to next header.
+- F3 (httpsrv.c:1022): strtok_r result for Content-Length header value not checked before while(*contentlen==' ') dereference. Wrapped the while/atoi block in if (contentlen) guard.
 
 TODO: Review all project code for buffer overflows and underflows — fixed-size buffers written to with unchecked lengths, including strcpy/strcat/sprintf/memcpy/read with caller-controlled sizes.
 
