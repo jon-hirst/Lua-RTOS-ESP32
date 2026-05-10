@@ -929,7 +929,19 @@ DONE: Review all project code for wrong printf/syslog format specifiers — %s u
 - F1 (lmic.c:1134,1417,1586,2121; radio.c:518,595,600; lmic_hal.c:375): `%lu` used with `(u4_t)os_getTime()` (uint32_t) and `LMIC.freq` (u4_t = uint32_t). `%lu` expects `unsigned long`; on Xtensa 32-bit both are 32-bit so it works in practice, but is undefined behaviour per C11 §7.21.6.1p9. All eight sites changed to `(unsigned long)os_getTime()` and `(unsigned long)LMIC.freq` so the argument type exactly matches the specifier.
 - No other format specifier mismatches found: gpio_name() (uint8_t) with %d is correct (uint8_t promoted to int), strerror(errno) with %s is correct, all other integer/string pairings checked across sys/drivers, sys/vfs, lua/modules, lora, mqtt, gdisplay, FabGL, and eth_enc424j600.
 
-TODO: Review all project code for sizeof(pointer) used instead of buffer size — sizeof applied to a pointer variable rather than the buffer it points to, producing 4 or 8 instead of the allocation size.
+DONE: Review all project code for sizeof(pointer) used instead of buffer size — sizeof applied to a pointer variable rather than the buffer it points to, producing 4 or 8 instead of the allocation size.
+
+No bugs found in core project files (sys/, lua/, lora/, http/, FabGL/, etc.) — all sizeof() calls in buffer operations target array variables or types, not pointer variables. Nine bugs found in the mqtt/ (Eclipse PAHO) library where sizeof(pointer) underreported list memory accounting:
+- F1 (SocketBuffer.c:374): sizeof(pw) → sizeof(*pw) in SocketBuffer_pendingWrite ListAppend
+- F2 (MQTTAsync.c:1484): sizeof(command) → sizeof(*command) in ListAppend (PUBLISH QoS0 interrupted path)
+- F3 (MQTTAsync.c:1533): sizeof(command) → sizeof(*command) in ListAppend (responses queue path)
+- F4 (MQTTAsync.c:2427): sizeof(qe) + sizeof(mm) → sizeof(*qe) + sizeof(*mm) in message queue ListAppend
+- F5 (MQTTAsync.c:2723): sizeof(conn) → sizeof(*conn) in MQTTAsync_connect addCommand
+- F6 (MQTTAsync.c:2770): sizeof(dis) → sizeof(*dis) in MQTTAsync_disconnect addCommand
+- F7 (MQTTAsync.c:2935): sizeof(sub) → sizeof(*sub) in MQTTAsync_subscribeMany addCommand
+- F8 (MQTTAsync.c:3013): sizeof(unsub) → sizeof(*unsub) in MQTTAsync_unsubscribeMany addCommand
+- F9 (MQTTAsync.c:3125): sizeof(pub) → sizeof(*pub) in MQTTAsync_send addCommand
+All nine sites used the 4-byte pointer size instead of the pointed-to struct size, causing the list's size accounting field (aList->size) to undercount total memory held by each list.
 
 TODO: Review all project code for sizeof(array) used instead of element count — sizeof(arr) used as a loop bound or guard instead of sizeof(arr)/sizeof(arr[0]).
 

@@ -371,7 +371,7 @@ void SocketBuffer_pendingWrite(int socket, int count, iobuf* iovecs, int* frees,
 		pw->iovecs[i] = iovecs[i];
 		pw->frees[i] = frees[i];
 	}
-	ListAppend(&writes, pw, sizeof(pw) + total);
+	ListAppend(&writes, pw, sizeof(*pw) + total);
 #if __XTENSA__
   }
 #endif

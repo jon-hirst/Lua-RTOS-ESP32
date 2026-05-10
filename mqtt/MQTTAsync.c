@@ -1481,7 +1481,7 @@ static int MQTTAsync_processCommand(void)
 			rc != SOCKET_ERROR && rc != MQTTASYNC_PERSISTENCE_ERROR)
 	{
 		if (rc == TCPSOCKET_INTERRUPTED)
-			ListAppend(command->client->responses, command, sizeof(command));
+			ListAppend(command->client->responses, command, sizeof(*command));
 		else
 			MQTTAsync_freeCommand(command);
 	}
@@ -1530,7 +1530,7 @@ static int MQTTAsync_processCommand(void)
 		}
 	}
 	else /* put the command into a waiting for response queue for each client, indexed by msgid */
-		ListAppend(command->client->responses, command, sizeof(command));
+		ListAppend(command->client->responses, command, sizeof(*command));
 
 exit:
 	MQTTAsync_unlock_mutex(mqttasync_mutex);
@@ -2424,7 +2424,7 @@ void Protocol_processPublication(Publish* publish, Clients* client)
 		qe->msg = mm;
 		qe->topicName = publish->topic;
 		qe->topicLen = publish->topiclen;
-		ListAppend(client->messageQueue, qe, sizeof(qe) + sizeof(mm) + mm->payloadlen + strlen(qe->topicName)+1);
+		ListAppend(client->messageQueue, qe, sizeof(*qe) + sizeof(*mm) + mm->payloadlen + strlen(qe->topicName)+1);
 #if !defined(NO_PERSISTENCE)
 		if (client->persistence)
 			MQTTPersistence_persistQueueEntry(client, (MQTTPersistence_qEntry*)qe);
@@ -2720,7 +2720,7 @@ int MQTTAsync_connect(MQTTAsync handle, const MQTTAsync_connectOptions* options)
 	}
 	conn->command.type = CONNECT;
 	conn->command.details.conn.currentURI = 0;
-	rc = MQTTAsync_addCommand(conn, sizeof(conn));
+	rc = MQTTAsync_addCommand(conn, sizeof(*conn));
 #if __XTENSA__
   }
 #endif
@@ -2767,7 +2767,7 @@ static int MQTTAsync_disconnect1(MQTTAsync handle, const MQTTAsync_disconnectOpt
 	}
 	dis->command.type = DISCONNECT;
 	dis->command.details.dis.internal = internal;
-	rc = MQTTAsync_addCommand(dis, sizeof(dis));
+	rc = MQTTAsync_addCommand(dis, sizeof(*dis));
 #if __XTENSA__
   }
 #endif
@@ -2932,7 +2932,7 @@ int MQTTAsync_subscribeMany(MQTTAsync handle, int count, char* const* topic, int
 #endif
 		sub->command.details.sub.qoss[i] = qos[i];
 	}
-	rc = MQTTAsync_addCommand(sub, sizeof(sub));
+	rc = MQTTAsync_addCommand(sub, sizeof(*sub));
 #if __XTENSA__
   }
 #endif
@@ -3010,7 +3010,7 @@ int MQTTAsync_unsubscribeMany(MQTTAsync handle, int count, char* const* topic, M
     if (unsub->command.details.unsub.topics)
 #endif
 		unsub->command.details.unsub.topics[i] = MQTTStrdup(topic[i]);
-	rc = MQTTAsync_addCommand(unsub, sizeof(unsub));
+	rc = MQTTAsync_addCommand(unsub, sizeof(*unsub));
 #if __XTENSA__
   }
 #endif
@@ -3122,7 +3122,7 @@ int MQTTAsync_send(MQTTAsync handle, const char* destinationName, int payloadlen
 #endif
 	pub->command.details.pub.qos = qos;
 	pub->command.details.pub.retained = retained;
-	rc = MQTTAsync_addCommand(pub, sizeof(pub));
+	rc = MQTTAsync_addCommand(pub, sizeof(*pub));
 #if __XTENSA__
   }
 #endif
