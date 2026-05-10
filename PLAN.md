@@ -877,7 +877,17 @@ Two additional integer overflow bugs were found and fixed during this review:
 - F5 (gateway.c:467,553): `now.tv_sec * 1000` in ttn_up_task/ttn_down_task uses gettimeofday (absolute
   Unix time ~1.748e9 s); `1748000000 * 1000` overflows int32 on every call. Cast to uint64_t first.
 
-DOING: Review all project code for uninitialized variables used on error paths — variables declared but not set before use when execution takes a branch that skips the initializing assignment.
+DONE: Review all project code for uninitialized variables used on error paths — variables declared but not set before use when execution takes a branch that skips the initializing assignment.
+
+- F1 (sensor.c:521): `driver_error_t *error;` declared without initialization in sensor_unsetup. When
+  unit->sensor->unsetup is NULL the assignment at line 534 is skipped. The subsequent loop over interfaces
+  uses switch(type) with only GPIO_INTERFACE and I2C_INTERFACE cases; if the first matching interface
+  type falls to default:, the following `if (error)` reads uninitialized stack memory. Fixed:
+  changed `driver_error_t *error;` to `driver_error_t *error = NULL;`.
+- F2 (gdisplay.c:1137): segBuf allocated with malloc() but never checked for NULL before being passed to
+  qrcodegen_makeNumeric/Alphanumeric/Bytes/Eci. A malloc failure produces a NULL pointer that these
+  functions dereference, crashing the firmware. Fixed: added NULL check on segBuf; on failure frees
+  text, qrcode, tempBuffer and raises GDISPLAY_ERR_NOT_ENOUGH_MEMORY.
 
 TODO: Review all project code for dangling pointers after free — callers that retain a copy of a pointer after freeing it, or structs whose members point to freed memory.
 

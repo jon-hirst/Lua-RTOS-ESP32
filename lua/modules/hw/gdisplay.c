@@ -1135,6 +1135,12 @@ static int lgdisplay_qrcode( lua_State* L ) {
 			if (text && num_segments < MAX_SEGMENTS) {
 				syslog(LOG_DEBUG, "gdisplay: encoding segment type %i value '%s' ...\n", mode, text);
 				uint8_t *segBuf = malloc(qrcodegen_calcSegmentBufferSize((enum qrcodegen_Mode)mode, strlen(text)) * sizeof(uint8_t));
+				if (!segBuf) {
+					free(text);
+					free(qrcode);
+					free(tempBuffer);
+					return luaL_exception_extended(L, GDISPLAY_ERR_NOT_ENOUGH_MEMORY, "error allocating segment buffer");
+				}
 				switch(mode) {
 					case qrcodegen_Mode_NUMERIC:
 						text_segments[num_segments] = qrcodegen_makeNumeric(text, segBuf);

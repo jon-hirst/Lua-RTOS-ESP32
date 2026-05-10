@@ -518,7 +518,7 @@ driver_error_t *sensor_setup(const sensor_t *sensor, sensor_setup_t *setup, sens
 }
 
 driver_error_t *sensor_unsetup(sensor_instance_t *unit) {
-    driver_error_t *error;
+    driver_error_t *error = NULL;
     int i;
 
     portDISABLE_INTERRUPTS();
