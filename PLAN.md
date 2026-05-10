@@ -1092,7 +1092,30 @@ _pthread_cleanup_pop() and _pthread_cleanup(). If any future cleanup handler cal
 API that acquires thread_mtx (e.g. pthread_cleanup_push), it would self-deadlock. The current
 Lua cleanup handler only acquires lua_mutex (a separate recursive mutex) so this is safe today.
 
-TODO: Review all project code for double-checked locking without memory barriers — patterns where a shared flag or pointer is read outside a lock to avoid locking cost, then re-checked inside, without appropriate volatile or atomic semantics.
+DONE: Review all project code for double-checked locking without memory barriers — patterns where a shared flag or pointer is read outside a lock to avoid locking cost, then re-checked inside, without appropriate volatile or atomic semantics.
+
+No genuine double-checked locking bugs found. Every init-flag pattern was inspected:
+
+- lora_lmic.c `!setup`: all three sites (lines 308, 343, 508) are inside `mtx_lock(&lora_mtx)` — safe.
+- gdisplay/gdisplay.c `init`: checked outside any lock, but gdisplay is only ever called from the
+  single Lua task; the mutex is not yet initialised at first-call time so a pre-lock check is
+  structurally impossible — effectively single-threaded, no race.
+- lua/modules/middleware/mqtt.c `!initialized`: no lock, but called exclusively from the Lua task
+  (single-threaded Lua execution model) — safe by design.
+- sys/drivers/can.c `!setup`, sys/drivers/bluetooth.c `!setup`: plain non-DCL init guards with no
+  re-check under a lock; called from Lua which enforces single-threaded access.
+- sys/drivers/spi.c `spi_init()`, sys/drivers/i2c.c `i2c_init()`: registered as DRIVER_REGISTER
+  constructors, called before the FreeRTOS scheduler starts — no concurrent callers possible.
+- pthread/_pthread.c `_pthread_init()`: called from startup.c before the scheduler starts — safe.
+- sys/drivers/gpio_debouncing.c `setup`: a local variable (not a static global), tracking whether
+  `debouncing` existed at function entry — not a shared flag at all.
+- MQTTAsync.c `!initialized`: checked inside `MQTTAsync_lock_mutex(mqttasync_mutex)` at line 461 —
+  safe.
+- mbedtls/ecp.c `!init_done`: local static, third-party code — not modified.
+
+All apparent check-then-lock-then-check sequences in mount.c, sensor.c, rmt.c, list.c, and
+lora_pkt_fwd.c were false positives caused by matching across function boundaries (the two checks
+refer to unrelated variables).
 
 TODO: Review all project code for unchecked return values — calls to system functions (open, read, write, ioctl, send, recv, connect, bind, listen) where the return value is ignored and execution continues as if the call succeeded.
 
