@@ -223,7 +223,10 @@ static int lspi_deselect(lua_State*L ) {
 exit:
     // Destroy buffer
     spi->len = 0;
-    if (spi->buff) free(spi->buff);
+    if (spi->buff) {
+        free(spi->buff);
+        spi->buff = NULL;
+    }
 
     if (error) {
         return luaL_driver_error(L, error);

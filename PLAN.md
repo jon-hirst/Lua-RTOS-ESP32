@@ -889,7 +889,13 @@ DONE: Review all project code for uninitialized variables used on error paths �
   functions dereference, crashing the firmware. Fixed: added NULL check on segBuf; on failure frees
   text, qrcode, tempBuffer and raises GDISPLAY_ERR_NOT_ENOUGH_MEMORY.
 
-TODO: Review all project code for dangling pointers after free — callers that retain a copy of a pointer after freeing it, or structs whose members point to freed memory.
+DONE: Review all project code for dangling pointers after free — callers that retain a copy of a pointer after freeing it, or structs whose members point to freed memory.
+
+- F1 (spi.c:226): In lspi_deselect(), spi->buff was freed without being set to NULL. lspi_rw_helper()
+  computes `uint8_t *buff = spi->buff + spi->len` (line 256) with no NULL guard, then writes to *buff.
+  If the user calls spi:write() after spi:deselect() without an intervening spi:select(), the dangling
+  spi->buff (freed heap pointer, spi->len==0 so buff==freed_ptr) is dereferenced on line 284, writing
+  to freed heap memory. Fix: added spi->buff = NULL after free(spi->buff) in lspi_deselect().
 
 TODO: Review all project code for use-after-free via realloc — realloc result stored back into the same pointer variable, leaving the old pointer invalid even on failure.
 
