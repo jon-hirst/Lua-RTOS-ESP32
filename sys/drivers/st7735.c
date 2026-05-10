@@ -400,7 +400,7 @@ void st7735_addr_window(uint8_t write, int x0, int y0, int x1, int y1) {
 	gdisplay_caps_t *caps = gdisplay_ll_get_caps();
 	uint32_t wd;
 
-    if ((x0 > caps->width) || (y0 > caps->height) || (x1 > caps->width) || (y1 > caps->height)) {
+    if ((x0 >= caps->width) || (y0 >= caps->height) || (x1 >= caps->width) || (y1 >= caps->height)) {
         return;
     }
 

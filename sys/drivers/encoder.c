@@ -243,7 +243,7 @@ driver_error_t *encoder_setup(int8_t a, int8_t b, int8_t sw, encoder_h_t **h) {
 #endif
 
 	// Sanity checks
-	if ((a < 0) && (b < 0)) {
+	if ((a < 0) || (b < 0)) {
 		return driver_error(ENCODER_DRIVER, ENCODER_ERR_INVALID_PIN, "a and b pins are required");
 	}
 

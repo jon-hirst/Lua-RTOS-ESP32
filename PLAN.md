@@ -967,7 +967,16 @@ correctly test the incoming function argument. One dead-code instance found at
 lua/modules/hw/gdisplay.c:553 (inside #if 0) where luaL_checkinteger(L,3) was used for both
 `w` and `h` — not fixed since the block is disabled.
 
-TODO: Review all project code for inverted bounds checks — conditions where the comparison operator is backwards, passing invalid input and rejecting valid input.
+DONE: Review all project code for inverted bounds checks — conditions where the comparison operator is backwards, passing invalid input and rejecting valid input.
+
+- F1 (encoder.c:246): `&&` changed to `||` in encoder_setup pin-validity guard. With `&&`, a single
+  invalid (negative) pin passed the "a and b pins are required" check and reached GPIO_CHECK_INPUT
+  with a negative shift count — undefined behaviour. With `||`, either negative pin triggers the error.
+- F2 (st7735.c:403): all four coordinate comparisons changed from `>` to `>=` in st7735_addr_window.
+  Valid pixel indices are 0..width-1 and 0..height-1; `x >= width` is out-of-bounds but `x > width`
+  passed that coordinate through, letting the SPI window command write to display memory one column or
+  row past the edge. ili9341 inherits this fix (it reuses st7735_addr_window).
+- F3 (st7789.c:208): same `>` → `>=` fix in st7789_addr_window for the same reason.
 
 TODO: Review all project code for realloc result stored directly into the source pointer — if realloc returns NULL the original allocation is lost, causing a memory leak before the null-pointer crash.
 
