@@ -437,7 +437,7 @@ driver_error_t *pwm_unsetup(int8_t unit, int8_t channel) {
 	pwm_stop(unit, channel);
 
 	// Clear data
-	memset(&pwm[unit][channel], 0, sizeof(pwm));
+	memset(&pwm[unit][channel], 0, sizeof(pwm[unit][channel]));
 
 #if CONFIG_LUA_RTOS_USE_HARDWARE_LOCKS
 	// Unlock resources

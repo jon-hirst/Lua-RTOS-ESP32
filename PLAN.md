@@ -943,7 +943,19 @@ No bugs found in core project files (sys/, lua/, lora/, http/, FabGL/, etc.) —
 - F9 (MQTTAsync.c:3125): sizeof(pub) → sizeof(*pub) in MQTTAsync_send addCommand
 All nine sites used the 4-byte pointer size instead of the pointed-to struct size, causing the list's size accounting field (aList->size) to undercount total memory held by each list.
 
-TODO: Review all project code for sizeof(array) used instead of element count — sizeof(arr) used as a loop bound or guard instead of sizeof(arr)/sizeof(arr[0]).
+DONE: Review all project code for sizeof(array) used instead of element count — sizeof(arr) used as a loop bound or guard instead of sizeof(arr)/sizeof(arr[0]).
+
+- F1 (pwm.c:440): memset(&pwm[unit][channel], 0, sizeof(pwm)) — sizeof(pwm) is the size of the
+  entire 2D array struct pwm[CPU_LAST_PWM+1][CPU_LAST_PWM_CH+1] (at least 80 bytes), but only a
+  single element (5 bytes) should be zeroed. This over-writes all other channel state and memory
+  beyond the array boundary. Fixed: sizeof(pwm) → sizeof(pwm[unit][channel]).
+
+All other sizeof comparisons against array names in loop bounds and guards were reviewed:
+- tm1637.c:226 sizeof(map) — map is uint8_t[], sizeof == element count, correct.
+- gateway.c:700 sizeof(sf) — sf is uint8_t[6], sizeof == element count, correct.
+- keyboard.cpp:428 sizeof(PAUSECODES) — PAUSECODES is uint8_t[], sizeof == element count, correct.
+- gateway.c:704,712 sizeof(freq)/sizeof(freq[0]) — already correct (fixed in prior session).
+- adc.c:158 sizeof(adc_devs)/sizeof(adc_devs[0]) — already correct.
 
 TODO: Review all project code for conditions that test the wrong variable — validation or guard expressions that read a stored/old value instead of the incoming function argument.
 
