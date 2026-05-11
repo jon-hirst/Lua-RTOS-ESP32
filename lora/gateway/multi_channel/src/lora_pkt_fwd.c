@@ -856,8 +856,8 @@ static int send_tx_ack(uint8_t token_h, uint8_t token_l, enum jit_error_e error)
     buff_ack[1] = token_h;
     buff_ack[2] = token_l;
     buff_ack[3] = PKT_TX_ACK;
-    *(uint32_t *)(buff_ack + 4) = net_mac_h;
-    *(uint32_t *)(buff_ack + 8) = net_mac_l;
+    memcpy(buff_ack + 4, &net_mac_h, sizeof(net_mac_h));
+    memcpy(buff_ack + 8, &net_mac_l, sizeof(net_mac_l));
     buff_index = 12; /* 12-byte header */
 
     /* Put no JSON string if there is nothing to report */
@@ -1457,8 +1457,8 @@ void thread_up(void) {
     /* pre-fill the data buffer with fixed fields */
     buff_up[0] = PROTOCOL_VERSION;
     buff_up[3] = PKT_PUSH_DATA;
-    *(uint32_t *)(buff_up + 4) = net_mac_h;
-    *(uint32_t *)(buff_up + 8) = net_mac_l;
+    memcpy(buff_up + 4, &net_mac_h, sizeof(net_mac_h));
+    memcpy(buff_up + 8, &net_mac_l, sizeof(net_mac_l));
 
     while (!exit_sig && !quit_sig) {
 
@@ -1904,8 +1904,8 @@ void thread_down(void) {
     /* pre-fill the pull request buffer with fixed fields */
     buff_req[0] = PROTOCOL_VERSION;
     buff_req[3] = PKT_PULL_DATA;
-    *(uint32_t *)(buff_req + 4) = net_mac_h;
-    *(uint32_t *)(buff_req + 8) = net_mac_l;
+    memcpy(buff_req + 4, &net_mac_h, sizeof(net_mac_h));
+    memcpy(buff_req + 8, &net_mac_l, sizeof(net_mac_l));
 
     /* beacon variables initialization */
     last_beacon_gps_time.tv_sec = 0;

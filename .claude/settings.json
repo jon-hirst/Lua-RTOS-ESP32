@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Bash(*)",
+      "Bash(xtensa-esp32s3-elf-objdump *)",
+      "Bash(xtensa-esp32s3-elf-readelf *)",
+      "Bash(xtensa-esp32s3-elf-nm *)",
+      "Bash(nm *)"
+    ],
+    "deny": [
+      "Bash(git commit *)"
+    ]
+  }
+}

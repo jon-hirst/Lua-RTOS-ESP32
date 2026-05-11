@@ -1224,7 +1224,19 @@ DONE: Review all project code for information leakage — error messages or HTTP
 - F3 (httpsrv.c:672-689): Same pattern for the `luaS_callback_call` failure path. Fixed same way as F2.
 - F4 (luasocket/auxiliar.c:57): `auxiliar_tostring` formatted the raw userdata pointer with `%p`, so `tostring(socket)` returned a heap address (e.g. `"TCP socket: 0x3fc9a1b0"`), enabling ASLR bypass. Fixed: replace `%p` with a non-reversible XOR-fold + multiply hash printed as `%08X`.
 
-TODO: Review all project code for strict aliasing violations — type-punning through incompatible pointer casts (e.g. uint8_t* cast to uint32_t* to read multi-byte values) that the compiler may optimise incorrectly under strict-aliasing rules.
+DONE: Review all project code for strict aliasing violations — type-punning through incompatible pointer casts (e.g. uint8_t* cast to uint32_t* to read multi-byte values) that the compiler may optimise incorrectly under strict-aliasing rules.
+
+- F1 (lora_pkt_fwd.c:859-860, 1460-1461, 1907-1908): six sites wrote `*(uint32_t*)(uint8_t_buf + offset) = net_mac_h/l`, casting a uint8_t array to uint32_t* for a 4-byte write. Fixed: replaced all six with `memcpy(buf + offset, &net_mac_h/l, sizeof(net_mac_h/l))`.
+- F2 (st7789.c:308): `uint32_t c = *(uint32_t*)color` where `color` is `uint16_t*`, reading 4 bytes through an incompatible pointer type. Fixed: `uint32_t c; memcpy(&c, color, sizeof(c))`.
+- F3 (spiffs_check.c:137-141): two writes through `((spiffs_page_ix*)((u8_t*)fs->lu_work + offset))[idx] = val` (uint8_t buffer cast to uint16_t* for indexed write). Fixed: compute byte offset explicitly and use `memcpy` to write.
+- F4 (spiffs_check.c:565-588): `spiffs_page_ix* object_page_index` assigned from a cast of `u8_t*`, then read as `object_page_index[i]`. Fixed: changed to `u8_t* object_page_base` with `memcpy(&rpix, base + i*sizeof(spiffs_page_ix), sizeof(spiffs_page_ix))` in the loop.
+- F5 (spiffs_nucleus.c:636-641): two indexed reads of `spiffs_page_ix` from `u8_t*` buffer via cast. Fixed with `memcpy` and explicit byte offset.
+- F6 (spiffs_nucleus.c:1323-1353): four sites (two reads, two writes) in the append function. Fixed with `memcpy` and explicit byte offsets.
+- F7 (spiffs_nucleus.c:1511-1519): two reads of `orig_data_pix` from `u8_t*` buffers via cast. Fixed with `memcpy`.
+- F8 (spiffs_nucleus.c:1575-1583): two writes of `data_pix` to `u8_t*` buffers via cast. Fixed with `memcpy`.
+- F9 (spiffs_nucleus.c:1783-1791): four accesses (read+write pair for both objix_hdr and objix paths) in the truncate function. Fixed: read with `memcpy` then write `SPIFFS_OBJ_ID_FREE` via a local variable and `memcpy`.
+- F10 (spiffs_nucleus.c:1855-1864): two writes of `new_data_pix` in the truncate partial-page path. Fixed with `memcpy`.
+- F11 (spiffs_nucleus.c:1983-1989): two reads of `data_pix` in the read function. Fixed with `memcpy`.
 
 TODO: Review all project code for unsequenced modifications — expressions where the same variable is both read and modified without a sequence point, such as a[i] = i++, producing undefined behaviour.
 

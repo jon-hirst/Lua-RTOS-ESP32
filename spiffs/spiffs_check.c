@@ -134,9 +134,11 @@ static s32_t spiffs_rewrite_index(spiffs *fs, spiffs_obj_id obj_id, spiffs_span_
 
   // rewrite in mem
   if (objix_spix == 0) {
-    ((spiffs_page_ix*)((u8_t *)fs->lu_work + sizeof(spiffs_page_object_ix_header)))[data_spix] = new_data_pix;
+    u32_t _ofs = sizeof(spiffs_page_object_ix_header) + (u32_t)data_spix * sizeof(spiffs_page_ix);
+    memcpy((u8_t *)fs->lu_work + _ofs, &new_data_pix, sizeof(spiffs_page_ix));
   } else {
-    ((spiffs_page_ix*)((u8_t *)fs->lu_work + sizeof(spiffs_page_object_ix)))[SPIFFS_OBJ_IX_ENTRY(fs, data_spix)] = new_data_pix;
+    u32_t _ofs = sizeof(spiffs_page_object_ix) + (u32_t)SPIFFS_OBJ_IX_ENTRY(fs, data_spix) * sizeof(spiffs_page_ix);
+    memcpy((u8_t *)fs->lu_work + _ofs, &new_data_pix, sizeof(spiffs_page_ix));
   }
 
   res = _spiffs_wr(fs, SPIFFS_OP_T_OBJ_DA | SPIFFS_OP_C_UPDT,
@@ -562,7 +564,7 @@ static s32_t spiffs_page_consistency_check_i(spiffs *fs) {
           SPIFFS_CHECK_RES(res);
 
           // traverse index for referenced pages
-          spiffs_page_ix *object_page_index;
+          u8_t *object_page_base;
           spiffs_page_header *objix_p_hdr = (spiffs_page_header *)fs->lu_work;
 
           int entries;
@@ -572,17 +574,18 @@ static s32_t spiffs_page_consistency_check_i(spiffs *fs) {
             // object header page index
             entries = SPIFFS_OBJ_HDR_IX_LEN(fs);
             data_spix_offset = 0;
-            object_page_index = (spiffs_page_ix *)((u8_t *)fs->lu_work + sizeof(spiffs_page_object_ix_header));
+            object_page_base = (u8_t *)fs->lu_work + sizeof(spiffs_page_object_ix_header);
           } else {
             // object page index
             entries = SPIFFS_OBJ_IX_LEN(fs);
             data_spix_offset = SPIFFS_OBJ_HDR_IX_LEN(fs) + SPIFFS_OBJ_IX_LEN(fs) * (p_hdr.span_ix - 1);
-            object_page_index = (spiffs_page_ix *)((u8_t *)fs->lu_work + sizeof(spiffs_page_object_ix));
+            object_page_base = (u8_t *)fs->lu_work + sizeof(spiffs_page_object_ix);
           }
 
           // for all entries in index
           for (i = 0; !restart && i < entries; i++) {
-            spiffs_page_ix rpix = object_page_index[i];
+            spiffs_page_ix rpix;
+            memcpy(&rpix, object_page_base + (u32_t)i * sizeof(spiffs_page_ix), sizeof(spiffs_page_ix));
             u8_t rpix_within_range = rpix >= pix_offset && rpix < pix_offset + pages_per_scan;
 
             if ((rpix != (spiffs_page_ix)-1 && rpix > SPIFFS_MAX_PAGES(fs))

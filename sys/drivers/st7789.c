@@ -305,7 +305,8 @@ void st7789_color(uint16_t *color, uint32_t len) {
 
 	// Convert 18-bit packed input (bits [17:12]=R6,[11:6]=G6,[5:0]=B6) to
 	// 16-bit RGB565 sent as two big-endian bytes (MSB first) to the display.
-	uint32_t c = *(uint32_t *)color;
+	uint32_t c;
+	memcpy(&c, color, sizeof(c));
 	uint8_t r5 = (c >> 13) & 0x1F;
 	uint8_t g6 = (c >> 6)  & 0x3F;
 	uint8_t b5 = (c >> 1)  & 0x1F;
