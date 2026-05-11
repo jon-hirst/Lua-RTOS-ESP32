@@ -172,7 +172,7 @@ idf_component_register(
     INCLUDE_DIRS "${include_dirs}"
 	LDFRAGMENTS "${fragments}"
     PRIV_REQUIRES app_update driver nvs_flash pthread vfs
-    REQUIRES lua esp_adc spiffs ramfs romfs lfs motion nmea gdisplay driver esp_hw_support esp_wifi esp_eth openssl eth_enc424j600
+    REQUIRES lua esp_adc spiffs ramfs romfs lfs motion nmea gdisplay driver esp_hw_support esp_wifi esp_eth openssl eth_enc424j600 coap
 )
 
 # rmt_private.h moved from driver/ to esp_driver_rmt/src/ in IDF v5.5

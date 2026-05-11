@@ -1814,6 +1814,11 @@ menu "Lua RTOS"
                bool "Include MQTT module in build"
                default y
 
+            config LUA_RTOS_LUA_USE_COAP
+               depends on LUA_RTOS_LUA_USE_NET
+               bool "Include CoAP client and server module in build"
+               default n
+
             config LUA_RTOS_LUA_USE_MDNS
                depends on LUA_RTOS_LUA_USE_NET
                bool "Include MDNS module in build"

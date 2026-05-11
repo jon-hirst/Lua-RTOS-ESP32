@@ -53,6 +53,7 @@ set(srcs
 #	"modules/luasocket/unixdgram.c"
 #	"modules/luasocket/unixstream.c"
 #	"modules/luasocket/usocket.c"
+	"modules/middleware/coap.c"
 	"modules/middleware/lora.c"
 	"modules/middleware/mqtt.c"
 	"modules/misc/lsound.c"
@@ -148,7 +149,7 @@ idf_component_register(
 	SRCS "${srcs}"
 	INCLUDE_DIRS "${include_dirs}"
 	LDFRAGMENTS "${fragments}"
-	PRIV_REQUIRES bt wpa_supplicant ulp app_update pthread libcrypt vfs nvs_flash lora sound sys mqtt esp_rom rc-switch esp_hw_support hal "${fabgl}"
+	PRIV_REQUIRES bt wpa_supplicant ulp app_update pthread libcrypt vfs nvs_flash lora sound sys mqtt coap esp_rom rc-switch esp_hw_support hal "${fabgl}"
 )
 
 # Force linker to link lua modules enabled in build
@@ -179,6 +180,7 @@ list(APPEND extra_link_flags "-u luaopen_uart")
 list(APPEND extra_link_flags "-u luaopen_vga")
 #list(APPEND extra_link_flags "-u luaopen_ulp")
 #list(APPEND extra_link_flags "-u luaopen_bt")
+list(APPEND extra_link_flags "-u luaopen_coap")
 list(APPEND extra_link_flags "-u luaopen_lora")
 list(APPEND extra_link_flags "-u luaopen_mqtt")
 list(APPEND extra_link_flags "-u luaopen_sound")
