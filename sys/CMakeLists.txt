@@ -9,6 +9,8 @@ set(srcs
 #	"drivers/bluetooth.c"
 #	"drivers/bluetooth_eddystone.c"
 #	"drivers/bluetooth_hci.c"
+#	"drivers/bluetooth_gatt_server.c"
+#	"drivers/bluetooth_gatt_client.c"
 	"drivers/can.c"
 	"drivers/clock.c"
 	"drivers/cpu.c"

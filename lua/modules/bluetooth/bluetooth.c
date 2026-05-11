@@ -61,6 +61,8 @@
 #include <drivers/bluetooth.h>
 
 #include "bluetooth_eddystone.inc"
+#include "bluetooth_gatt_server.inc"
+#include "bluetooth_gatt_client.inc"
 
 static void scan_cb(int callback, bt_adv_frame_t *data) {
 	lua_State *TL;
@@ -329,6 +331,8 @@ static const LUA_REG_TYPE lbt_map[] = {
 	{ LSTRKEY( "chann"             ), LROVAL  ( lbt_adv_channel_map   ) },
 	{ LSTRKEY( "filter"            ), LROVAL  ( lbt_adv_filter_policy ) },
 	{ LSTRKEY( "service"           ), LROVAL  ( lbt_service ) },
+	{ LSTRKEY( "gatts"             ), LROVAL  ( lbt_gatts_map ) },
+	{ LSTRKEY( "gattc"             ), LROVAL  ( lbt_gattc_map ) },
 	{ LNILKEY, LNILVAL }
 };
 

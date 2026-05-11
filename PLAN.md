@@ -1329,7 +1329,7 @@ two OTA app partitions, and CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE should be enab
 update rolls back automatically. The factory partition may need to shrink to make room, or the
 storage (LFS) partition resized accordingly.
 
-TODO: Add BLE GATT server and client
+DONE: Add BLE GATT server and client
 
 sys/drivers/bluetooth.c only implements BLE GAP (advertising and scanning). Without GATT there
 are no services, characteristics, or descriptors, so BLE cannot exchange application data. Add a
@@ -1337,7 +1337,11 @@ GATT server that allows Lua scripts to define services and characteristics, and 
 can connect to a peripheral, discover services, and read/write characteristics. Expose both as
 Lua APIs under the existing bluetooth module.
 
-TODO: Add GATT server and client error codes and type declarations to bluetooth.h
+DONE: Add GATT server and client error codes and type declarations to bluetooth.h
+- Added includes for esp_gatts_api.h, esp_gattc_api.h, esp_gatt_defs.h.
+- Added BT_ERR_CANT_REGISTER_GATTS through BT_ERR_CANT_REGISTER_NOTIFY (12–22).
+- Added callback typedefs: bt_gatts_read_cb_t, bt_gatts_write_cb_t, bt_gatts_connect_cb_t, bt_gatts_disconnect_cb_t, and gattc counterparts.
+- Declared all GATT server and client public API functions.
 
 Extend sys/drivers/bluetooth.h with the types and declarations needed by both the GATT server
 and client drivers. Add new error codes (BT_ERR_CANT_REGISTER_GATTS, BT_ERR_CANT_CREATE_SERVICE,
@@ -1365,7 +1369,11 @@ bt_gattc_write_char, bt_gattc_register_for_notify, bt_gattc_on_connect,
 bt_gattc_on_disconnect, bt_gattc_on_notify.
 Include esp_gatts_api.h, esp_gattc_api.h, and esp_gatt_defs.h.
 
-TODO: Implement BLE GATT server driver in sys/drivers/bluetooth_gatt_server.c
+DONE: Implement BLE GATT server driver in sys/drivers/bluetooth_gatt_server.c
+- Created sys/drivers/bluetooth_gatt_server.c with static service/characteristic table (8 services, 16 chars each).
+- Handles REG, CREATE, ADD_CHAR, ADD_CHAR_DESCR, START, STOP, CONNECT, DISCONNECT, READ, WRITE events.
+- Auto-responds to reads/writes that have no registered Lua callback.
+- Implements all bt_gatts_* public API functions declared in bluetooth.h.
 
 Create sys/drivers/bluetooth_gatt_server.c. Use esp_ble_gatts_register_callback and
 esp_ble_gatts_app_register to register a GATTS application interface. Keep a static table of
@@ -1397,7 +1405,11 @@ bt_gatts_on_read / bt_gatts_on_write store the Lua callback reference in the cha
 bt_gatts_on_connect / bt_gatts_on_disconnect store a single global callback reference each.
 Register all new driver errors with DRIVER_REGISTER_ERROR macros at the top of the file.
 
-TODO: Implement BLE GATT client driver in sys/drivers/bluetooth_gatt_client.c
+DONE: Implement BLE GATT client driver in sys/drivers/bluetooth_gatt_client.c
+- Created sys/drivers/bluetooth_gatt_client.c with static connection table (4 entries) and service search buffer.
+- Handles REG, CONNECT, CFG_MTU, OPEN, CLOSE, SEARCH_RES, SEARCH_CMPL, READ_CHAR, WRITE_CHAR, NOTIFY, REG_FOR_NOTIFY events.
+- Delivers search results synchronously via callback after SEARCH_CMPL.
+- Implements all bt_gattc_* public API functions declared in bluetooth.h.
 
 Create sys/drivers/bluetooth_gatt_client.c. Register a GATTC application interface with
 esp_ble_gattc_register_callback and esp_ble_gattc_app_register. Keep a static connection
@@ -1428,14 +1440,18 @@ bt_gattc_get_char_by_uuid calls esp_ble_gattc_get_char_by_uuid to return the han
 characteristic inside a discovered service's handle range.
 Register all new client error codes with DRIVER_REGISTER_ERROR.
 
-TODO: Add GATT server and client source files to the drivers CMakeLists.txt
+DONE: Add GATT server and client source files to the drivers CMakeLists.txt
+- Added bluetooth_gatt_server.c and bluetooth_gatt_client.c to sys/CMakeLists.txt (commented out alongside the existing bluetooth entries; enabled the same way as the rest).
 
 Open sys/drivers/CMakeLists.txt (or the equivalent idf_component_register SRCS list) and add
 bluetooth_gatt_server.c and bluetooth_gatt_client.c so they are compiled as part of the
 drivers component. Confirm that CONFIG_BT_ENABLED guards are in place (they are inside the .c
 files via #if CONFIG_BT_ENABLED, so no extra CMake condition is needed).
 
-TODO: Implement GATT server Lua bindings in lua/modules/bluetooth/bluetooth_gatt_server.inc
+DONE: Implement GATT server Lua bindings in lua/modules/bluetooth/bluetooth_gatt_server.inc
+- Created lua/modules/bluetooth/bluetooth_gatt_server.inc with all lgatts_* functions and lbt_gatts_map.
+- C callback glue functions (gatts_read_lua_cb, gatts_write_lua_cb, gatts_connect_lua_cb, gatts_disconnect_lua_cb) call Lua functions via pvGetLuaState/lua_newthread pattern.
+- Per-characteristic read/write refs stored in static table indexed by char handle.
 
 Create lua/modules/bluetooth/bluetooth_gatt_server.inc. This file is #included by
 bluetooth.c (like bluetooth_eddystone.inc) and provides all lgatts_* Lua-callable functions and
@@ -1467,7 +1483,11 @@ need_rsp} where value is a hex string.
 
 Define lbt_gatts_map as a LUA_REG_TYPE array mapping the function names above.
 
-TODO: Implement GATT client Lua bindings in lua/modules/bluetooth/bluetooth_gatt_client.inc
+DONE: Implement GATT client Lua bindings in lua/modules/bluetooth/bluetooth_gatt_client.inc
+- Created lua/modules/bluetooth/bluetooth_gatt_client.inc with all lgattc_* functions and lbt_gattc_map.
+- C glue callbacks for connect, disconnect, notify, and single-shot read.
+- lgattc_search_service returns a Lua array of {uuid, start_handle, end_handle} tables.
+- lgattc_read_char stores a one-shot callback ref cleared after first use.
 
 Create lua/modules/bluetooth/bluetooth_gatt_client.inc with all lgattc_* Lua-callable functions
 and the lbt_gattc_map table.
@@ -1497,7 +1517,10 @@ queue and calls Lua function references from the Lua state.
 
 Define lbt_gattc_map as a LUA_REG_TYPE array mapping the function names above.
 
-TODO: Wire GATT server and client into the main Lua bluetooth module
+DONE: Wire GATT server and client into the main Lua bluetooth module
+- Added #include for bluetooth_gatt_server.inc and bluetooth_gatt_client.inc in bluetooth.c.
+- Added { LSTRKEY("gatts"), LROVAL(lbt_gatts_map) } and { LSTRKEY("gattc"), LROVAL(lbt_gattc_map) } to lbt_map.
+- Accessible as bluetooth.gatts.register(...), bluetooth.gattc.connect(...), etc.
 
 In lua/modules/bluetooth/bluetooth.c:
   1. Add #include "bluetooth_gatt_server.inc" and #include "bluetooth_gatt_client.inc" after the
@@ -1509,7 +1532,12 @@ In lua/modules/bluetooth/bluetooth.c:
 
 This gives Lua scripts access as bluetooth.gatts.register(...), bluetooth.gattc.connect(...), etc.
 
-TODO: Add a Lua test script for the BLE GATT server and client
+DONE: Add a Lua test script for the BLE GATT server and client
+- Created lua/tests/bluetooth_gatt.lua.
+- Server path: registers app 0x55, creates Heart Rate service 0x180D, adds char 0x2A37 with read/write/notify, starts advertising 10 s then stops.
+- on_read replies with static value 0048; on_write prints received data.
+- Client path (RUN_CLIENT = true): connects to CLIENT_ADDR, discovers services, reads char, registers notify, waits 5 s, disconnects.
+- Each step commented as live documentation.
 
 Create lua/tests/bluetooth_gatt.lua. The script should:
   1. Set up a minimal GATT server: register app 0x55, create a service with UUID 0x180D
