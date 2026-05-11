@@ -1383,12 +1383,92 @@ lwIP socket layer, supporting both master (initiator) and slave (responder) role
 Lua module with functions to read/write coils, discrete inputs, holding registers, and input
 registers using standard Modbus function codes.
 
-TODO: Add CoAP client and server
+DOING: Add CoAP client and server
 
 CoAP (RFC 7252) is the IETF standard lightweight IoT protocol for constrained nodes. ESP-IDF
 ships libcoap which provides a full CoAP stack over UDP. Add a Lua wrapper that allows scripts
 to register CoAP resources (server) and issue GET/PUT/POST/DELETE requests (client), with
 support for confirmable and non-confirmable messages and the observe extension (RFC 7641).
+
+TODO: Add libcoap as a third-party ESP-IDF component
+
+ESP-IDF v5.5 does not bundle libcoap as a built-in component (it was removed after v4.x).
+Source libcoap v3.x from https://github.com/obgm/libcoap and place it in a new top-level
+`coap/` directory, following the same pattern as `mqtt/` (which bundles Eclipse Paho MQTT).
+Create `coap/CMakeLists.txt` as an IDF component that compiles the required libcoap source
+files (`coap_session.c`, `coap_net.c`, `coap_pdu.c`, `coap_resource.c`, `coap_subscribe.c`,
+`coap_option.c`, `coap_address.c`, `coap_block.c`, `coap_encode.c`, `coap_uri.c`,
+`coap_io.c`, `coap_debug.c`, `coap_mem.c`, `coap_prng.c`) with include dirs pointing to
+`libcoap/include`. Guard the build under `CONFIG_LUA_RTOS_LUA_USE_COAP`. The component must
+declare `REQUIRES lwip` so that socket headers resolve correctly.
+
+TODO: Add Kconfig option for the CoAP module
+
+Add `config LUA_RTOS_LUA_USE_COAP` to `main/Kconfig` immediately after the MQTT entry
+(around line 1815). It must `depends on LUA_RTOS_LUA_USE_NET`, have the description
+"Include CoAP client and server module in build", and default to `n` (opt-in, since the
+libcoap component adds non-trivial flash cost).
+
+TODO: Create the CoAP Lua wrapper — server side
+
+Create `lua/modules/middleware/coap.c`. Guard the entire file under
+`#if CONFIG_LUA_RTOS_LUA_USE_COAP`. Implement the server side:
+
+- `lcoap_server_new(port)` — creates a `coap_context_t` bound to the given UDP port
+  (default 5683), returned as a full userdata with metatable `"coap.srv"`. Spawns a
+  FreeRTOS task that calls `coap_io_process()` in a loop.
+- `server:resource(path, mediatype)` — registers a CoAP resource at `path` (e.g.
+  `"sensors/temp"`). Returns a resource userdata with metatable `"coap.res"`.
+- `resource:on(method, callback)` — registers a Lua callback for a method (`"get"`,
+  `"put"`, `"post"`, `"delete"`). The callback receives `(request, response)` where both
+  are light Lua tables exposing `payload`, `content_format`, and `code` fields.
+- `server:stop()` — signals the background task to exit, frees the `coap_context_t`.
+- Register the server metatable with `luaL_newmetarotable` and expose `__gc` → `stop`.
+- `MODULE_REGISTER_ROM(COAP, coap, lcoap_map, luaopen_coap, 1)` at the bottom.
+
+TODO: Create the CoAP Lua wrapper — client side
+
+Add client functions to `lua/modules/middleware/coap.c` (same file, same guard):
+
+- `lcoap_get(uri, [options])` — sends a confirmable GET to `coap://host/path`, blocks
+  until a response arrives or timeout (default 10 s), returns `(payload, code,
+  content_format)` or `(nil, error_string)`.
+- `lcoap_put(uri, payload, [content_format, options])` — confirmable PUT.
+- `lcoap_post(uri, payload, [content_format, options])` — confirmable POST.
+- `lcoap_delete(uri, [options])` — confirmable DELETE.
+- `lcoap_observe(uri, callback, [options])` — subscribes to a resource using the Observe
+  option (RFC 7641). Spawns a background task; each notification invokes `callback(payload,
+  code)`. Returns a handle with a `:cancel()` method.
+- All client functions create a temporary `coap_context_t` per call (or reuse a shared
+  singleton protected by a mutex) and use `coap_send()` + `coap_io_process()` with a
+  deadline.
+
+TODO: Update lua/CMakeLists.txt to compile the CoAP module
+
+In `lua/CMakeLists.txt`:
+- Add `"modules/middleware/coap.c"` to the `srcs` list (alongside `mqtt.c` and `lora.c`).
+- Add `coap` to the `PRIV_REQUIRES` line so the linker finds the libcoap component.
+- Append `-u luaopen_coap` to `extra_link_flags` (alongside the existing `-u luaopen_mqtt`
+  line) so the linker does not discard the module even when no explicit `require` appears
+  at link time.
+
+TODO: Update sys/CMakeLists.txt to require the CoAP component
+
+In `sys/CMakeLists.txt`, add `coap` to the `REQUIRES` list in `idf_component_register()`
+so that driver code that may later call libcoap directly (e.g. a net_coap.inc helper) can
+include libcoap headers without needing its own REQUIRES declaration.
+
+TODO: Write Lua test scripts for CoAP server and client
+
+Create two test scripts under `fs_images/tests/tests/coap/`:
+- `coap_server_test.lua` — starts a CoAP server on port 5683, registers a `/test/hello`
+  resource with a GET handler that returns the string `"Hello CoAP"`, and a PUT handler
+  that stores the payload and echoes it back on subsequent GETs. Runs for 30 seconds then
+  stops. Expected to be exercised by the client test.
+- `coap_client_test.lua` — performs `coap.get("coap://127.0.0.1/test/hello")`, asserts
+  the response code is 2.05 (Content) and payload is `"Hello CoAP"`. Then PUTs a new
+  value and GETs again to verify the update. Also exercises observe by subscribing,
+  waiting for two notifications, then cancelling.
 
 TODO: Add secure boot and flash encryption configuration
 
