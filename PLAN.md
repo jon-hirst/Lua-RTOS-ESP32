@@ -1320,3 +1320,113 @@ IPC task is the caller, it waits forever for a signal it must send itself — a 
   if (task_handler == s_ipc_task_handle[cpu_id]) { func(arg); return ESP_OK; }
   so calls originating from inside the IPC task run the callback directly rather than deadlocking.
 
+TODO: Fix OTA partition table so firmware updates actually work
+
+partitions.csv has only a single factory partition — no ota_0/ota_1 slots. net_ota() in
+sys/drivers/net.c calls esp_ota_get_next_update_partition() which returns NULL with this layout,
+causing every OTA attempt to fail silently. The partition table must be restructured to include
+two OTA app partitions, and CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE should be enabled so a failed
+update rolls back automatically. The factory partition may need to shrink to make room, or the
+storage (LFS) partition resized accordingly.
+
+TODO: Add BLE GATT server and client
+
+sys/drivers/bluetooth.c only implements BLE GAP (advertising and scanning). Without GATT there
+are no services, characteristics, or descriptors, so BLE cannot exchange application data. Add a
+GATT server that allows Lua scripts to define services and characteristics, and a GATT client that
+can connect to a peripheral, discover services, and read/write characteristics. Expose both as
+Lua APIs under the existing bluetooth module.
+
+TODO: Add SD card driver (SDMMC and SPI-SD)
+
+No SD card driver exists in the project. SD cards are essential for data logging, audio file
+storage, and carrying large firmware images. Add an SDMMC driver using the ESP-IDF sdmmc
+component and an SPI-SD fallback for boards that route SD over SPI. Mount the card as a VFS
+filesystem (e.g. /sd) using the existing mount infrastructure so standard Lua io.* calls work.
+
+TODO: Add WebSocket server and client
+
+The HTTP server and MQTT client are present but there is no WebSocket support. WebSockets are
+required for real-time bidirectional communication between the device and a browser-based
+dashboard. Add a WebSocket server that upgrades HTTP connections (RFC 6455) and a WebSocket
+client that can connect to an external server. Expose both as Lua APIs, with callbacks for
+on_message, on_open, and on_close events.
+
+TODO: Add USB CDC device driver using ESP32-S3 native USB
+
+The ESP32-S3 has a native USB peripheral. The project has a USB console stub in
+idf-replacements/esp_system/port/usb_console.c but no Lua-accessible USB device driver.
+Add a CDC-ACM (USB serial) device using the ESP-IDF TinyUSB component so the device appears
+as a virtual COM port to a connected PC, usable as an alternative to the UART console.
+Optionally add HID and mass-storage class support.
+
+TODO: Add WiFi provisioning for first-run credential setup
+
+There is no mechanism to configure WiFi credentials on a fresh device without recompiling.
+Add a provisioning mode that starts a SoftAP with a captive portal (or uses BLE GATT once
+that is implemented) so users can enter SSID and password from a phone or browser. Integrate
+with ESP-IDF's wifi_prov_mgr component. Credentials should be saved to NVS so provisioning
+only runs once unless explicitly reset.
+
+TODO: Add stereo mode to the I2S driver
+
+lua/modules/hw/i2s.c defines only LI2S_FORMAT_MONO (value 0). The i2s_std.h API in ESP-IDF
+v5 supports stereo natively via I2S_SLOT_MODE_STEREO. Add LI2S_FORMAT_STEREO, wire it through
+li2s_attach into the i2s_std_slot_config_t, and update the li2s_write / li2s_read functions to
+handle interleaved stereo sample buffers correctly.
+
+TODO: Add Modbus RTU and TCP driver
+
+Modbus is the dominant protocol for industrial sensors and actuators. The UART and TCP stacks
+are already present. Add a Modbus RTU driver over UART and a Modbus TCP driver over the existing
+lwIP socket layer, supporting both master (initiator) and slave (responder) roles. Expose as a
+Lua module with functions to read/write coils, discrete inputs, holding registers, and input
+registers using standard Modbus function codes.
+
+TODO: Add CoAP client and server
+
+CoAP (RFC 7252) is the IETF standard lightweight IoT protocol for constrained nodes. ESP-IDF
+ships libcoap which provides a full CoAP stack over UDP. Add a Lua wrapper that allows scripts
+to register CoAP resources (server) and issue GET/PUT/POST/DELETE requests (client), with
+support for confirmable and non-confirmable messages and the observe extension (RFC 7641).
+
+TODO: Add secure boot and flash encryption configuration
+
+Deployed devices need firmware signing to prevent running unauthorized firmware. Add Kconfig
+options and documentation for enabling CONFIG_SECURE_BOOT_V2_ENABLED (RSA-PSS firmware
+signature verification at boot) and CONFIG_FLASH_ENCRYPTION_ENABLED (AES-XTS encryption
+of all flash contents). Add a build step that signs the firmware binary and document the key
+provisioning and burning procedure. Both features are supported by the ESP-IDF bootloader
+without changes to application code.
+
+TODO: Add camera driver for ESP32-S3 DVP/CSI interface
+
+The ESP32-S3 supports an 8-bit parallel DVP camera interface via the LCD_CAM peripheral and
+DMA. Add a camera driver using the esp_camera component (or the newer esp-idf camera driver)
+supporting common image sensors (OV2640, OV5640). Expose a Lua API to capture a JPEG frame
+to a buffer or directly to the LFS filesystem, and optionally stream frames over the HTTP
+server as MJPEG.
+
+TODO: Add NMEA sentence parser Lua bindings
+
+The nmea/ directory contains a C NMEA parser library but it has no Lua bindings. Add a Lua
+module (hw.nmea or sensor.gps at the parsed level) that wraps the parser so scripts can open
+a UART port connected to a GPS module and receive structured position, speed, course, and
+satellite-count values rather than raw NMEA strings.
+
+TODO: Add autorun script support on boot
+
+There is no mechanism for a Lua script to run automatically at startup without modifying
+firmware source. Add support for a boot script (e.g. /data/autorun.lua or /sys/init.lua)
+that is executed by the Lua VM immediately after the REPL initialises. If the script exits
+with an error the REPL should still start. Provide a way to disable autorun from the REPL
+(e.g. os.autorun(false)) to recover from a broken boot script without reflashing.
+
+TODO: Add WPA3 WiFi authentication support
+
+The WiFi driver in sys/drivers/wifi.c only explicitly handles WPA2-PSK. WPA3-Personal
+(SAE handshake) is increasingly required by modern access points and is supported by the
+ESP-IDF wifi component via WIFI_AUTH_WPA3_PSK and WIFI_AUTH_WPA2_WPA3_PSK auth modes.
+Add these auth modes to the Lua wifi.sta.setup() API and document that WPA3 requires
+CONFIG_ESP_WIFI_ENABLE_WPA3_SAE=y in sdkconfig.
+
