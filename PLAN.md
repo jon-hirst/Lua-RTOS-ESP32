@@ -1337,6 +1337,193 @@ GATT server that allows Lua scripts to define services and characteristics, and 
 can connect to a peripheral, discover services, and read/write characteristics. Expose both as
 Lua APIs under the existing bluetooth module.
 
+TODO: Add GATT server and client error codes and type declarations to bluetooth.h
+
+Extend sys/drivers/bluetooth.h with the types and declarations needed by both the GATT server
+and client drivers. Add new error codes (BT_ERR_CANT_REGISTER_GATTS, BT_ERR_CANT_CREATE_SERVICE,
+BT_ERR_CANT_ADD_CHAR, BT_ERR_CANT_ADD_DESCR, BT_ERR_CANT_START_SERVICE,
+BT_ERR_CANT_REGISTER_GATTC, BT_ERR_CANT_CONNECT, BT_ERR_CANT_SEARCH_SERVICE,
+BT_ERR_CANT_READ_CHAR, BT_ERR_CANT_WRITE_CHAR, BT_ERR_CANT_REGISTER_NOTIFY) assigned to the
+next free slots after BT_ERR_ADVDATA_TOO_LONG. Add callback typedefs:
+  bt_gatts_read_cb_t(conn_id, trans_id, char_handle, offset)
+  bt_gatts_write_cb_t(conn_id, trans_id, char_handle, value, len, need_rsp)
+  bt_gatts_connect_cb_t(conn_id, addr)
+  bt_gatts_disconnect_cb_t(conn_id, addr)
+  bt_gattc_search_cb_t(conn_id, uuid_str, start_handle, end_handle)
+  bt_gattc_read_cb_t(conn_id, char_handle, value, len, status)
+  bt_gattc_write_cb_t(conn_id, char_handle, status)
+  bt_gattc_notify_cb_t(conn_id, char_handle, value, len)
+  bt_gattc_connect_cb_t(conn_id, addr)
+  bt_gattc_disconnect_cb_t(conn_id, addr)
+Declare server functions: bt_gatts_register, bt_gatts_create_service, bt_gatts_add_characteristic,
+bt_gatts_add_descriptor, bt_gatts_start_service, bt_gatts_stop_service,
+bt_gatts_send_response, bt_gatts_send_notify, bt_gatts_on_read, bt_gatts_on_write,
+bt_gatts_on_connect, bt_gatts_on_disconnect.
+Declare client functions: bt_gattc_register, bt_gattc_open, bt_gattc_close,
+bt_gattc_search_service, bt_gattc_get_char_by_uuid, bt_gattc_read_char,
+bt_gattc_write_char, bt_gattc_register_for_notify, bt_gattc_on_connect,
+bt_gattc_on_disconnect, bt_gattc_on_notify.
+Include esp_gatts_api.h, esp_gattc_api.h, and esp_gatt_defs.h.
+
+TODO: Implement BLE GATT server driver in sys/drivers/bluetooth_gatt_server.c
+
+Create sys/drivers/bluetooth_gatt_server.c. Use esp_ble_gatts_register_callback and
+esp_ble_gatts_app_register to register a GATTS application interface. Keep a static table of
+up to 8 registered services; each entry holds the service UUID, service handle, and an array of
+up to 16 characteristic entries (UUID, properties, permissions, current value buffer, value len,
+read callback ref, write callback ref). Use an EventGroupHandle_t (gatts_event) to synchronise
+blocking calls in the same way the existing GAP driver does.
+
+Handle these ESP-IDF GATTS events in the callback:
+  ESP_GATTS_REG_EVT       — store gatts_if; signal registration complete.
+  ESP_GATTS_CREATE_EVT    — store service_handle in the pending service slot; signal create done.
+  ESP_GATTS_ADD_CHAR_EVT  — store char_handle in the pending characteristic slot; signal done.
+  ESP_GATTS_ADD_CHAR_DESCR_EVT — store descr_handle; signal done.
+  ESP_GATTS_START_EVT     — signal service-started.
+  ESP_GATTS_STOP_EVT      — signal service-stopped.
+  ESP_GATTS_CONNECT_EVT   — store conn_id; invoke bt_gatts_on_connect callback via queue/task.
+  ESP_GATTS_DISCONNECT_EVT — clear conn_id; invoke bt_gatts_on_disconnect callback.
+  ESP_GATTS_READ_EVT      — look up characteristic by handle; if a Lua read callback is
+                            registered push {conn_id, trans_id, handle, offset} onto the callback
+                            queue so the Lua task can call it; otherwise auto-respond with the
+                            stored value.
+  ESP_GATTS_WRITE_EVT     — look up characteristic; push {conn_id, trans_id, handle, value, len,
+                            need_rsp} onto the callback queue; if need_rsp and no callback,
+                            send an empty success response automatically.
+
+Implement the public API functions declared in bluetooth.h. bt_gatts_send_response calls
+esp_ble_gatts_send_response. bt_gatts_send_notify calls esp_ble_gatts_send_indicate.
+bt_gatts_on_read / bt_gatts_on_write store the Lua callback reference in the characteristic slot.
+bt_gatts_on_connect / bt_gatts_on_disconnect store a single global callback reference each.
+Register all new driver errors with DRIVER_REGISTER_ERROR macros at the top of the file.
+
+TODO: Implement BLE GATT client driver in sys/drivers/bluetooth_gatt_client.c
+
+Create sys/drivers/bluetooth_gatt_client.c. Register a GATTC application interface with
+esp_ble_gattc_register_callback and esp_ble_gattc_app_register. Keep a static connection
+table (up to 4 entries) indexed by conn_id, each holding the remote address and open state.
+Use a shared EventGroupHandle_t (gattc_event) for synchronising blocking calls.
+
+Handle these ESP-IDF GATTC events:
+  ESP_GATTC_REG_EVT        — store gattc_if; signal registration complete.
+  ESP_GATTC_OPEN_EVT       — populate connection slot; invoke on_connect callback via queue.
+  ESP_GATTC_CLOSE_EVT      — clear connection slot; invoke on_disconnect callback via queue.
+  ESP_GATTC_CONNECT_EVT    — physical connection up; call esp_ble_gattc_send_mtu_req.
+  ESP_GATTC_DISCONNECT_EVT — physical connection down.
+  ESP_GATTC_CFG_MTU_EVT    — MTU negotiated; signal open complete.
+  ESP_GATTC_SEARCH_RES_EVT — for each discovered service push a {uuid, start_handle, end_handle}
+                             record onto a local list.
+  ESP_GATTC_SEARCH_CMPL_EVT — invoke search callback for each record; signal search done.
+  ESP_GATTC_READ_CHAR_EVT  — invoke read callback with {conn_id, handle, value, status}.
+  ESP_GATTC_WRITE_CHAR_EVT — invoke write callback with {conn_id, handle, status}.
+  ESP_GATTC_NOTIFY_EVT     — push {conn_id, handle, value, is_notify} onto queue for Lua.
+  ESP_GATTC_REG_FOR_NOTIFY_EVT — signal notify-registration done.
+
+Implement public API: bt_gattc_open calls esp_ble_gattc_open and blocks on gattc_event.
+bt_gattc_close calls esp_ble_gattc_close. bt_gattc_search_service calls
+esp_ble_gattc_search_service and blocks until ESP_GATTC_SEARCH_CMPL_EVT. bt_gattc_read_char
+calls esp_ble_gattc_read_char; bt_gattc_write_char calls esp_ble_gattc_write_char.
+bt_gattc_register_for_notify calls esp_ble_gattc_register_for_notify.
+bt_gattc_get_char_by_uuid calls esp_ble_gattc_get_char_by_uuid to return the handle of a
+characteristic inside a discovered service's handle range.
+Register all new client error codes with DRIVER_REGISTER_ERROR.
+
+TODO: Add GATT server and client source files to the drivers CMakeLists.txt
+
+Open sys/drivers/CMakeLists.txt (or the equivalent idf_component_register SRCS list) and add
+bluetooth_gatt_server.c and bluetooth_gatt_client.c so they are compiled as part of the
+drivers component. Confirm that CONFIG_BT_ENABLED guards are in place (they are inside the .c
+files via #if CONFIG_BT_ENABLED, so no extra CMake condition is needed).
+
+TODO: Implement GATT server Lua bindings in lua/modules/bluetooth/bluetooth_gatt_server.inc
+
+Create lua/modules/bluetooth/bluetooth_gatt_server.inc. This file is #included by
+bluetooth.c (like bluetooth_eddystone.inc) and provides all lgatts_* Lua-callable functions and
+the lbt_gatts_map table.
+
+Functions to implement:
+  lgatts_register(app_id)             — calls bt_gatts_register; returns nothing on success.
+  lgatts_create_service(uuid, handles)— calls bt_gatts_create_service; returns service_handle.
+  lgatts_add_characteristic(srv_hdl, uuid, props, perms, value)
+                                      — calls bt_gatts_add_characteristic; returns char_handle.
+  lgatts_add_descriptor(srv_hdl, char_hdl, uuid, perms)
+                                      — calls bt_gatts_add_descriptor; returns descr_handle.
+  lgatts_start_service(srv_hdl)       — calls bt_gatts_start_service.
+  lgatts_stop_service(srv_hdl)        — calls bt_gatts_stop_service.
+  lgatts_send_response(conn_id, trans_id, value_string)
+                                      — hex-decodes value_string; calls bt_gatts_send_response.
+  lgatts_notify(conn_id, char_hdl, value_string, need_confirm)
+                                      — hex-decodes value; calls bt_gatts_send_notify.
+  lgatts_on_read(char_hdl, fn)        — stores fn ref; calls bt_gatts_on_read.
+  lgatts_on_write(char_hdl, fn)       — stores fn ref; calls bt_gatts_on_write.
+  lgatts_on_connect(fn)               — calls bt_gatts_on_connect.
+  lgatts_on_disconnect(fn)            — calls bt_gatts_on_disconnect.
+
+Callback glue: the C driver delivers events to a FreeRTOS queue; the gatts_lua_task (created
+once during bt_gatts_register) drains the queue, acquires the Lua state with pvGetLuaState,
+spawns a Lua thread, and calls the stored function reference. Read callbacks receive a table
+{conn_id, trans_id, handle, offset}; write callbacks receive {conn_id, trans_id, handle, value,
+need_rsp} where value is a hex string.
+
+Define lbt_gatts_map as a LUA_REG_TYPE array mapping the function names above.
+
+TODO: Implement GATT client Lua bindings in lua/modules/bluetooth/bluetooth_gatt_client.inc
+
+Create lua/modules/bluetooth/bluetooth_gatt_client.inc with all lgattc_* Lua-callable functions
+and the lbt_gattc_map table.
+
+Functions to implement:
+  lgattc_register(app_id)             — calls bt_gattc_register.
+  lgattc_connect(addr_hex, addr_type) — calls bt_gattc_open; returns conn_id.
+  lgattc_disconnect(conn_id)          — calls bt_gattc_close.
+  lgattc_search_service(conn_id, uuid_or_nil)
+                                      — calls bt_gattc_search_service; blocks until complete;
+                                        returns array of {uuid, start_handle, end_handle}.
+  lgattc_get_char(conn_id, start_hdl, end_hdl, uuid)
+                                      — calls bt_gattc_get_char_by_uuid; returns char_handle.
+  lgattc_read_char(conn_id, char_hdl, fn)
+                                      — calls bt_gattc_read_char; fn called with {handle, value}.
+  lgattc_write_char(conn_id, char_hdl, value_hex, write_type)
+                                      — hex-decodes value; calls bt_gattc_write_char.
+  lgattc_register_notify(conn_id, char_hdl)
+                                      — calls bt_gattc_register_for_notify.
+  lgattc_on_connect(fn)               — calls bt_gattc_on_connect.
+  lgattc_on_disconnect(fn)            — calls bt_gattc_on_disconnect.
+  lgattc_on_notify(fn)                — calls bt_gattc_on_notify; fn called with {conn_id,
+                                        handle, value, is_notify}.
+
+Callback glue follows the same pattern as the server .inc: a gattc_lua_task drains a FreeRTOS
+queue and calls Lua function references from the Lua state.
+
+Define lbt_gattc_map as a LUA_REG_TYPE array mapping the function names above.
+
+TODO: Wire GATT server and client into the main Lua bluetooth module
+
+In lua/modules/bluetooth/bluetooth.c:
+  1. Add #include "bluetooth_gatt_server.inc" and #include "bluetooth_gatt_client.inc" after the
+     existing #include "bluetooth_eddystone.inc" line, guarded by #if CONFIG_BT_ENABLED.
+  2. Add two entries to lbt_map:
+       { LSTRKEY("gatts"), LROVAL(lbt_gatts_map) }
+       { LSTRKEY("gattc"), LROVAL(lbt_gattc_map) }
+     before the terminal { LNILKEY, LNILVAL }.
+
+This gives Lua scripts access as bluetooth.gatts.register(...), bluetooth.gattc.connect(...), etc.
+
+TODO: Add a Lua test script for the BLE GATT server and client
+
+Create lua/tests/bluetooth_gatt.lua. The script should:
+  1. Set up a minimal GATT server: register app 0x55, create a service with UUID 0x180D
+     (Heart Rate), add a Measurement characteristic (UUID 0x2A37, NOTIFY|READ, value "0000"),
+     start the service, begin GAP advertising so a central can find it.
+  2. Register on_write and on_read callbacks that print the received data and, for reads,
+     call bluetooth.gatts.send_response with a static value.
+  3. After 10 seconds stop advertising and the service.
+  4. For the client path: scan for one second, pick the first result whose address is given as
+     a script constant, connect, search for service 0x180D, find the Measurement characteristic,
+     read it once, register for notifications, wait 5 seconds printing each notification, then
+     disconnect.
+Include comments explaining each API call so the test serves as live documentation.
+
 TODO: Add SD card driver (SDMMC and SPI-SD)
 
 No SD card driver exists in the project. SD cards are essential for data logging, audio file
