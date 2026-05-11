@@ -143,8 +143,6 @@ driver_error_t *can_check_error(esp_err_t error) {
             return driver_error(CAN_DRIVER, CAN_ERR_CANT_START, buffer);
         }
     }
-
-    return NULL;
 }
 
 /*

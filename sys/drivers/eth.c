@@ -108,8 +108,6 @@ driver_error_t *net_eth_check_error(esp_err_t error) {
             return driver_error(ETH_DRIVER, ETH_ERR_CANT_INIT, buffer);
         }
     }
-
-    return NULL;
 }
 
 static void net_eth_event_handler(void *arg, esp_event_base_t base, int32_t id, void *data) {

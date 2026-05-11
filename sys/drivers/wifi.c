@@ -298,8 +298,6 @@ driver_error_t *wifi_check_error(esp_err_t error) {
             return driver_error(WIFI_DRIVER, WIFI_ERR_CANT_INIT, buffer);
         }
     }
-
-    return NULL;
 }
 
 static driver_error_t *wifi_init(wifi_mode_t mode) {

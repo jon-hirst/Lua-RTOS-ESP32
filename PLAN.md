@@ -1258,15 +1258,19 @@ No genuine UB found. All flagged candidates were false positives:
 
 No changes required.
 
-TODO: Review all project code for dead and unreachable code — statements after unconditional return/break/continue/goto, conditions that are always true or always false due to type constraints or prior assignments, and branches that can never execute.
+DONE: Review all project code for dead and unreachable code — statements after unconditional return/break/continue/goto, conditions that are always true or always false due to type constraints or prior assignments, and branches that can never execute.
 
-- F1 (cpu.c:108): `(1 << bit)` in cpu_has_gpio() where `bit` is a GPIO pin number (0-48 on
-  ESP32-S3). For bit >= 32 this is undefined behaviour — shifting a 32-bit signed int by 32+
-  positions. Fixed: `(GPIO_BIT_MASK << bit)` uses `uint64_t` (1ULL) so the shift is always
-  within the 64-bit type width and the result matches the gpio_pin_mask_t return type of
-  cpu_port_io_pin_mask().
-- F2 (gpio.c:87,102,117): `(1 << pin)` in gpio_ll_pin_set, gpio_ll_pin_clr, and gpio_ll_pin_inv
-  where `pin < 32`. When pin == 31, `1 << 31` produces 2^31 which is not representable in a
-  signed 32-bit int — undefined behaviour per C11 §6.5.7. Fixed: `(1u << pin)` so the shift is
-  on an unsigned 32-bit type, making the result well-defined for all pin values 0-31.
+- F1 (cpu.c:108): `(1 << bit)` in cpu_has_gpio() — already fixed (uses `(GPIO_BIT_MASK << bit)`).
+- F2 (gpio.c:87,102,117): `(1 << pin)` in gpio_ll_pin_set/clr/inv — already fixed (uses `(1u << pin)`).
+- F3 (eth.c:112): unreachable `return NULL;` after switch where all cases including default return
+  via driver_error() or panic(). Removed.
+- F4 (can.c:147): same unreachable `return NULL;` pattern. Removed.
+- F5 (wifi.c:302): same unreachable `return NULL;` pattern. Removed.
+
+All three check_error functions (net_eth_check_error, can_check_error, wifi_check_error) follow the
+same structure: ESP_OK handled at the top; switch handles all other error codes with a default: that
+mallocs a diagnostic buffer, calls driver_error(), and returns — making the trailing return NULL
+unreachable on every code path. Reviewed 295 C/C++ files across all subsystems; no other genuine
+dead code found (other candidates were false positives from switch-with-break default cases,
+third-party luasocket code, or FreeRTOS ISR patterns that are intentional).
 
