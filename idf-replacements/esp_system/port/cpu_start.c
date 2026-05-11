@@ -116,10 +116,10 @@ extern int _rtc_bss_end;
 extern int _bss_bt_start;
 extern int _bss_bt_end;
 #endif // CONFIG_BT_LE_RELEASE_IRAM_SUPPORTED
-extern int _instruction_reserved_start;
-extern int _instruction_reserved_end;
-extern int _rodata_reserved_start;
-extern int _rodata_reserved_end;
+extern char _instruction_reserved_start;
+extern char _instruction_reserved_end;
+extern char _rodata_reserved_start;
+extern char _rodata_reserved_end;
 
 extern int _vector_table;
 #if SOC_INT_CLIC_SUPPORTED

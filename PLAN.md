@@ -1274,3 +1274,49 @@ unreachable on every code path. Reviewed 295 C/C++ files across all subsystems; 
 dead code found (other candidates were false positives from switch-with-break default cases,
 third-party luasocket code, or FreeRTOS ISR patterns that are intentional).
 
+DONE: Fix fault in idf-replacements/esp_system/port/cpu_start.c — extern int on potentially-unaligned linker symbols
+
+The local file declares _instruction_reserved_start/end and _rodata_reserved_start/end as
+`extern int`. CLANG assumes that any `extern int` symbol is 4-byte aligned and may clear the low
+2 bits of a constant used in a bitwise-AND with that symbol's address during optimisation. These
+linker symbols can be placed at non-4-byte-aligned addresses by the linker script, making the
+assumption wrong. The esp-idf v5.5 version changed these four declarations to `extern char` to
+remove the alignment assumption.
+
+- cpu_start.c:119-122: all four `extern int` declarations changed to `extern char`.
+
+DONE: Fix fault in idf-replacements/esp_system/esp_system.c — wrong SMP condition causes vTaskPreemptionDisable on unicore SMP builds
+
+The local file uses `#ifdef CONFIG_FREERTOS_SMP` to choose between vTaskPreemptionDisable(NULL)
+and vTaskSuspendAll() before restarting. When CONFIG_FREERTOS_SMP=y and CONFIG_FREERTOS_UNICORE=y
+(unicore SMP build), the local code calls vTaskPreemptionDisable(NULL), which is a no-op on a
+single core and skips the vTaskSuspendAll() that is required to stop the scheduler before the
+restart sequence.
+
+- esp_system.c:56: `#ifdef CONFIG_FREERTOS_SMP` changed to
+  `#if ( ( CONFIG_FREERTOS_SMP ) && ( !CONFIG_FREERTOS_UNICORE ) )` so unicore SMP builds
+  fall through to vTaskSuspendAll().
+
+DONE: Fix fault in idf-replacements/esp_system/panic.c — undefined behaviour null pointer write in panic_abort
+
+panic_abort() contains `*((volatile int *) 0) = 0;` to trigger an abort on targets that have no
+illegal instruction. Writing through a null pointer is undefined behaviour under the C standard;
+the compiler may elide the write or miscompile the surrounding code.
+
+- panic.c:482: null pointer write replaced with `asm("ill")` on Xtensa and `asm("unimp")` on
+  RISC-V, guarded by `#ifdef __XTENSA__` / `#elif __riscv`. `while (1)` retained as the
+  infinite-loop fallback (ESP_INFINITE_LOOP not yet available in the local include set).
+
+DONE: Fix fault in idf-replacements/esp_system/esp_ipc.c — recursive IPC call deadlocks
+
+When a function running inside the IPC task calls esp_ipc_call_blocking() or esp_ipc_call_nonblocking()
+targeting the same CPU, the local code takes s_ipc_mutex[cpu_id] and then waits on
+xSemaphoreTake(s_ipc_ack[cpu_id], portMAX_DELAY) for the IPC task to signal completion. Since the
+IPC task is the caller, it waits forever for a signal it must send itself — a deadlock.
+
+- esp_ipc.c:138: TaskHandle_t task_handler = xTaskGetCurrentTaskHandle() moved out of the
+  #ifdef CONFIG_ESP_IPC_USES_CALLERS_PRIORITY guard so it is always obtained.
+- esp_ipc.c:140-145: Added recursive-IPC check before the mutex take:
+  if (task_handler == s_ipc_task_handle[cpu_id]) { func(arg); return ESP_OK; }
+  so calls originating from inside the IPC task run the callback directly rather than deadlocking.
+
