@@ -1238,7 +1238,25 @@ DONE: Review all project code for strict aliasing violations — type-punning th
 - F10 (spiffs_nucleus.c:1855-1864): two writes of `new_data_pix` in the truncate partial-page path. Fixed with `memcpy`.
 - F11 (spiffs_nucleus.c:1983-1989): two reads of `data_pix` in the read function. Fixed with `memcpy`.
 
-TODO: Review all project code for unsequenced modifications — expressions where the same variable is both read and modified without a sequence point, such as a[i] = i++, producing undefined behaviour.
+DONE: Review all project code for unsequenced modifications — expressions where the same variable is both read and modified without a sequence point, such as a[i] = i++, producing undefined behaviour.
+
+Searched all project C/C++ files (295 files across sys/, main/, motion/, sound/, gdisplay/,
+sdisplay/, http/, captivedns/, rc-switch/, telnet/, lora/, nmea/, lua/modules/, ramfs/,
+romfs/, spiffs/, lfs/, libcrypt/, pthread/, mqtt/, zlib/, FabGL/src/, eth_enc424j600/,
+openssl/) for:
+  - i = i++ / i = ++i patterns
+  - a[i] = i++ (subscript variable also modified in same expression)
+  - f(a, a++) (same variable with and without ++ in function argument list)
+  - a[i++] = a[i] (subscript variable read and modified without sequence point)
+
+No genuine UB found. All flagged candidates were false positives:
+  - while(cnt && arr[cnt-1] == x) cnt-- : && and while body provide sequence points
+  - while(s->bl_count[bits] == 0) bits-- : while condition/body separated
+  - if (++i >= 10 && i < 21) : && provides sequence point after ++i
+  - while ((c = name[i++]) && i < SPIFFS_OBJ_NAME_LEN) : && sequences i++ before RHS
+  - sprintf(ed->filename, "...", ++ed->env->untitled) : modifies a different member than it reads
+
+No changes required.
 
 TODO: Review all project code for dead and unreachable code — statements after unconditional return/break/continue/goto, conditions that are always true or always false due to type constraints or prior assignments, and branches that can never execute.
 
