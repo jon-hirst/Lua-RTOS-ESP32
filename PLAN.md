@@ -1784,6 +1784,53 @@ module (hw.nmea or sensor.gps at the parsed level) that wraps the parser so scri
 a UART port connected to a GPS module and receive structured position, speed, course, and
 satellite-count values rather than raw NMEA strings.
 
+TODO: Add NMEA Lua bindings — step 1: add CONFIG_LUA_RTOS_LUA_USE_NMEA Kconfig entry
+
+Add a new `config LUA_RTOS_LUA_USE_NMEA` entry in `main/Kconfig` in the hw-modules section
+(near the existing UART entry). This bool option, defaulting to `y`, guards compilation of
+the new Lua nmea module and is independent of `CONFIG_LUA_RTOS_USE_SENSOR_GPS`.
+
+TODO: Add NMEA Lua bindings — step 2: extend nmea library guard to cover new Kconfig key
+
+`nmea/nmea0183.h` and `nmea/nmea0183.c` are currently compiled only when
+`CONFIG_LUA_RTOS_USE_SENSOR_GPS=y`. Change the `#if` guard in both files to also compile
+when `CONFIG_LUA_RTOS_LUA_USE_NMEA=y`, so the new Lua module can use the library without
+requiring the sensor framework.
+
+TODO: Add NMEA Lua bindings — step 3: create lua/modules/hw/nmea.c
+
+Create `lua/modules/hw/nmea.c`, guarded by `#if CONFIG_LUA_RTOS_LUA_USE_NMEA`. The module
+is named `nmea` and exposes:
+
+- `nmea.setup(uart_id, baud)` — opens the specified UART at the given baud rate, spawns a
+  background FreeRTOS task that reads lines with `uart_reads()` and feeds them to
+  `nmea_parse()`, and returns a userdata instance. Errors are raised as Lua exceptions using
+  the driver error framework.
+- `instance:read()` — calls `nmea_new_pos()`, `nmea_lat()`, `nmea_lon()`, `nmea_height()`,
+  and `nmea_sats()`, and returns a Lua table
+  `{lat=…, lon=…, height=…, sats=…, valid=…}`.
+- `instance:close()` — deletes the background FreeRTOS task and closes the UART port.
+
+The module must register a DRIVER error block with DRIVER_REGISTER_BEGIN/END and define
+at least one error code for "can't create task". Follow the structure used by
+`lua/modules/middleware/websocket.c`. Register the module with MODULE_REGISTER_ROM.
+
+TODO: Add NMEA Lua bindings — step 4: add nmea.c to lua/CMakeLists.txt sources
+
+Add the line `"modules/hw/nmea.c"` to the `srcs` list in `lua/CMakeLists.txt` (near the
+other `modules/hw/*.c` entries). Also add the linker flag
+`list(APPEND extra_link_flags "-u luaopen_nmea")` in the extra_link_flags section so the
+linker does not strip the module registration symbol.
+
+TODO: Add NMEA Lua bindings — step 5: write lua/tests/nmea_test.lua
+
+Create a test script at `lua/tests/nmea_test.lua`. The script should:
+1. Open the nmea module on UART 1 at 9600 baud.
+2. Wait 2 seconds (using `tmr.sleep`) for the GPS to produce a fix.
+3. Call `instance:read()` and print each field (lat, lon, height, sats, valid).
+4. Call `instance:close()`.
+If any step raises an error, catch it with `pcall` and print a descriptive message.
+
 TODO: Add autorun script support on boot
 
 There is no mechanism for a Lua script to run automatically at startup without modifying
