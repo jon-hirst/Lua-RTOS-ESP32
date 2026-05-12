@@ -101,6 +101,7 @@ typedef void *device_t;
 #define BMA423_DRIVER_ID   42
 #define FT6X36_DRIVER_ID   43
 #define COAP_DRIVER_ID     44
+#define WS_DRIVER_ID       45
 
 #define GPIO_DRIVER driver_get_by_name("gpio")
 #define UART_DRIVER driver_get_by_name("uart")

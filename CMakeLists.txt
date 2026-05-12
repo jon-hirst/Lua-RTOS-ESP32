@@ -24,6 +24,7 @@ set(EXTRA_COMPONENT_DIRS
   "captivedns"
   "mqtt"
   "coap"
+  "websocket"
   "telnet"
   "zlib"
   "rc-switch"

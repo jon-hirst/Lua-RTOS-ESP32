@@ -1819,6 +1819,11 @@ menu "Lua RTOS"
                bool "Include CoAP client and server module in build"
                default n
 
+            config LUA_RTOS_LUA_USE_WEBSOCKET
+               depends on LUA_RTOS_LUA_USE_NET
+               bool "Include WebSocket server and client module in build"
+               default n
+
             config LUA_RTOS_LUA_USE_MDNS
                depends on LUA_RTOS_LUA_USE_NET
                bool "Include MDNS module in build"

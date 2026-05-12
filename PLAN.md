@@ -1559,7 +1559,7 @@ storage, and carrying large firmware images. Add an SDMMC driver using the ESP-I
 component and an SPI-SD fallback for boards that route SD over SPI. Mount the card as a VFS
 filesystem (e.g. /sd) using the existing mount infrastructure so standard Lua io.* calls work.
 
-TODO: Add WebSocket server and client
+DONE: Add WebSocket server and client
 
 The HTTP server and MQTT client are present but there is no WebSocket support. WebSockets are
 required for real-time bidirectional communication between the device and a browser-based
@@ -1567,7 +1567,9 @@ dashboard. Add a WebSocket server that upgrades HTTP connections (RFC 6455) and 
 client that can connect to an external server. Expose both as Lua APIs, with callbacks for
 on_message, on_open, and on_close events.
 
-TODO: Enable CONFIG_HTTPD_WS_SUPPORT in sdkconfig
+DONE: Enable CONFIG_HTTPD_WS_SUPPORT in sdkconfig
+
+Set CONFIG_HTTPD_WS_SUPPORT=y in sdkconfig (was commented out). This enables httpd_ws_recv_frame, httpd_ws_send_frame_async, and httpd_ws_get_fd_info APIs in esp_http_server.
 
 The ESP-IDF esp_http_server component includes WebSocket frame handling (httpd_ws_recv_frame,
 httpd_ws_send_frame, httpd_ws_send_frame_async, httpd_ws_get_fd_info) behind the
@@ -1575,7 +1577,9 @@ CONFIG_HTTPD_WS_SUPPORT Kconfig flag. The sdkconfig currently has this option co
 (# CONFIG_HTTPD_WS_SUPPORT is not set). Set CONFIG_HTTPD_WS_SUPPORT=y so that the WebSocket
 server implementation can use these APIs without a custom RFC 6455 framing implementation.
 
-TODO: Add CONFIG_LUA_RTOS_LUA_USE_WEBSOCKET to main/Kconfig
+DONE: Add CONFIG_LUA_RTOS_LUA_USE_WEBSOCKET to main/Kconfig
+
+Added config LUA_RTOS_LUA_USE_WEBSOCKET after LUA_RTOS_LUA_USE_COAP in main/Kconfig, depends on LUA_RTOS_LUA_USE_NET, default n.
 
 Following the pattern of LUA_RTOS_LUA_USE_COAP (line 1817) and LUA_RTOS_LUA_USE_MQTT
 (line 1812) in main/Kconfig, add a new bool entry:
@@ -1585,7 +1589,9 @@ Following the pattern of LUA_RTOS_LUA_USE_COAP (line 1817) and LUA_RTOS_LUA_USE_
      default n
 This lets users opt in via menuconfig without affecting other modules.
 
-TODO: Create the websocket/ component directory with CMakeLists.txt
+DONE: Create the websocket/ component directory with CMakeLists.txt
+
+Created websocket/CMakeLists.txt (conditionally compiles websocket_server.c and websocket_client.c when CONFIG_LUA_RTOS_LUA_USE_WEBSOCKET is set, REQUIRES esp_http_server tcp_transport sys). Added "websocket" to EXTRA_COMPONENT_DIRS in top-level CMakeLists.txt.
 
 Create a new top-level component directory websocket/ following the pattern of the http/
 and coap/ directories. Write websocket/CMakeLists.txt that conditionally compiles
@@ -1593,7 +1599,9 @@ websocket_server.c and websocket_client.c when CONFIG_LUA_RTOS_LUA_USE_WEBSOCKET
 and declares REQUIRES against esp_http_server, tcp_transport, and sys so the component
 can use esp_http_server WebSocket APIs and esp_transport_ws.
 
-TODO: Create websocket/websocket.h with the C-level driver API
+DONE: Create websocket/websocket.h with the C-level driver API
+
+Created websocket/include/websocket.h with ws_server_handle_t, ws_client_handle_t, callback typedefs (ws_msg_cb_t, ws_open_cb_t, ws_close_cb_t), server API (ws_server_create/destroy/send/broadcast), and client API (ws_client_create/destroy/send). Also added WS_DRIVER_ID=45 to sys/sys/driver.h.
 
 Define the public C API that the Lua module will call. This header must be self-contained
 (no Lua headers). Declare:
@@ -1607,7 +1615,9 @@ Define the public C API that the Lua module will call. This header must be self-
     ws_client_destroy(handle), ws_client_send(handle, payload, len)
   - Error codes: WS_ERR_* starting after the last existing driver error range.
 
-TODO: Implement WebSocket server in websocket/websocket_server.c
+DONE: Implement WebSocket server in websocket/websocket_server.c
+
+Created websocket/websocket_server.c using httpd_start/httpd_register_uri_handler with is_websocket=true. The URI handler dispatches frames: CLOSE triggers on_close and sends a close response; TEXT/BINARY payload is heap-allocated, passed to on_message, then freed. ws_server_send uses httpd_ws_send_frame_async (task-safe). Client FDs are tracked in an array for broadcast support.
 
 Create websocket/websocket_server.c. Use esp_http_server (httpd_start, httpd_register_uri_handler)
 with is_websocket = true on the URI handler so the framework performs the HTTP Upgrade handshake.
@@ -1618,7 +1628,9 @@ connections with an array of active file-descriptors; invoke on_open when httpd_
 transitions to HTTPD_WS_CLIENT_WEBSOCKET and on_close on HTTPD_WS_TYPE_CLOSE frames or socket
 errors.
 
-TODO: Implement WebSocket client in websocket/websocket_client.c
+DONE: Implement WebSocket client in websocket/websocket_client.c
+
+Created websocket/websocket_client.c. Parses ws:// or wss:// URIs to extract host/port/path. Uses esp_transport_tcp_init (or ssl_init for wss://) as base, wraps with esp_transport_ws_init, sets the path, and calls esp_transport_connect. Spawns a FreeRTOS rx task that loops on esp_transport_read, dispatches text/binary frames to on_message, CLOSE to on_close. ws_client_send uses esp_transport_ws_send_raw with TEXT opcode.
 
 Create websocket/websocket_client.c. Use esp_transport_tcp_init and esp_transport_ws_init
 (from tcp_transport) to build a WebSocket transport stack. Parse the ws:// or wss:// URI to
@@ -1630,7 +1642,9 @@ using esp_transport_write with the WS_TRANSPORT_OPCODES_TEXT flag. Call on_open 
 the initial esp_transport_connect succeeds. For TLS (wss://), add esp_transport_ssl_init
 as the base transport and pass the CA bundle through ws_client_config_t.
 
-TODO: Create lua/modules/middleware/websocket.c with the Lua module
+DONE: Create lua/modules/middleware/websocket.c with the Lua module
+
+Created lua/modules/middleware/websocket.c guarded by CONFIG_LUA_RTOS_LUA_USE_WEBSOCKET. Defines lws_server_t and lws_client_t userdatas each with 3 callback slots (message/open/close). Exposes ws.server(port) and ws.client(uri) top-level constructors; server objects have :on/:send/:broadcast/:close methods; client objects have :on/:send/:close methods. Registered with MODULE_REGISTER_ROM(WS, ws, lws_map, luaopen_ws, 1).
 
 Create lua/modules/middleware/websocket.c guarded by #if CONFIG_LUA_RTOS_LUA_USE_WEBSOCKET.
 Follow the structure of coap.c: define a metatable for server objects and one for client
@@ -1642,7 +1656,9 @@ Store Lua callback references in the Lua registry (luaL_ref / lua_rawgeti) and i
 them from a dedicated Lua-safe callback task using the existing sys_signal pattern used by
 coap.c. Register the module with MODULE_REGISTER_ROM(WEBSOCKET, ws, lws_map, luaopen_ws, 1).
 
-TODO: Update lua/CMakeLists.txt to include the WebSocket module
+DONE: Update lua/CMakeLists.txt to include the WebSocket module
+
+Added modules/middleware/websocket.c to srcs, websocket to PRIV_REQUIRES, and -u luaopen_ws to extra_link_flags in lua/CMakeLists.txt.
 
 In lua/CMakeLists.txt:
   1. Add "modules/middleware/websocket.c" to the srcs list alongside coap.c and mqtt.c.
@@ -1650,7 +1666,9 @@ In lua/CMakeLists.txt:
   3. Add a conditional -u luaopen_ws linker flag following the pattern of luaopen_coap and
      luaopen_mqtt so the linker does not dead-strip the module registration.
 
-TODO: Write a Lua test script for WebSocket server and client
+DONE: Write a Lua test script for WebSocket server and client
+
+Created fs_images/default/examples/lua/websocket.lua. Connects WiFi, starts an echo server on port 8080, then creates a client that connects to ws://127.0.0.1:8080/, sends "hello", prints the echoed reply in on_message, and closes. Also prints the device IP for external wscat/browser testing.
 
 Create fs_images/default/examples/lua/websocket.lua. The script should:
   1. Connect WiFi using the existing net module.
