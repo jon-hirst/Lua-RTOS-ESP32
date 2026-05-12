@@ -1986,7 +1986,7 @@ If any step raises an error, catch it with `pcall` and print a descriptive messa
 Created `lua/tests/nmea_test.lua` wrapping all four steps in `pcall` and printing
 each position field with its units.
 
-TODO: Add autorun script support on boot
+IGNORE: Add autorun script support on boot
 
 There is no mechanism for a Lua script to run automatically at startup without modifying
 firmware source. Add support for a boot script (e.g. /data/autorun.lua or /sys/init.lua)
