@@ -243,6 +243,31 @@ int captivedns_start(lua_State* L) {
   return 0;
 }
 
+int captivedns_start_raw(void) {
+  driver_error_t *error;
+
+  wifi_mode_t mode;
+  if ((error = wifi_check_error(esp_wifi_get_mode(&mode)))) {
+    free(error);
+    return -1;
+  }
+
+  if (mode == WIFI_MODE_STA) {
+    return -1;
+  }
+
+  if ((error = wifi_stat(&if_config))) {
+    free(error);
+    return -1;
+  }
+
+  captive_api_call_t msg = {
+  };
+  tcpip_api_call(captivedns_inc_pcb_refcount, (struct tcpip_api_call_data*)&msg);
+
+  return (msg.err == ERR_OK) ? 0 : -1;
+}
+
 void captivedns_stop() {
   captive_api_call_t msg = {
   };

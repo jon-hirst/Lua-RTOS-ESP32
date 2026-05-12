@@ -56,6 +56,7 @@
 
 #include "modules.h"
 
+#include "net_wifi_prov.inc"
 #include "net_wifi.inc"
 #include "net_eth.inc"
 #include "net_service_sntp.inc"

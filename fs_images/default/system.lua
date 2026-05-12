@@ -80,9 +80,36 @@ end
 
 -- Network setup
 if (config.wifi) then
+	-- Provisioning: if net.wf.prov is available and no credentials are stored,
+	-- start the captive-portal SoftAP (this call blocks until the device reboots).
+	if (net.wf.prov ~= nil) then
+		if (not net.wf.prov.has_credentials()) then
+			print("No WiFi credentials found — starting provisioning portal ...")
+			net.wf.prov.start("LuaRTOS-Setup", "")
+			-- wifi_prov_start blocks until esp_restart() is called from the HTTP task.
+		else
+			-- Load stored credentials and override the config before connecting.
+			local prov_ssid = {}
+			local prov_pass = {}
+			-- nvs.read returns the value for a given namespace/key
+			local ok_ssid, stored_ssid = pcall(function()
+				return nvs.read("wifiprov", "ssid")
+			end)
+			local ok_pass, stored_pass = pcall(function()
+				return nvs.read("wifiprov", "pass")
+			end)
+			if ok_ssid and stored_ssid and stored_ssid ~= "" then
+				config.net.wifi.ssid = stored_ssid
+			end
+			if ok_pass and stored_pass then
+				config.net.wifi.pass = stored_pass
+			end
+		end
+	end
+
 	print("Starting wifi ...")
 	net.wf.setup(
-		net.wf.mode.STA, config.net.wifi.ssid, config.net.wifi.pass, 
+		net.wf.mode.STA, config.net.wifi.ssid, config.net.wifi.pass,
 		config.net.wifi.ip, config.net.wifi.mask, config.net.wifi.gw,
 		config.net.wifi.dns1, config.net.wifi.dns2
 	)

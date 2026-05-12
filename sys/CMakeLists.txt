@@ -153,6 +153,9 @@ set(fragments
     "iram.lf"
 )	   
 
+if(CONFIG_LUA_RTOS_WIFI_PROV)
+    list(APPEND srcs "drivers/wifi_prov.c")
+endif()
 if(CONFIG_LUA_RTOS_LUA_USE_BMA423)
     list(APPEND srcs "drivers/bma423.c")
 endif()

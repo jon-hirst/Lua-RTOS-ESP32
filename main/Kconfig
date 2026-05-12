@@ -1699,6 +1699,17 @@ menu "Lua RTOS"
                bool "Include curl support in net module"
                default n
 
+            config LUA_RTOS_WIFI_PROV
+               depends on LUA_RTOS_LUA_USE_NET
+               bool "Enable WiFi provisioning captive portal"
+               default n
+               help
+                 Enables a SoftAP captive-portal provisioning mode. On first boot
+                 (or after credentials are erased) the device starts a SoftAP and
+                 serves an HTTP form so the user can enter their SSID and password
+                 from a phone or browser. Credentials are stored in NVS so
+                 provisioning only runs once unless explicitly reset.
+
             config LUA_RTOS_LUA_USE_ENCODER
                bool "Include encoder module in build"
                default y

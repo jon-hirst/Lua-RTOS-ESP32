@@ -1686,7 +1686,7 @@ Add a CDC-ACM (USB serial) device using the ESP-IDF TinyUSB component so the dev
 as a virtual COM port to a connected PC, usable as an alternative to the UART console.
 Optionally add HID and mass-storage class support.
 
-TODO: Add WiFi provisioning for first-run credential setup
+DONE: Add WiFi provisioning for first-run credential setup
 
 There is no mechanism to configure WiFi credentials on a fresh device without recompiling.
 Add a provisioning mode that starts a SoftAP with a captive portal (or uses BLE GATT once
@@ -1694,14 +1694,20 @@ that is implemented) so users can enter SSID and password from a phone or browse
 with ESP-IDF's wifi_prov_mgr component. Credentials should be saved to NVS so provisioning
 only runs once unless explicitly reset.
 
-TODO: WiFi provisioning step 1 — Add CONFIG_LUA_RTOS_WIFI_PROV Kconfig option
+DONE: WiFi provisioning step 1 — Add CONFIG_LUA_RTOS_WIFI_PROV Kconfig option
+
+Added config LUA_RTOS_WIFI_PROV to main/Kconfig after LUA_RTOS_LUA_USE_CURL_NET.
+Depends on LUA_RTOS_LUA_USE_NET, default n, with help text describing the captive portal.
 
 In main/Kconfig, inside the WiFi / NET section (near LUA_RTOS_LUA_USE_NET), add a new bool
 config symbol CONFIG_LUA_RTOS_WIFI_PROV that depends on LUA_RTOS_LUA_USE_NET.  Give it a
 help text explaining that enabling it adds a SoftAP captive-portal provisioning mode that
 lets users enter SSID and password from a browser on first boot.
 
-TODO: WiFi provisioning step 2 — Create sys/drivers/wifi_prov.h
+DONE: WiFi provisioning step 2 — Create sys/drivers/wifi_prov.h
+
+Created sys/drivers/wifi_prov.h with the provisioning C API declarations, guarded
+by #if CONFIG_LUA_RTOS_WIFI_PROV.
 
 Declare the provisioning C API:
   int wifi_prov_has_credentials(void);
@@ -1712,7 +1718,12 @@ Declare the provisioning C API:
   void wifi_prov_stop(void);
 Guard the entire header in #if CONFIG_LUA_RTOS_WIFI_PROV ... #endif.
 
-TODO: WiFi provisioning step 3 — Implement NVS credential storage in sys/drivers/wifi_prov.c
+DONE: WiFi provisioning step 3 — Implement NVS credential storage in sys/drivers/wifi_prov.c
+
+Created sys/drivers/wifi_prov.c. Implemented wifi_prov_has_credentials,
+wifi_prov_load_credentials, wifi_prov_save_credentials, wifi_prov_erase_credentials
+using nvs_flash API (namespace "wifiprov", keys "ssid" and "pass").
+wifi_prov_has_credentials returns 1 only when ssid key exists and is non-empty.
 
 Create sys/drivers/wifi_prov.c. Implement wifi_prov_has_credentials, wifi_prov_load_credentials,
 wifi_prov_save_credentials, and wifi_prov_erase_credentials using the ESP-IDF nvs_flash / nvs
@@ -1720,7 +1731,11 @@ API directly (namespace "wifiprov", string keys "ssid" and "pass").  Use nvs_get
 nvs_set_str. wifi_prov_has_credentials returns 1 only when both "ssid" and "pass" keys
 exist and ssid is non-empty.  Guard everything in #if CONFIG_LUA_RTOS_WIFI_PROV.
 
-TODO: WiFi provisioning step 4 — Implement SoftAP startup in wifi_prov_start()
+DONE: WiFi provisioning step 4 — Implement SoftAP startup in wifi_prov_start()
+
+Implemented wifi_prov_start() in sys/drivers/wifi_prov.c. Calls wifi_setup(WIFI_MODE_AP,...),
+wifi_start(0), then captivedns_start_raw() (a new non-Lua variant added to captivedns.c),
+then spawns wifi_prov_http_task. wifi_prov_stop() calls captivedns_stop() and wifi_stop().
 
 In sys/drivers/wifi_prov.c, implement wifi_prov_start(ap_ssid, ap_pass).  It must:
   1. Call wifi_setup(WIFI_MODE_AP, ap_ssid, ap_pass, 0,0,0,0,0, 0, 1, 0) to bring up
@@ -1734,7 +1749,12 @@ In sys/drivers/wifi_prov.c, implement wifi_prov_start(ap_ssid, ap_pass).  It mus
   5. Spawn a FreeRTOS task (wifi_prov_http_task) on port 80 to serve the provisioning
      form (implemented in step 5).
 
-TODO: WiFi provisioning step 5 — Implement the provisioning HTTP server task
+DONE: WiFi provisioning step 5 — Implement the provisioning HTTP server task
+
+Implemented wifi_prov_http_task() in sys/drivers/wifi_prov.c. Uses lwIP raw sockets.
+GET / scans APs and returns a self-contained HTML form with a select list and password
+input. POST / URL-decodes ssid/pass fields, calls wifi_prov_save_credentials(), sends a
+confirmation page, waits 500 ms, then calls esp_restart(). Other paths redirect to /.
 
 In sys/drivers/wifi_prov.c, implement wifi_prov_http_task().  Use lwIP raw sockets
 (not the full httpsrv).  For each accepted connection:
@@ -1748,7 +1768,11 @@ In sys/drivers/wifi_prov.c, implement wifi_prov_http_task().  Use lwIP raw socke
   - Any other path: redirect to /.
 Stop the task and call wifi_prov_stop() which calls captivedns_stop() and wifi_stop().
 
-TODO: WiFi provisioning step 6 — Create lua/modules/net/net_wifi_prov.inc
+DONE: WiFi provisioning step 6 — Create lua/modules/net/net_wifi_prov.inc
+
+Created lua/modules/net/net_wifi_prov.inc with lnet_wf_prov_start (optional ap_ssid/ap_pass
+with defaults "LuaRTOS-Setup"/""), lnet_wf_prov_reset, lnet_wf_prov_has, and
+net_wf_prov_map[] table. Guarded by #if CONFIG_LUA_RTOS_WIFI_PROV.
 
 Define three Lua-callable C functions:
   lnet_wf_prov_start(L)   — optional args ap_ssid, ap_pass (defaults "LuaRTOS-Setup", "")
@@ -1757,20 +1781,32 @@ Define three Lua-callable C functions:
 And a static const LUA_REG_TYPE net_wf_prov_map[] table exposing them as
 "start", "reset", "has_credentials".  Guard in #if CONFIG_LUA_RTOS_WIFI_PROV.
 
-TODO: WiFi provisioning step 7 — Wire net.wf.prov sub-table into net.c
+DONE: WiFi provisioning step 7 — Wire net.wf.prov sub-table into net.c
+
+Added #include "net_wifi_prov.inc" in lua/modules/net/net.c.
+Added { LSTRKEY("prov"), LROVAL(net_wf_prov_map) } entry in wifi_map[] in net_wifi.inc,
+guarded by #if CONFIG_LUA_RTOS_WIFI_PROV.
 
 In lua/modules/net/net.c, #include "net_wifi_prov.inc" alongside the other .inc files.
 In the net_wf_map[] table (or wherever net.wf sub-keys are registered) add an entry
 { LSTRKEY("prov"), LROVAL(net_wf_prov_map) } guarded by CONFIG_LUA_RTOS_WIFI_PROV.
 
-TODO: WiFi provisioning step 8 — Update build system to compile wifi_prov.c
+DONE: WiFi provisioning step 8 — Update build system to compile wifi_prov.c
+
+Added if(CONFIG_LUA_RTOS_WIFI_PROV) block in sys/CMakeLists.txt that appends
+"drivers/wifi_prov.c" to srcs. Verified nvs_flash is already in PRIV_REQUIRES.
 
 In sys/drivers/CMakeLists.txt (the file that lists driver source files), add
 wifi_prov.c to the sources list, wrapped in an if(CONFIG_LUA_RTOS_WIFI_PROV) block.
 Ensure nvs_flash is listed in the REQUIRES or PRIV_REQUIRES for the sys component
 (it is likely already there; verify and add if missing).
 
-TODO: WiFi provisioning step 9 — Update system.lua to use stored credentials
+DONE: WiFi provisioning step 9 — Update system.lua to use stored credentials
+
+Updated fs_images/default/system.lua. Inside the "if (config.wifi)" block, added
+provisioning logic: if net.wf.prov is non-nil, checks has_credentials(); if false,
+calls net.wf.prov.start (blocking until reboot); if true, loads SSID/pass from NVS
+via nvs.read (pcall-guarded) and overrides config.net.wifi before net.wf.setup().
 
 In fs_images/default/system.lua, before the existing "if (config.wifi)" block, add
 provisioning logic:
@@ -1782,7 +1818,11 @@ provisioning logic:
             and config.data.wifi.pass before calling net.wf.setup().
   - The existing wifi block runs normally with the NVS-supplied credentials.
 
-TODO: WiFi provisioning step 10 — Add example script wifi-prov.lua
+DONE: WiFi provisioning step 10 — Add example script wifi-prov.lua
+
+Created fs_images/default/examples/lua/wifi-prov.lua. Checks net.wf.prov availability,
+shows has_credentials() result, calls net.wf.prov.start() if no credentials are stored,
+and includes reset instructions and full user-flow comments.
 
 Create fs_images/default/examples/lua/wifi-prov.lua demonstrating:
   - Checking whether credentials are already stored (net.wf.prov.has_credentials()).

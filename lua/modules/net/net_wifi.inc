@@ -575,6 +575,9 @@ static const LUA_REG_TYPE wifi_map[] = {
     { LSTRKEY( "powersave" ),     LROVAL  ( wifi_powersave_map ) },
     { LSTRKEY( "wpstype"   ),     LROVAL  ( wifi_wpstype_map   ) },
     { LSTRKEY( "timecheck" ),     LROVAL  ( wifi_timecheck_map ) },
+#if CONFIG_LUA_RTOS_WIFI_PROV
+    { LSTRKEY( "prov"      ),     LROVAL  ( net_wf_prov_map    ) },
+#endif
 
     DRIVER_REGISTER_LUA_ERRORS(wifi)
     { LNILKEY, LNILVAL }
