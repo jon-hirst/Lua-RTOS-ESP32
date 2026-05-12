@@ -436,7 +436,7 @@ driver_error_t *wifi_scan(uint16_t *count, wifi_ap_record_t **list) {
     return NULL;
 }
 
-driver_error_t *wifi_setup(wifi_mode_t mode, char *ssid, char *password, uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns1, uint32_t dns2, int powersave, int channel, int hidden) {
+driver_error_t *wifi_setup(wifi_mode_t mode, char *ssid, char *password, uint32_t ip, uint32_t mask, uint32_t gw, uint32_t dns1, uint32_t dns2, int powersave, int channel, int hidden, int auth_mode) {
     driver_error_t *error;
     wifi_interface_t interface;
 
@@ -478,6 +478,13 @@ driver_error_t *wifi_setup(wifi_mode_t mode, char *ssid, char *password, uint32_
         strncpy((char *)wifi_config.sta.password, password, 64);
 
         wifi_config.sta.channel = (channel ? channel : 0);
+
+        if (auth_mode == WIFI_AUTH_WPA3_PSK || auth_mode == WIFI_AUTH_WPA2_WPA3_PSK) {
+            wifi_config.sta.threshold.authmode = (wifi_auth_mode_t)auth_mode;
+            wifi_config.sta.pmf_cfg.capable  = true;
+            wifi_config.sta.pmf_cfg.required = (auth_mode == WIFI_AUTH_WPA3_PSK);
+            wifi_config.sta.sae_pwe_h2e      = WPA3_SAE_PWE_BOTH;
+        }
 
         interface = ESP_IF_WIFI_STA;
         if ((error = wifi_check_error(esp_wifi_set_config(interface, &wifi_config)))) return error;

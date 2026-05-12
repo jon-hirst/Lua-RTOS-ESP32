@@ -82,6 +82,7 @@ static int lwifi_setup(lua_State* L) {
     int powersave = 0;
     int channel = 0;
     int hidden = 0;
+    int auth_mode = 0;
 
     uint32_t ip = 0;
     uint32_t mask = 0;
@@ -102,6 +103,7 @@ static int lwifi_setup(lua_State* L) {
         dns2 = luaL_optinteger(L, 8, 0);
         powersave = luaL_optinteger(L, 9, 0);
         channel = luaL_optinteger(L, 10, 0);
+        auth_mode = luaL_optinteger(L, 11, 0);
     } else if (mode == WIFI_MODE_AP || mode == WIFI_MODE_APSTA) {
         powersave = luaL_optinteger(L, 4, 0);
         channel = luaL_optinteger(L, 5, 0);
@@ -117,7 +119,7 @@ static int lwifi_setup(lua_State* L) {
     }
 
     // Setup wifi
-    if ((error = wifi_setup(mode, (char *)ssid, (char *)password, ip, mask, gw, dns1, dns2, powersave, channel, hidden))) {
+    if ((error = wifi_setup(mode, (char *)ssid, (char *)password, ip, mask, gw, dns1, dns2, powersave, channel, hidden, auth_mode))) {
         return luaL_driver_error(L, error);
     }
 
@@ -524,7 +526,9 @@ static const LUA_REG_TYPE wifi_auth_map[] = {
     { LSTRKEY( "WEP"          ), LINTVAL( WIFI_AUTH_WEP ) },
     { LSTRKEY( "WPA_PSK"      ), LINTVAL( WIFI_AUTH_WPA_PSK ) },
     { LSTRKEY( "WPA2_PSK"     ), LINTVAL( WIFI_AUTH_WPA2_PSK ) },
-    { LSTRKEY( "WPA_WPA2_PSK" ), LINTVAL( WIFI_AUTH_WPA_WPA2_PSK ) },
+    { LSTRKEY( "WPA_WPA2_PSK"  ), LINTVAL( WIFI_AUTH_WPA_WPA2_PSK  ) },
+    { LSTRKEY( "WPA3_PSK"      ), LINTVAL( WIFI_AUTH_WPA3_PSK      ) },
+    { LSTRKEY( "WPA2_WPA3_PSK" ), LINTVAL( WIFI_AUTH_WPA2_WPA3_PSK ) },
     { LNILKEY, LNILVAL }
 };
 

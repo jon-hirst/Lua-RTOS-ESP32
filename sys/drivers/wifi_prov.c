@@ -383,7 +383,7 @@ driver_error_t *wifi_prov_start(const char *ap_ssid, const char *ap_pass) {
 
     /* Bring up the SoftAP */
     error = wifi_setup(WIFI_MODE_AP, (char *)ap_ssid, (char *)ap_pass,
-                       0, 0, 0, 0, 0, 0, 1, 0);
+                       0, 0, 0, 0, 0, 0, 1, 0, 0);
     if (error) return error;
 
     error = wifi_start(0);

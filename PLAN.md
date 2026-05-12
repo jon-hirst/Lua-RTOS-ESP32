@@ -2052,7 +2052,7 @@ that is executed by the Lua VM immediately after the REPL initialises. If the sc
 with an error the REPL should still start. Provide a way to disable autorun from the REPL
 (e.g. os.autorun(false)) to recover from a broken boot script without reflashing.
 
-TODO: Add WPA3 WiFi authentication support
+DONE: Add WPA3 WiFi authentication support
 
 The WiFi driver in sys/drivers/wifi.c only explicitly handles WPA2-PSK. WPA3-Personal
 (SAE handshake) is increasingly required by modern access points and is supported by the
@@ -2060,13 +2060,16 @@ ESP-IDF wifi component via WIFI_AUTH_WPA3_PSK and WIFI_AUTH_WPA2_WPA3_PSK auth m
 Add these auth modes to the Lua wifi.sta.setup() API and document that WPA3 requires
 CONFIG_ESP_WIFI_ENABLE_WPA3_SAE=y in sdkconfig.
 
-TODO: Verify CONFIG_ESP_WIFI_ENABLE_WPA3_SAE is enabled in sdkconfig
+DONE: Verify CONFIG_ESP_WIFI_ENABLE_WPA3_SAE is enabled in sdkconfig
 
 Check build/config/sdkconfig.h to confirm CONFIG_ESP_WIFI_ENABLE_WPA3_SAE=1 is already
 present. If it is not set, identify the sdkconfig entry and document how the user must
 enable it before WPA3 will work at runtime.
 
-TODO: Add WPA3 auth mode parameter to wifi_setup() in sys/drivers/wifi.c and sys/drivers/wifi.h
+build/config/sdkconfig.h confirms: CONFIG_ESP_WIFI_ENABLE_WPA3_SAE=1 and CONFIG_ESP_WIFI_ENABLE_WPA3_OWE_STA=1.
+No sdkconfig change is required.
+
+DONE: Add WPA3 auth mode parameter to wifi_setup() in sys/drivers/wifi.c and sys/drivers/wifi.h
 
 Extend the wifi_setup() signature to accept a new int auth_mode parameter (placed after
 the existing password parameter). When mode is WIFI_MODE_STA and auth_mode is
@@ -2081,7 +2084,10 @@ For all other auth modes (including 0 / unspecified) leave the fields at their z
 initialised defaults so existing WPA2 behaviour is unchanged.
 Update the declaration in sys/drivers/wifi.h to match.
 
-TODO: Update every call-site of wifi_setup() to pass the new auth_mode argument
+Added auth_mode parameter to wifi_setup() in wifi.h (line 89) and wifi.c (line 439).
+Added WPA3 config block in STA branch setting threshold.authmode, pmf_cfg, and sae_pwe_h2e.
+
+DONE: Update every call-site of wifi_setup() to pass the new auth_mode argument
 
 Two call-sites exist outside of net_wifi.inc:
   1. sys/drivers/wifi_prov.c: wifi_prov_start() calls wifi_setup() for AP mode.
@@ -2089,7 +2095,10 @@ Two call-sites exist outside of net_wifi.inc:
      unchanged.
   2. Any future call-sites discovered by grep should also be updated.
 
-TODO: Add WPA3_PSK and WPA2_WPA3_PSK constants to the Lua wifi auth map in lua/modules/net/net_wifi.inc
+Updated wifi_prov.c:386 — added trailing 0 (auth_mode) to the wifi_setup() call.
+No other call-sites found outside net_wifi.inc (covered by the next TODO).
+
+DONE: Add WPA3_PSK and WPA2_WPA3_PSK constants to the Lua wifi auth map in lua/modules/net/net_wifi.inc
 
 In the wifi_auth_map[] table (around line 522) add:
   { LSTRKEY( "WPA3_PSK"      ), LINTVAL( WIFI_AUTH_WPA3_PSK      ) },
@@ -2097,7 +2106,9 @@ In the wifi_auth_map[] table (around line 522) add:
 These expose the new constants as net.wf.auth.WPA3_PSK and net.wf.auth.WPA2_WPA3_PSK
 in Lua scripts.
 
-TODO: Add optional auth_mode argument to lwifi_setup() in lua/modules/net/net_wifi.inc
+Added both entries to wifi_auth_map[] in net_wifi.inc:527-528.
+
+DONE: Add optional auth_mode argument to lwifi_setup() in lua/modules/net/net_wifi.inc
 
 In the STA branch of lwifi_setup() (around line 96) read an optional integer argument
 for auth mode:
@@ -2107,7 +2118,10 @@ The argument position (11) follows the existing optional channel argument at pos
 so the extended Lua API becomes:
   net.wf.setup(mode, ssid, password [, ip, mask, gw, dns1, dns2, powersave, channel, auth])
 
-TODO: Write a Lua test script for WPA3 in lua/tests/
+Added `int auth_mode = 0;` with other locals; added `auth_mode = luaL_optinteger(L, 11, 0)`
+in STA branch; passed auth_mode to wifi_setup() call in net_wifi.inc.
+
+DONE: Write a Lua test script for WPA3 in lua/tests/
 
 Create lua/tests/test_wifi_wpa3.lua that:
   1. Calls net.wf.setup(net.wf.mode.STA, ssid, pass, 0,0,0,0,0,0,0, net.wf.auth.WPA3_PSK)
@@ -2116,4 +2130,6 @@ Create lua/tests/test_wifi_wpa3.lua that:
   3. Verifies that net.wf.auth.WPA3_PSK and net.wf.auth.WPA2_WPA3_PSK constants are
      integers and non-zero.
 The test is a compile/link smoke-test; actual AP connection requires hardware.
+
+Created lua/tests/test_wifi_wpa3.lua with all three checks plus a distinctness assertion.
 
