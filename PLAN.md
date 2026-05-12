@@ -1559,6 +1559,50 @@ storage, and carrying large firmware images. Add an SDMMC driver using the ESP-I
 component and an SPI-SD fallback for boards that route SD over SPI. Mount the card as a VFS
 filesystem (e.g. /sd) using the existing mount infrastructure so standard Lua io.* calls work.
 
+TODO: Update sys/vfs/fat.c for ESP-IDF v5 API
+
+The file sys/vfs/fat.c was written for ESP-IDF v4 and uses removed/deprecated APIs.
+Update it to use the v5 equivalents:
+- Replace sdspi_slot_config_t with sdspi_device_config_t and SDSPI_SLOT_CONFIG_DEFAULT() with SDSPI_DEVICE_CONFIG_DEFAULT().
+- Replace sdspi_device_config_t.gpio_miso/mosi/sck fields (removed in v5) with host_id (SPI bus number) and gpio_cs only; the bus pins are already configured by the SPI driver.
+- Replace esp_vfs_fat_sdmmc_mount() for the SPI path with esp_vfs_fat_sdspi_mount().
+- Replace esp_vfs_fat_sdmmc_unmount() (deprecated) with esp_vfs_fat_sdcard_unmount(path, card) in both vfs_fat_umount() and vfs_fat_format().
+- Store the sdmmc_card_t* handle as a file-scope static so unmount and format can reference it.
+- Update the #include paths: driver/sdmmc_host.h and driver/sdspi_host.h are now in esp_driver_sdmmc and esp_driver_sdspi components respectively (same include paths, different component names).
+
+TODO: Enable vfs/fat.c in sys/CMakeLists.txt and add component dependencies
+
+sys/CMakeLists.txt has "vfs/fat.c" commented out (line 124) and the REQUIRES list does not include the SD/FAT components.
+- Uncomment the "vfs/fat.c" source entry, guarded by a cmake if(CONFIG_SD_CARD_MMC OR CONFIG_SD_CARD_SPI) block so it only builds when an SD interface is selected.
+- Add esp_driver_sdmmc, esp_driver_sdspi, and fatfs to the REQUIRES list (already-present entries stay).
+
+TODO: Add Lua sd module (lua/modules/sys/sd.c)
+
+No Lua-facing sd module exists. Create lua/modules/sys/sd.c exposing:
+- sd.mount([path])   -- mount the SD card at the given VFS path (default "/sd")
+- sd.umount([path])  -- unmount the SD card
+- sd.info()          -- return a table with name, type ("SDHC/SDXC" or "SDSC"), and size_mb
+- sd.format([path])  -- reformat the FAT filesystem on the card
+Each function calls the corresponding vfs_fat_* helper in sys/vfs/fat.c.
+Register the module in the same module table where i2c, spi, and similar drivers are listed.
+
+TODO: Add sd module to Lua module registry
+
+Find the file that lists all Lua hardware/sys modules (the array of luaL_Reg or equivalent table used by the interpreter) and add an entry for the new sd module so it is available as require("sd") or the global sd table at boot.
+
+TODO: Enable SD card and FAT in sdkconfig
+
+Set CONFIG_SD_CARD_MMC=y (or CONFIG_SD_CARD_SPI=y for SPI boards), CONFIG_LUA_RTOS_USE_FAT=y, and the related pin/bus options in sdkconfig so the driver compiles and is exercised. Document the minimal set of config keys that must be set for each interface so future board ports know what to touch.
+
+TODO: Write Lua test script for SD card driver (lua/tests/test_sd.lua)
+
+Create lua/tests/test_sd.lua that:
+- Mounts the SD card with sd.mount("/sd").
+- Prints card info from sd.info().
+- Creates, writes, reads back, and deletes a file using standard io.open() / io.read() / io.write() calls so the VFS path is exercised.
+- Unmounts the card with sd.umount("/sd").
+Include comments on each step so the script also serves as usage documentation.
+
 DONE: Add WebSocket server and client
 
 The HTTP server and MQTT client are present but there is no WebSocket support. WebSockets are
