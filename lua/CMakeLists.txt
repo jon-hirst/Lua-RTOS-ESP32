@@ -29,6 +29,7 @@ set(srcs
 	"modules/hw/servo.c"
 	"modules/hw/spi.c"
 	"modules/hw/stepper.c"
+	"modules/hw/nmea.c"
 	"modules/hw/touch.c"
 	"modules/hw/uart.c"
 #	"modules/hw/ulp.c"
@@ -165,6 +166,7 @@ list(APPEND extra_link_flags "-u luaopen_encoder")
 list(APPEND extra_link_flags "-u luaopen_gdisplay")
 list(APPEND extra_link_flags "-u luaopen_i2c")
 list(APPEND extra_link_flags "-u luaopen_i2s")
+list(APPEND extra_link_flags "-u luaopen_nmea")
 list(APPEND extra_link_flags "-u luaopen_neopixel")
 list(APPEND extra_link_flags "-u luaopen_pcf8563")
 list(APPEND extra_link_flags "-u luaopen_pio")

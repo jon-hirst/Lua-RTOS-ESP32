@@ -45,7 +45,7 @@
 
 #include "sdkconfig.h"
 
-#if CONFIG_LUA_RTOS_USE_SENSOR_GPS
+#if CONFIG_LUA_RTOS_USE_SENSOR_GPS || CONFIG_LUA_RTOS_LUA_USE_NMEA
 
 #include <stdlib.h>
 #include <stdio.h>

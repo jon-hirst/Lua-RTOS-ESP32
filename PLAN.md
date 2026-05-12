@@ -1777,27 +1777,34 @@ supporting common image sensors (OV2640, OV5640). Expose a Lua API to capture a 
 to a buffer or directly to the LFS filesystem, and optionally stream frames over the HTTP
 server as MJPEG.
 
-TODO: Add NMEA sentence parser Lua bindings
+DONE: Add NMEA sentence parser Lua bindings
 
 The nmea/ directory contains a C NMEA parser library but it has no Lua bindings. Add a Lua
 module (hw.nmea or sensor.gps at the parsed level) that wraps the parser so scripts can open
 a UART port connected to a GPS module and receive structured position, speed, course, and
 satellite-count values rather than raw NMEA strings.
 
-TODO: Add NMEA Lua bindings — step 1: add CONFIG_LUA_RTOS_LUA_USE_NMEA Kconfig entry
+DONE: Add NMEA Lua bindings — step 1: add CONFIG_LUA_RTOS_LUA_USE_NMEA Kconfig entry
 
 Add a new `config LUA_RTOS_LUA_USE_NMEA` entry in `main/Kconfig` in the hw-modules section
 (near the existing UART entry). This bool option, defaulting to `y`, guards compilation of
 the new Lua nmea module and is independent of `CONFIG_LUA_RTOS_USE_SENSOR_GPS`.
 
-TODO: Add NMEA Lua bindings — step 2: extend nmea library guard to cover new Kconfig key
+Added `config LUA_RTOS_LUA_USE_NMEA` bool entry (default y) in `main/Kconfig` after the
+`LUA_RTOS_LUA_USE_UART` entry, with a help string explaining the module purpose.
+
+DONE: Add NMEA Lua bindings — step 2: extend nmea library guard to cover new Kconfig key
 
 `nmea/nmea0183.h` and `nmea/nmea0183.c` are currently compiled only when
 `CONFIG_LUA_RTOS_USE_SENSOR_GPS=y`. Change the `#if` guard in both files to also compile
 when `CONFIG_LUA_RTOS_LUA_USE_NMEA=y`, so the new Lua module can use the library without
 requiring the sensor framework.
 
-TODO: Add NMEA Lua bindings — step 3: create lua/modules/hw/nmea.c
+Changed `#if CONFIG_LUA_RTOS_USE_SENSOR_GPS` to
+`#if CONFIG_LUA_RTOS_USE_SENSOR_GPS || CONFIG_LUA_RTOS_LUA_USE_NMEA` in both
+`nmea/nmea0183.h` and `nmea/nmea0183.c`.
+
+DONE: Add NMEA Lua bindings — step 3: create lua/modules/hw/nmea.c
 
 Create `lua/modules/hw/nmea.c`, guarded by `#if CONFIG_LUA_RTOS_LUA_USE_NMEA`. The module
 is named `nmea` and exposes:
@@ -1815,14 +1822,22 @@ The module must register a DRIVER error block with DRIVER_REGISTER_BEGIN/END and
 at least one error code for "can't create task". Follow the structure used by
 `lua/modules/middleware/websocket.c`. Register the module with MODULE_REGISTER_ROM.
 
-TODO: Add NMEA Lua bindings — step 4: add nmea.c to lua/CMakeLists.txt sources
+Created `lua/modules/hw/nmea.c` with `NMEA_DRIVER_ID 46` added to `sys/sys/driver.h`.
+The module opens the UART via `uart_init`/`uart_setup_interrupts`, spawns an
+`nmea_reader_task` that calls `uart_reads` and `nmea_parse` in a loop, and exposes
+`nmea.setup`, `instance:read`, and `instance:close` via `MODULE_REGISTER_ROM`.
+
+DONE: Add NMEA Lua bindings — step 4: add nmea.c to lua/CMakeLists.txt sources
 
 Add the line `"modules/hw/nmea.c"` to the `srcs` list in `lua/CMakeLists.txt` (near the
 other `modules/hw/*.c` entries). Also add the linker flag
 `list(APPEND extra_link_flags "-u luaopen_nmea")` in the extra_link_flags section so the
 linker does not strip the module registration symbol.
 
-TODO: Add NMEA Lua bindings — step 5: write lua/tests/nmea_test.lua
+Added `"modules/hw/nmea.c"` to the srcs list (before touch.c) and
+`list(APPEND extra_link_flags "-u luaopen_nmea")` before the neopixel entry.
+
+DONE: Add NMEA Lua bindings — step 5: write lua/tests/nmea_test.lua
 
 Create a test script at `lua/tests/nmea_test.lua`. The script should:
 1. Open the nmea module on UART 1 at 9600 baud.
@@ -1830,6 +1845,9 @@ Create a test script at `lua/tests/nmea_test.lua`. The script should:
 3. Call `instance:read()` and print each field (lat, lon, height, sats, valid).
 4. Call `instance:close()`.
 If any step raises an error, catch it with `pcall` and print a descriptive message.
+
+Created `lua/tests/nmea_test.lua` wrapping all four steps in `pcall` and printing
+each position field with its units.
 
 TODO: Add autorun script support on boot
 

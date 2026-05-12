@@ -1967,6 +1967,15 @@ menu "Lua RTOS"
                bool "Include uart module in build"
                default y
 
+            config LUA_RTOS_LUA_USE_NMEA
+               bool "Include nmea module in build"
+               default y
+               help
+                  Enables the Lua 'nmea' module which reads NMEA 0183 sentences
+                  from a UART-connected GPS receiver and returns structured
+                  position, speed, course, and satellite-count values.
+                  Independent of CONFIG_LUA_RTOS_USE_SENSOR_GPS.
+
             config LUA_RTOS_LUA_USE_VGA
                bool "Include vga module in build (FabGL VGAController + Canvas)"
                default n
