@@ -1552,14 +1552,16 @@ Create lua/tests/bluetooth_gatt.lua. The script should:
      disconnect.
 Include comments explaining each API call so the test serves as live documentation.
 
-TODO: Add SD card driver (SDMMC and SPI-SD)
+DONE: Add SD card driver (SDMMC and SPI-SD)
 
 No SD card driver exists in the project. SD cards are essential for data logging, audio file
 storage, and carrying large firmware images. Add an SDMMC driver using the ESP-IDF sdmmc
 component and an SPI-SD fallback for boards that route SD over SPI. Mount the card as a VFS
 filesystem (e.g. /sd) using the existing mount infrastructure so standard Lua io.* calls work.
 
-TODO: Update sys/vfs/fat.c for ESP-IDF v5 API
+Updated sys/vfs/fat.c to ESP-IDF v5 API; enabled vfs/fat.c conditionally in sys/CMakeLists.txt with esp_driver_sdmmc/sdspi/fatfs dependencies; created lua/modules/sys/sd.c with mount/umount/info/format; wired into lua/CMakeLists.txt; enabled CONFIG_SD_CARD_MMC and CONFIG_LUA_RTOS_USE_FAT in sdkconfig; wrote lua/tests/test_sd.lua.
+
+DONE: Update sys/vfs/fat.c for ESP-IDF v5 API
 
 The file sys/vfs/fat.c was written for ESP-IDF v4 and uses removed/deprecated APIs.
 Update it to use the v5 equivalents:
@@ -1570,13 +1572,17 @@ Update it to use the v5 equivalents:
 - Store the sdmmc_card_t* handle as a file-scope static so unmount and format can reference it.
 - Update the #include paths: driver/sdmmc_host.h and driver/sdspi_host.h are now in esp_driver_sdmmc and esp_driver_sdspi components respectively (same include paths, different component names).
 
-TODO: Enable vfs/fat.c in sys/CMakeLists.txt and add component dependencies
+Rewrote sys/vfs/fat.c: replaced sdspi_slot_config_t/SDSPI_SLOT_CONFIG_DEFAULT with sdspi_device_config_t/SDSPI_DEVICE_CONFIG_DEFAULT; set host_id and gpio_cs (removed gpio_miso/mosi/sck fields); used esp_vfs_fat_sdspi_mount() for the SPI path; replaced esp_vfs_fat_sdmmc_unmount() with esp_vfs_fat_sdcard_unmount(path,card); replaced esp_vfs_fat_sdmmc_format() with esp_vfs_fat_sdcard_format(); stored sdmmc_card_t* as file-scope s_card static; added vfs_fat_card() accessor; declared vfs_fat_card() as void* in vfs.h.
+
+DONE: Enable vfs/fat.c in sys/CMakeLists.txt and add component dependencies
 
 sys/CMakeLists.txt has "vfs/fat.c" commented out (line 124) and the REQUIRES list does not include the SD/FAT components.
 - Uncomment the "vfs/fat.c" source entry, guarded by a cmake if(CONFIG_SD_CARD_MMC OR CONFIG_SD_CARD_SPI) block so it only builds when an SD interface is selected.
 - Add esp_driver_sdmmc, esp_driver_sdspi, and fatfs to the REQUIRES list (already-present entries stay).
 
-TODO: Add Lua sd module (lua/modules/sys/sd.c)
+Removed the hard-coded comment for vfs/fat.c and added an if(CONFIG_SD_CARD_MMC OR CONFIG_SD_CARD_SPI) conditional list(APPEND srcs "vfs/fat.c") block after the main srcs list. Added esp_driver_sdmmc, esp_driver_sdspi, and fatfs to the REQUIRES line in idf_component_register.
+
+DONE: Add Lua sd module (lua/modules/sys/sd.c)
 
 No Lua-facing sd module exists. Create lua/modules/sys/sd.c exposing:
 - sd.mount([path])   -- mount the SD card at the given VFS path (default "/sd")
@@ -1586,15 +1592,21 @@ No Lua-facing sd module exists. Create lua/modules/sys/sd.c exposing:
 Each function calls the corresponding vfs_fat_* helper in sys/vfs/fat.c.
 Register the module in the same module table where i2c, spi, and similar drivers are listed.
 
-TODO: Add sd module to Lua module registry
+Created lua/modules/sys/sd.c with lsd_mount, lsd_umount, lsd_info, and lsd_format functions. Guarded by #if (CONFIG_SD_CARD_MMC || CONFIG_SD_CARD_SPI) && CONFIG_LUA_RTOS_USE_FAT. Uses vfs_fat_card() cast to sdmmc_card_t* to fill the info table. Registered via MODULE_REGISTER_ROM(SD, sd, sd_map, luaopen_sd, 1).
+
+DONE: Add sd module to Lua module registry
 
 Find the file that lists all Lua hardware/sys modules (the array of luaL_Reg or equivalent table used by the interpreter) and add an entry for the new sd module so it is available as require("sd") or the global sd table at boot.
 
-TODO: Enable SD card and FAT in sdkconfig
+Added "modules/sys/sd.c" to the srcs list in lua/CMakeLists.txt (after nvs.c) and appended list(APPEND extra_link_flags "-u luaopen_sd") after the nvs entry. The MODULE_REGISTER_ROM macro in sd.c handles registration at link time.
+
+DONE: Enable SD card and FAT in sdkconfig
 
 Set CONFIG_SD_CARD_MMC=y (or CONFIG_SD_CARD_SPI=y for SPI boards), CONFIG_LUA_RTOS_USE_FAT=y, and the related pin/bus options in sdkconfig so the driver compiles and is exercised. Document the minimal set of config keys that must be set for each interface so future board ports know what to touch.
 
-TODO: Write Lua test script for SD card driver (lua/tests/test_sd.lua)
+Set in sdkconfig: CONFIG_LUA_RTOS_USE_FAT=y; CONFIG_SD_CARD_MMC=y (SDMMC interface); CONFIG_LUA_RTOS_MCC_1_LINE=y (1-bit bus, safest default); CONFIG_LUA_RTOS_MCC_CD=-1; CONFIG_LUA_RTOS_MCC_WP=-1. For SPI boards change CONFIG_SD_CARD_SPI=y and set CONFIG_LUA_RTOS_SD_SPI and CONFIG_LUA_RTOS_SD_CS. SDMMC uses GPIO2 (DAT0), GPIO14 (CLK), GPIO15 (CMD) by default on ESP32.
+
+DONE: Write Lua test script for SD card driver (lua/tests/test_sd.lua)
 
 Create lua/tests/test_sd.lua that:
 - Mounts the SD card with sd.mount("/sd").
@@ -1602,6 +1614,8 @@ Create lua/tests/test_sd.lua that:
 - Creates, writes, reads back, and deletes a file using standard io.open() / io.read() / io.write() calls so the VFS path is exercised.
 - Unmounts the card with sd.umount("/sd").
 Include comments on each step so the script also serves as usage documentation.
+
+Created lua/tests/test_sd.lua: mounts at /sd, prints sd.info() table, writes a test file via io.open, reads it back and asserts data matches, deletes the file with os.remove, then unmounts.
 
 DONE: Add WebSocket server and client
 

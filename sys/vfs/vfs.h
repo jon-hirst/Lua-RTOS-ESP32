@@ -95,6 +95,7 @@ int vfs_fat_mount(const char *target);
 int vfs_fat_umount(const char *target);
 int vfs_fat_format(const char *target);
 int vfs_fat_fsstat(const char *target, uint32_t *total, uint32_t *used);
+void *vfs_fat_card(void);
 
 int vfs_spiffs_mount(const char *target);
 int vfs_spiffs_umount(const char *target);

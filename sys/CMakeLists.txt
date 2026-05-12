@@ -121,7 +121,6 @@ set(srcs
 	"syscalls/common.c"
 	"unix/getcwd.c"
 	"unix/syslog.c"
-#	"vfs/fat.c"
 	"vfs/lfs.c"
 #	"vfs/pty.c"
 	"vfs/ramfs.c"
@@ -132,7 +131,11 @@ set(srcs
 	"vfs/vfs.c"
 )
 
-set(include_dirs 
+if(CONFIG_SD_CARD_MMC OR CONFIG_SD_CARD_SPI)
+    list(APPEND srcs "vfs/fat.c")
+endif()
+
+set(include_dirs
     "."
 	"freertos"
 	"vfs"
@@ -177,7 +180,7 @@ idf_component_register(
     INCLUDE_DIRS "${include_dirs}"
 	LDFRAGMENTS "${fragments}"
     PRIV_REQUIRES app_update driver nvs_flash pthread vfs
-    REQUIRES lua esp_adc spiffs ramfs romfs lfs motion nmea gdisplay driver esp_hw_support esp_wifi esp_eth openssl eth_enc424j600 coap
+    REQUIRES lua esp_adc spiffs ramfs romfs lfs motion nmea gdisplay driver esp_hw_support esp_wifi esp_eth openssl eth_enc424j600 coap esp_driver_sdmmc esp_driver_sdspi fatfs
 )
 
 # rmt_private.h moved from driver/ to esp_driver_rmt/src/ in IDF v5.5

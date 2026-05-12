@@ -70,6 +70,7 @@ set(srcs
 	"modules/sys/loslib_adds.c"
 	"modules/sys/lua_rtos_main.c"
 	"modules/sys/nvs.c"
+	"modules/sys/sd.c"
 	"modules/sys/thread.c"
 	"modules/sys/tmr.c"
 	"modules/sys/vm.c"
@@ -195,6 +196,7 @@ list(APPEND extra_link_flags "-u luaopen_fs")
 list(APPEND extra_link_flags "-u luaopen_pack")
 list(APPEND extra_link_flags "-u luaopen_md5")
 list(APPEND extra_link_flags "-u luaopen_nvs")
+list(APPEND extra_link_flags "-u luaopen_sd")
 list(APPEND extra_link_flags "-u luaopen_thread")
 list(APPEND extra_link_flags "-u luaopen_tmr")
 list(APPEND extra_link_flags "-u luaopen_vm")
